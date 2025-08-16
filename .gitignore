@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Environment variables
+.env
+
+# IDE specific files
+.vscode/
+.idea/
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Netlify
+.netlify/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Virtual environment
+venv/
