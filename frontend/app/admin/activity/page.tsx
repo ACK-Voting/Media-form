@@ -65,7 +65,7 @@ function ActivityPage() {
 
   // Get icon for activity type
   const getActivityIcon = (action: string) => {
-    const iconMap: Record<string, { icon: JSX.Element; bgColor: string }> = {
+    const iconMap: Record<string, { icon: React.ReactElement; bgColor: string }> = {
       application_approved: {
         bgColor: 'bg-green-100',
         icon: (
