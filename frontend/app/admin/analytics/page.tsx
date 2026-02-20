@@ -132,7 +132,7 @@ function AnalyticsPage() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ _id, percent }) => `${_id}: ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }: any) => `${name}: ${(percent * 100).toFixed(0)}%`}
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="count"
@@ -205,7 +205,7 @@ function AnalyticsPage() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ _id, percent }) => `${_id}: ${(percent * 100).toFixed(0)}%`}
+                  label={({ name, percent }: any) => `${name}: ${(percent * 100).toFixed(0)}%`}
                   outerRadius={100}
                   fill="#8884d8"
                   dataKey="count"
