@@ -255,7 +255,7 @@
             event.preventDefault();
             const form = event.target;
             const formData = new FormData(form);
-            
+
             // Show loading state
             const submitBtn = form.querySelector('button[type="submit"]');
             const originalBtnText = submitBtn.innerHTML;
@@ -263,24 +263,90 @@
             submitBtn.innerHTML = 'Submitting...';
 
             try {
-                const response = await fetch('/', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: new URLSearchParams(formData).toString()
+                // Convert FormData to JSON object
+                const data = {};
+                formData.forEach((value, key) => {
+                    // Handle arrays (checkboxes)
+                    if (key === 'roles' || key === 'availability') {
+                        if (!data[key]) data[key] = [];
+                        data[key].push(value);
+                    } else {
+                        data[key] = value;
+                    }
                 });
 
-                if (response.ok) {
-                    alert('Thank you for your submission! We will get back to you soon.');
+                // Send to backend API
+                const API_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+                    ? 'http://localhost:3000/api/submissions'
+                    : 'YOUR_PRODUCTION_API_URL/api/submissions';
+
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert('✅ Thank you for your submission! We will get back to you soon.');
                     form.reset();
                 } else {
-                    throw new Error('Network response was not ok');
+                    throw new Error(result.message || 'Submission failed');
                 }
             } catch (error) {
-                alert('There was a problem with your submission. Please try again.');
+                alert('❌ There was a problem with your submission. Please try again.');
                 console.error('Error:', error);
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalBtnText;
+            }
+        }
+
+        // Toggle membership details
+        function toggleMembershipNumber(isMember) {
+            const details = document.getElementById('membershipDetails');
+            const membershipNumber = document.getElementById('membershipNumber');
+            const otherChurch = document.getElementById('otherChurch');
+
+            if (isMember) {
+                details.style.display = 'block';
+                membershipNumber.required = true;
+                otherChurch.required = false;
+            } else {
+                details.style.display = 'none';
+                membershipNumber.required = false;
+                otherChurch.required = true;
+            }
+        }
+
+        // Toggle experience details
+        function toggleExperienceDetails(hasExperience) {
+            const details = document.getElementById('experienceDetails');
+            const description = document.getElementById('experienceDescription');
+
+            if (hasExperience) {
+                details.style.display = 'block';
+                description.required = true;
+            } else {
+                details.style.display = 'none';
+                description.required = false;
+            }
+        }
+
+        // Toggle equipment list
+        function toggleEquipmentList(hasEquipment) {
+            const list = document.getElementById('equipmentList');
+            const description = document.getElementById('equipmentDescription');
+
+            if (hasEquipment) {
+                list.style.display = 'block';
+                description.required = true;
+            } else {
+                list.style.display = 'none';
+                description.required = false;
             }
         }
 
@@ -289,47 +355,6 @@
             // Add form submission handler
             const form = document.getElementById('registrationForm');
             form.addEventListener('submit', handleSubmit);
-            // Toggle membership details
-            function toggleMembershipNumber(isMember) {
-                const details = document.getElementById('membershipDetails');
-                const membershipNumber = document.getElementById('membershipNumber');
-                const otherChurch = document.getElementById('otherChurch');
-
-                if (isMember) {
-                    details.style.display = 'block';
-                    membershipNumber.required = true;
-                    otherChurch.required = false;
-                } else {
-                    details.style.display = 'none';
-                    membershipNumber.required = false;
-                    otherChurch.required = true;
-                }
-            }
-
-            // Toggle experience details
-            function toggleExperienceDetails(hasExperience) {
-                const details = document.getElementById('experienceDetails');
-                const description = document.getElementById('experienceDescription');
-
-                if (hasExperience) {
-                    details.style.display = 'block';
-                    description.required = true;
-                } else {
-                    details.style.display = 'none';
-                    description.required = false;
-                }
-            }
-
-            // Toggle equipment list
-            function toggleEquipmentList(hasEquipment) {
-                const list = document.getElementById('equipmentList');
-
-                if (hasEquipment) {
-                    list.style.display = 'block';
-                } else {
-                    list.style.display = 'none';
-                }
-            }
 
             // Auto-fill declaration name
             const fullNameField = document.getElementById('fullName');
@@ -622,9 +647,34 @@
             color: white;
         }
 
+        .download-btn.submit-btn {
+            background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+            color: white;
+            font-size: 18px;
+            padding: 15px 30px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(155, 89, 182, 0.4);
+        }
+
+        .download-btn.submit-btn:hover {
+            background: linear-gradient(135deg, #8e44ad 0%, #732d91 100%);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(155, 89, 182, 0.6);
+        }
+
         .download-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .download-btn:active {
+            transform: translateY(0);
+        }
+
+        .download-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
 
         @media (max-width: 768px) {
@@ -686,26 +736,7 @@
         </div>
 
         <div class="form-content">
-                <div class="download-buttons">
-                    <button type="button" class="download-btn pdf" onclick="downloadPDF()">
-                        📄 Download as PDF
-                    </button>
-                    <button type="button" class="download-btn docx" onclick="downloadDOCX()">
-                        📝 Download as DOCX
-                    </button>
-                    <button type="button" class="download-btn print" onclick="printForm()">
-                        🖨️ Print Form
-                    </button>
-                    <button type="submit" class="download-btn" style="background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);">
-                        📤 Submit Form
-                    </button>
-                </div>
-
-            <form id="registrationForm" name="media-team-registration" method="POST" data-netlify="true" netlify-honeypot="bot-field">
-                <p class="hidden">
-                    <label>Don't fill this out if you're human: <input name="bot-field" /></label>
-                </p>
-                <input type="hidden" name="form-name" value="media-team-registration">
+            <form id="registrationForm" name="media-team-registration" method="POST">
                 <div class="intro">
                     <p><strong>Thank you for your interest in joining the ACK Mombasa Memorial Cathedral Media Team!</strong></p>
                     <p>Your skills and dedication will help us spread the Gospel, document church activities, and enhance our digital presence. Please complete this form to register as a volunteer.</p>
@@ -1036,301 +1067,24 @@
                 <div style="text-align: center; margin-top: 30px; font-size: 1.2em; color: #2c3e50;">
                     <strong>Thank you for your willingness to serve!</strong>
                 </div>
+
+                <div class="download-buttons">
+                    <button type="submit" class="download-btn submit-btn">
+                        📤 Submit Form
+                    </button>
+                    <button type="button" class="download-btn pdf" onclick="downloadPDF()">
+                        📄 Download as PDF
+                    </button>
+                    <button type="button" class="download-btn docx" onclick="downloadDOCX()">
+                        📝 Download as DOCX
+                    </button>
+                    <button type="button" class="download-btn print" onclick="printForm()">
+                        🖨️ Print Form
+                    </button>
+                </div>
             </form>
         </div>
     </div>
 
-    <!--(isMember) {
-            const details = document.getElementById('membershipDetails');
-            const membershipNumber = document.getElementById('membershipNumber');
-            const otherChurch = document.getElementById('otherChurch');
-
-            if (isMember) {
-                details.style.display = 'block';
-                membershipNumber.style.display = 'block';
-                otherChurch.style.display = 'none';
-                membershipNumber.required = true;
-                otherChurch.required = false;
-            } else {
-                details.style.display = 'block';
-                membershipNumber.style.display = 'none';
-                otherChurch.style.display = 'block';
-                membershipNumber.required = false;
-                otherChurch.required = true;
-            }
-        }
-
-        // Toggle experience details
-        function toggleExperienceDetails(hasExperience) {
-            const details = document.getElementById('experienceDetails');
-            const description = document.getElementById('experienceDescription');
-
-            if (hasExperience) {
-                details.style.display = 'block';
-                description.required = true;
-            } else {
-                details.style.display = 'none';
-                description.required = false;
-            }
-        }
-
-        // Toggle equipment list
-        function toggleEquipmentList(hasEquipment) {
-            const list = document.getElementById('equipmentList');
-
-            if (hasEquipment) {
-                list.style.display = 'block';
-            } else {
-                list.style.display = 'none';
-            }
-        }
-
-        // Auto-fill declaration name
-        document.getElementById('fullName').addEventListener('input', function() {
-            document.getElementById('declarationName').value = this.value;
-        });
-
-        // Print form function
-        function printForm() {
-            const buttons = document.querySelector('.download-buttons');
-            buttons.style.display = 'none';
-            window.print();
-            setTimeout(() => {
-                buttons.style.display = 'flex';
-            }, 1000);
-        }
-
-        // Download as PDF using jsPDF and html2canvas
-        function downloadPDF() {
-            // Hide download buttons during capture
-            const buttons = document.querySelector('.download-buttons');
-            buttons.style.display = 'none';
-
-            // Get form element
-            const form = document.getElementById('registrationForm');
-            const formWidth = form.offsetWidth;
-            const formHeight = form.offsetHeight;
-
-            // Create instance of jsPDF
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({
-                orientation: 'portrait',
-                unit: 'px',
-                format: [formWidth, formHeight]
-            });
-
-            // Use HTML2Canvas to render the form
-            html2canvas(form, {
-                scale: 2, // Higher scale for better quality
-                useCORS: true,
-                logging: false,
-                scrollX: 0,
-                scrollY: 0
-            }).then(canvas => {
-                // Add the canvas as an image to the PDF
-                const imgData = canvas.toDataURL('image/png');
-
-                // Calculate the PDF dimensions (A4 format)
-                const pdfWidth = doc.internal.pageSize.getWidth();
-                const pdfHeight = doc.internal.pageSize.getHeight();
-                const ratio = Math.min(pdfWidth / canvas.width, pdfHeight / canvas.height);
-                const imgWidth = canvas.width * ratio;
-                const imgHeight = canvas.height * ratio;
-
-                doc.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-                doc.save('ACK_Media_Team_Registration_Form.pdf');
-
-                // Show buttons again
-                buttons.style.display = 'flex';
-            });
-        }
-
-        // Download as DOCX file using docx.js
-        function downloadDOCX() {
-            const formData = new FormData(document.getElementById('registrationForm'));
-
-            // Get selected checkboxes for roles
-            const roles = [];
-            document.querySelectorAll('input[name="roles"]:checked').forEach(checkbox => {
-                roles.push(checkbox.value);
-            });
-
-            // Get selected checkboxes for availability
-            const availability = [];
-            document.querySelectorAll('input[name="availability"]:checked').forEach(checkbox => {
-                availability.push(checkbox.value);
-            });
-
-            // Access the docx library
-            const { Document, Paragraph, TextRun, HeadingLevel, AlignmentType, BorderStyle } = docx;
-
-            // Create a new Document
-            const doc = new Document({
-                sections: [{
-                    properties: {},
-                    children: [
-                        // Title
-                        new Paragraph({
-                            text: "ACK MOMBASA MEMORIAL CATHEDRAL",
-                            heading: HeadingLevel.HEADING_1,
-                            alignment: AlignmentType.CENTER,
-                            bold: true,
-                        }),
-                        new Paragraph({
-                            text: "MEDIA TEAM VOLUNTEER REGISTRATION FORM",
-                            heading: HeadingLevel.HEADING_2,
-                            alignment: AlignmentType.CENTER,
-                            bold: true,
-                            spacing: { after: 300 },
-                        }),
-
-                        // Personal Information
-                        new Paragraph({
-                            text: "PERSONAL INFORMATION",
-                            heading: HeadingLevel.HEADING_3,
-                            bold: true,
-                            thematicBreak: true,
-                        }),
-                        new Paragraph({
-                            text: `1. Full Name: ${formData.get('fullName') || '____________________'}`,
-                        }),
-                        new Paragraph({
-                            text: `2. Gender: ${formData.get('gender') || '________'}`,
-                        }),
-                        new Paragraph({
-                            text: `3. Age: ${formData.get('age') || '____'}`,
-                        }),
-                        new Paragraph({
-                            text: `4. Marital Status: ${formData.get('maritalStatus') || '____________'}`,
-                        }),
-                        new Paragraph({
-                            text: `5. Phone Number: ${formData.get('phone') || '____________________'}`,
-                        }),
-                        new Paragraph({
-                            text: `6. Email Address: ${formData.get('email') || '____________________'}`,
-                        }),
-                        new Paragraph({
-                            text: `7. Residential Address: ${formData.get('address') || '____________________'}`,
-                        }),
-                        new Paragraph({
-                            text: `8. ACK Member: ${formData.get('member') || '________'}`,
-                        }),
-                        new Paragraph({
-                            text: formData.get('member') === 'yes' ?
-                                  `   Membership Number: ${formData.get('membershipNumber') || '________'}` :
-                                  `   Other Church: ${formData.get('otherChurch') || '________'}`,
-                            spacing: { after: 200 },
-                        }),
-
-                        // Media Team Skills & Interests
-                        new Paragraph({
-                            text: "MEDIA TEAM SKILLS & INTERESTS",
-                            heading: HeadingLevel.HEADING_3,
-                            bold: true,
-                            thematicBreak: true,
-                        }),
-                        new Paragraph({
-                            text: `9. Interested Roles: ${roles.length > 0 ? roles.join(', ') : '____________________'}`,
-                        }),
-                        new Paragraph({
-                            text: `   Other Role: ${formData.get('otherRole') || '____________________'}`,
-                        }),
-                        new Paragraph({
-                            text: `10. Prior Experience: ${formData.get('experience') || '________'}`,
-                        }),
-                        formData.get('experience') === 'yes' ? new Paragraph({
-                            text: `    Description: ${formData.get('experienceDescription') || '____________________'}`,
-                        }) : {},
-                        new Paragraph({
-                            text: `11. Own Equipment: ${formData.get('equipment') || '________'}`,
-                        }),
-                        formData.get('equipment') === 'yes' ? new Paragraph({
-                            text: `    Equipment List: ${formData.get('equipmentDescription') || '____________________'}`,
-                            spacing: { after: 200 },
-                        }) : {},
-
-                        // Availability & Commitment
-                        new Paragraph({
-                            text: "AVAILABILITY & COMMITMENT",
-                            heading: HeadingLevel.HEADING_3,
-                            bold: true,
-                            thematicBreak: true,
-                        }),
-                        new Paragraph({
-                            text: `12. Volunteer Frequency: ${formData.get('frequency') || '____________________'}`,
-                        }),
-                        new Paragraph({
-                            text: `13. Preferred Times: ${availability.length > 0 ? availability.join(', ') : '____________________'}`,
-                        }),
-                        new Paragraph({
-                            text: `14. Training Sessions: ${formData.get('training') || '________'}`,
-                            spacing: { after: 200 },
-                        }),
-
-                        // Spiritual & Volunteer Commitment
-                        new Paragraph({
-                            text: "SPIRITUAL & VOLUNTEER COMMITMENT",
-                            heading: HeadingLevel.HEADING_3,
-                            bold: true,
-                            thematicBreak: true,
-                        }),
-                        new Paragraph({
-                            text: `15. Motivation: ${formData.get('motivation') || '____________________'}`,
-                        }),
-                        new Paragraph({
-                            text: `16. Commitment: ${formData.get('commitment') || '________'}`,
-                            spacing: { after: 200 },
-                        }),
-
-                        // Emergency Contact
-                        new Paragraph({
-                            text: "EMERGENCY CONTACT",
-                            heading: HeadingLevel.HEADING_3,
-                            bold: true,
-                            thematicBreak: true,
-                        }),
-                        new Paragraph({
-                            text: `17. Emergency Contact Name: ${formData.get('emergencyName') || '____________________'}`,
-                        }),
-                        new Paragraph({
-                            text: `18. Relationship: ${formData.get('emergencyRelation') || '____________________'}`,
-                        }),
-                        new Paragraph({
-                            text: `19. Emergency Phone: ${formData.get('emergencyPhone') || '____________________'}`,
-                            spacing: { after: 200 },
-                        }),
-
-                        // Declaration
-                        new Paragraph({
-                            text: "DECLARATION",
-                            heading: HeadingLevel.HEADING_3,
-                            bold: true,
-                            thematicBreak: true,
-                        }),
-                        new Paragraph({
-                            text: `I, ${formData.get('declarationName') || '____________________'}, confirm that the information provided is accurate.`,
-                        }),
-                        new Paragraph({
-                            text: "Signature: ____________________  Date: ____________________",
-                            spacing: { after: 200 },
-                        }),
-                    ],
-                }],
-            });
-
-            // Generate and download the DOCX file
-            docx.Packer.toBlob(doc).then(blob => {
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                document.body.appendChild(a);
-                a.style.display = 'none';
-                a.href = url;
-                a.download = 'ACK_Media_Team_Registration_Form.docx';
-                a.click();
-                window.URL.revokeObjectURL(url);
-            });
-        }
-
-    -->
 </body>
 </html>
