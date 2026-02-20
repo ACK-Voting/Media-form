@@ -94,21 +94,21 @@ export default function CalendarPage() {
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Calendar</h1>
-                    <p className="text-sm text-gray-500 mt-1">View team events and activities</p>
+                    <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">Calendar</h1>
+                    <p className="text-base text-gray-500 mt-1">View team events and activities</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <div className="flex bg-gray-100 rounded-lg p-1">
                         <button
                             onClick={() => setView('calendar')}
-                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === 'calendar' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                            className={`px-3 py-1.5 rounded-md text-base font-medium transition-colors ${view === 'calendar' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
                                 }`}
                         >
                             Calendar
                         </button>
                         <button
                             onClick={() => setView('list')}
-                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${view === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+                            className={`px-3 py-1.5 rounded-md text-base font-medium transition-colors ${view === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
                                 }`}
                         >
                             List
@@ -126,20 +126,20 @@ export default function CalendarPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                             </svg>
                         </button>
-                        <h2 className="text-lg font-semibold text-gray-900 min-w-[180px] text-center">{monthName}</h2>
+                        <h2 className="text-xl lg:text-2xl font-semibold text-gray-900 min-w-[180px] text-center">{monthName}</h2>
                         <button onClick={nextMonth} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                             <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
                         </button>
-                        <button onClick={goToday} className="ml-2 px-3 py-1.5 text-sm font-medium text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
+                        <button onClick={goToday} className="ml-2 px-3 py-1.5 text-base font-medium text-purple-600 hover:bg-purple-50 rounded-lg transition-colors">
                             Today
                         </button>
                     </div>
                     <select
                         value={filterType}
                         onChange={(e) => setFilterType(e.target.value)}
-                        className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                        className="px-3 py-2 border border-gray-200 rounded-lg text-base focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
                     >
                         {EVENT_TYPES.map((type) => (
                             <option key={type} value={type}>
@@ -159,7 +159,7 @@ export default function CalendarPage() {
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
                     <div className="grid grid-cols-7">
                         {DAYS.map((day) => (
-                            <div key={day} className="p-3 text-center text-xs font-semibold text-gray-500 bg-gray-50 border-b">
+                            <div key={day} className="p-3 text-center text-sm font-semibold text-gray-500 bg-gray-50 border-b">
                                 {day}
                             </div>
                         ))}
@@ -184,7 +184,7 @@ export default function CalendarPage() {
                                                     <button
                                                         key={event._id}
                                                         onClick={() => setSelectedEvent(event)}
-                                                        className={`w-full text-left px-1.5 py-0.5 rounded text-xs text-white truncate ${getEventTypeColor(event.eventType)}`}
+                                                        className={`w-full text-left px-1.5 py-0.5 rounded text-sm text-white truncate ${getEventTypeColor(event.eventType)}`}
                                                     >
                                                         {event.title}
                                                     </button>
@@ -205,7 +205,7 @@ export default function CalendarPage() {
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
                     {events.length === 0 ? (
                         <div className="text-center py-12 text-gray-400">
-                            <p className="text-lg">No events this month</p>
+                            <p className="text-xl">No events this month</p>
                         </div>
                     ) : (
                         <div className="divide-y divide-gray-100">
@@ -226,12 +226,12 @@ export default function CalendarPage() {
                                             </span>
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <h3 className="font-medium text-gray-900">{event.title}</h3>
-                                            <p className="text-sm text-gray-500 mt-0.5">
+                                            <h3 className="text-lg font-medium text-gray-900">{event.title}</h3>
+                                            <p className="text-base text-gray-500 mt-0.5">
                                                 {event.eventTime} {event.location && `• ${event.location}`}
                                             </p>
                                             {event.description && (
-                                                <p className="text-sm text-gray-400 mt-1 line-clamp-2">{event.description}</p>
+                                                <p className="text-base text-gray-400 mt-1 line-clamp-2">{event.description}</p>
                                             )}
                                             <span className={`inline-block mt-2 px-2 py-0.5 rounded-full text-xs font-medium ${getEventTypeBadge(event.eventType)}`}>
                                                 {event.eventType}
@@ -258,14 +258,14 @@ export default function CalendarPage() {
                             </svg>
                         </button>
 
-                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${getEventTypeBadge(selectedEvent.eventType)}`}>
+                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getEventTypeBadge(selectedEvent.eventType)}`}>
                             {selectedEvent.eventType}
                         </span>
 
-                        <h2 className="text-xl font-bold text-gray-900 mt-3">{selectedEvent.title}</h2>
+                        <h2 className="text-2xl lg:text-3xl font-bold text-gray-900 mt-3">{selectedEvent.title}</h2>
 
                         <div className="mt-4 space-y-3">
-                            <div className="flex items-center gap-3 text-sm text-gray-600">
+                            <div className="flex items-center gap-3 text-base text-gray-600">
                                 <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
@@ -274,7 +274,7 @@ export default function CalendarPage() {
                                 })}
                             </div>
                             {selectedEvent.eventTime && (
-                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                                <div className="flex items-center gap-3 text-base text-gray-600">
                                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
@@ -282,7 +282,7 @@ export default function CalendarPage() {
                                 </div>
                             )}
                             {selectedEvent.location && (
-                                <div className="flex items-center gap-3 text-sm text-gray-600">
+                                <div className="flex items-center gap-3 text-base text-gray-600">
                                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -293,7 +293,7 @@ export default function CalendarPage() {
                         </div>
 
                         {selectedEvent.description && (
-                            <p className="mt-4 text-sm text-gray-600 leading-relaxed">
+                            <p className="mt-4 text-base text-gray-600 leading-relaxed">
                                 {selectedEvent.description}
                             </p>
                         )}

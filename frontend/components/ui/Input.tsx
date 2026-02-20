@@ -11,7 +11,7 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement | HTMLTe
 
 const Input = React.forwardRef<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement, InputProps>(
     ({ label, error, helperText, as = 'input', options, className = '', ...props }, ref) => {
-        const baseStyles = 'w-full px-4 py-2.5 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-gray-900 placeholder-gray-500';
+        const baseStyles = 'w-full px-4 py-2.5 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 bg-white text-gray-900 placeholder:text-gray-500';
         const errorStyles = error ? 'border-red-500' : 'border-gray-400 hover:border-gray-500';
 
         const renderInput = () => {

@@ -64,8 +64,8 @@ export default function MeetingMinutesPage() {
         <div className="max-w-5xl mx-auto space-y-6">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-gray-900">Meeting Minutes</h1>
-                <p className="text-sm text-gray-500 mt-1">Browse and download meeting documentation</p>
+                <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">Meeting Minutes</h1>
+                <p className="text-base text-gray-500 mt-1">Browse and download meeting documentation</p>
             </div>
 
             {/* Search */}
@@ -79,7 +79,7 @@ export default function MeetingMinutesPage() {
                         value={search}
                         onChange={(e) => { setSearch(e.target.value); setPage(1); }}
                         placeholder="Search meeting minutes..."
-                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-sm"
+                        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none text-base"
                     />
                 </div>
             </div>
@@ -90,13 +90,13 @@ export default function MeetingMinutesPage() {
                 </div>
             ) : minutes.length === 0 ? (
                 <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-12 text-center">
-                    <p className="text-lg text-gray-400">No meeting minutes found</p>
-                    <p className="text-sm text-gray-300 mt-1">Check back later for updates</p>
+                    <p className="text-xl text-gray-400">No meeting minutes found</p>
+                    <p className="text-base text-gray-300 mt-1">Check back later for updates</p>
                 </div>
             ) : (
                 <>
                     {/* Minutes List */}
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                         {minutes.map((m) => (
                             <button
                                 key={m._id}
@@ -110,12 +110,12 @@ export default function MeetingMinutesPage() {
                                         </svg>
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <h3 className="font-semibold text-gray-900">{m.title}</h3>
-                                        <p className="text-sm text-gray-500 mt-0.5">
+                                        <h3 className="text-lg font-semibold text-gray-900">{m.title}</h3>
+                                        <p className="text-base text-gray-500 mt-0.5">
                                             {formatDate(m.meetingDate)}
                                         </p>
                                         {m.summary && (
-                                            <p className="text-sm text-gray-400 mt-1 line-clamp-2">{m.summary}</p>
+                                            <p className="text-base text-gray-400 mt-1 line-clamp-2">{m.summary}</p>
                                         )}
                                         <div className="flex items-center gap-3 mt-2">
                                             {m.attachments && m.attachments.length > 0 && (
@@ -144,17 +144,17 @@ export default function MeetingMinutesPage() {
                             <button
                                 onClick={() => setPage(Math.max(1, page - 1))}
                                 disabled={page === 1}
-                                className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-4 py-2 text-base font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Previous
                             </button>
-                            <span className="text-sm text-gray-500">
+                            <span className="text-base text-gray-500">
                                 Page {page} of {totalPages}
                             </span>
                             <button
                                 onClick={() => setPage(Math.min(totalPages, page + 1))}
                                 disabled={page === totalPages}
-                                className="px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="px-4 py-2 text-base font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Next
                             </button>
@@ -169,7 +169,7 @@ export default function MeetingMinutesPage() {
                     <div className="fixed inset-0 bg-black/50" onClick={() => setSelectedMinutes(null)} />
                     <div className="relative bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto z-10">
                         <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
-                            <h2 className="text-lg font-bold text-gray-900 truncate pr-4">{selectedMinutes.title}</h2>
+                            <h2 className="text-xl lg:text-2xl font-bold text-gray-900 truncate pr-4">{selectedMinutes.title}</h2>
                             <button
                                 onClick={() => setSelectedMinutes(null)}
                                 className="p-1.5 hover:bg-gray-100 rounded-lg flex-shrink-0"
@@ -180,7 +180,7 @@ export default function MeetingMinutesPage() {
                             </button>
                         </div>
                         <div className="p-6 space-y-5">
-                            <div className="flex items-center gap-3 text-sm text-gray-500">
+                            <div className="flex items-center gap-3 text-base text-gray-500">
                                 <span>📅 {formatDate(selectedMinutes.meetingDate)}</span>
                                 {selectedMinutes.uploadedBy && (
                                     <span>• Uploaded by {typeof selectedMinutes.uploadedBy === 'object' ? selectedMinutes.uploadedBy.username : 'Admin'}</span>
@@ -189,13 +189,13 @@ export default function MeetingMinutesPage() {
 
                             {selectedMinutes.summary && (
                                 <div>
-                                    <h3 className="text-sm font-semibold text-gray-700 mb-1">Summary</h3>
-                                    <p className="text-sm text-gray-600">{selectedMinutes.summary}</p>
+                                    <h3 className="text-base font-semibold text-gray-700 mb-1">Summary</h3>
+                                    <p className="text-base text-gray-600">{selectedMinutes.summary}</p>
                                 </div>
                             )}
 
                             <div>
-                                <h3 className="text-sm font-semibold text-gray-700 mb-2">Content</h3>
+                                <h3 className="text-base font-semibold text-gray-700 mb-2">Content</h3>
                                 <div className="prose prose-sm max-w-none text-gray-600 bg-gray-50 rounded-xl p-4 whitespace-pre-wrap">
                                     {selectedMinutes.content}
                                 </div>
@@ -204,7 +204,7 @@ export default function MeetingMinutesPage() {
                             {/* Attachments */}
                             {selectedMinutes.attachments && selectedMinutes.attachments.length > 0 && (
                                 <div>
-                                    <h3 className="text-sm font-semibold text-gray-700 mb-2">Attachments</h3>
+                                    <h3 className="text-base font-semibold text-gray-700 mb-2">Attachments</h3>
                                     <div className="space-y-2">
                                         {selectedMinutes.attachments.map((file, idx) => (
                                             <a
@@ -216,7 +216,7 @@ export default function MeetingMinutesPage() {
                                             >
                                                 <span className="text-xl">{getFileIcon(file.mimetype)}</span>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="text-sm font-medium text-gray-900 truncate">{file.originalName}</p>
+                                                    <p className="text-base font-medium text-gray-900 truncate">{file.originalName}</p>
                                                     <p className="text-xs text-gray-400">{formatFileSize(file.size)}</p>
                                                 </div>
                                                 <svg className="w-4 h-4 text-purple-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

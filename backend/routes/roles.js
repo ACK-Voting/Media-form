@@ -151,13 +151,15 @@ router.delete('/:id', auth, async (req, res) => {
     }
 });
 
-// GET /api/users/:userId/roles - Get user's roles
+// GET /api/roles/users/:userId/roles - Get user's roles
 router.get('/users/:userId/roles', verifyUserToken, async (req, res) => {
     try {
         const userId = req.params.userId;
+        const requestingUserId = String(req.user._id);
 
         // Users can only view their own roles unless they're admin
-        if (userId !== req.user._id.toString() && !req.admin) {
+        if (userId !== requestingUserId && !req.admin) {
+            console.log('Authorization failed:', { userId, requestingUserId, admin: req.admin });
             return res.status(403).json({
                 success: false,
                 message: 'Unauthorized'
@@ -168,14 +170,20 @@ router.get('/users/:userId/roles', verifyUserToken, async (req, res) => {
             .populate('roleId')
             .populate('assignedBy', 'username email');
 
+        console.log('User roles query:', {
+            userId,
+            rolesFound: userRoles.length,
+            roles: userRoles.map(ur => ({
+                id: ur._id,
+                roleName: ur.roleId?.name,
+                hasRoleId: !!ur.roleId
+            }))
+        });
+
+        // Return the userRoles with populated roleId
         res.json({
             success: true,
-            roles: userRoles.map(ur => ({
-                ...ur.roleId.toJSON(),
-                assignedAt: ur.assignedAt,
-                assignedBy: ur.assignedBy,
-                notes: ur.notes
-            }))
+            roles: userRoles
         });
     } catch (error) {
         console.error('Get user roles error:', error);

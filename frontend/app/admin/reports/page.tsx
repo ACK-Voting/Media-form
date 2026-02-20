@@ -6,6 +6,7 @@ import AdminLayout from '@/components/admin/AdminLayout';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+import DatePicker from '@/components/ui/DatePicker';
 import { reportsAPI } from '@/lib/api';
 import { useToast } from '@/contexts/ToastContext';
 import { exportDataToCSV } from '@/lib/export';
@@ -185,7 +186,14 @@ function ReportsPage() {
                   : 'border-gray-200 hover:border-purple-300'
               }`}
             >
-              <h3 className="font-bold text-lg mb-2">📊 Applications Report</h3>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-lg text-gray-900">Applications Report</h3>
+              </div>
               <p className="text-sm text-gray-600">
                 Detailed breakdown of all applications with filters
               </p>
@@ -202,7 +210,14 @@ function ReportsPage() {
                   : 'border-gray-200 hover:border-purple-300'
               }`}
             >
-              <h3 className="font-bold text-lg mb-2">👥 Members Report</h3>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-lg text-gray-900">Members Report</h3>
+              </div>
               <p className="text-sm text-gray-600">Active team member statistics and roles</p>
             </button>
 
@@ -217,7 +232,14 @@ function ReportsPage() {
                   : 'border-gray-200 hover:border-purple-300'
               }`}
             >
-              <h3 className="font-bold text-lg mb-2">📅 Events Report</h3>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-lg text-gray-900">Events Report</h3>
+              </div>
               <p className="text-sm text-gray-600">
                 Event participation and attendance data
               </p>
@@ -231,44 +253,51 @@ function ReportsPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
             {reportType !== 'members' && (
               <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    value={filters.startDate}
-                    onChange={(e) => setFilters({ ...filters, startDate: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
-                  />
-                </div>
+                <DatePicker
+                  label="Start Date"
+                  selected={filters.startDate ? new Date(filters.startDate) : null}
+                  onChange={(date) => setFilters({ ...filters, startDate: date ? date.toISOString().split('T')[0] : '' })}
+                  placeholder="Select start date..."
+                  dateFormat="MMM d, yyyy"
+                />
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                  <input
-                    type="date"
-                    value={filters.endDate}
-                    onChange={(e) => setFilters({ ...filters, endDate: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
-                  />
-                </div>
+                <DatePicker
+                  label="End Date"
+                  selected={filters.endDate ? new Date(filters.endDate) : null}
+                  onChange={(date) => setFilters({ ...filters, endDate: date ? date.toISOString().split('T')[0] : '' })}
+                  placeholder="Select end date..."
+                  minDate={filters.startDate ? new Date(filters.startDate) : undefined}
+                  dateFormat="MMM d, yyyy"
+                />
               </>
             )}
 
             {reportType === 'applications' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                <select
-                  value={filters.status}
-                  onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500"
-                >
-                  <option value="">All Statuses</option>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="rejected">Rejected</option>
-                  <option value="account_created">Account Created</option>
-                </select>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <select
+                    value={filters.status}
+                    onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                    className="w-full pl-10 pr-10 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all outline-none shadow-sm hover:border-gray-400 cursor-pointer appearance-none bg-white text-gray-900"
+                  >
+                    <option value="">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                    <option value="account_created">Account Created</option>
+                  </select>
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
             )}
           </div>
