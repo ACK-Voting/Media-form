@@ -12,6 +12,9 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "ACK Media Team Registration",
   description: "ACK Mombasa Memorial Cathedral Media Team Registration System",
+  icons: {
+    icon: "/logo_1.jpeg",
+  },
 };
 
 export default function RootLayout({
