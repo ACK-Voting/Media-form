@@ -8,7 +8,13 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+const corsOptions = {
+    origin: process.env.NODE_ENV === 'production'
+        ? (process.env.FRONTEND_URL || '').split(',').map(s => s.trim()).filter(Boolean)
+        : true,
+    credentials: true,
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -45,6 +51,8 @@ const meetingMinutesRoutes = require('./routes/meetingMinutes');
 const activityRoutes = require('./routes/activity');
 const analyticsRoutes = require('./routes/analytics');
 const reportsRoutes = require('./routes/reports');
+const availabilityRoutes = require('./routes/availability');
+const rotaRoutes = require('./routes/rota');
 
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/auth', authRoutes);
@@ -57,6 +65,8 @@ app.use('/api/meeting-minutes', meetingMinutesRoutes);
 app.use('/api/activity', activityRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/availability', availabilityRoutes);
+app.use('/api/rota', rotaRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -6,6 +6,7 @@ const auth = require('../middleware/auth');
 const { verifyUserToken } = require('../middleware/roleAuth');
 const notificationService = require('../services/notificationService');
 const activityService = require('../services/activityService');
+const { sendEventNotificationEmail } = require('../utils/email');
 
 // GET /api/events - Get all events (filterable)
 router.get('/', verifyUserToken, async (req, res) => {
@@ -117,7 +118,7 @@ router.get('/:id', verifyUserToken, async (req, res) => {
 // POST /api/events - Create event (admin only)
 router.post('/', auth, async (req, res) => {
     try {
-        const { title, description, eventDate, eventTime, location, eventType, attendees, isPublic } = req.body;
+        const { title, description, eventDate, eventTime, location, eventType, attendees, isPublic, isOnline, meetingLink } = req.body;
 
         if (!title || !eventDate) {
             return res.status(400).json({
@@ -135,18 +136,28 @@ router.post('/', auth, async (req, res) => {
             eventType: eventType || 'meeting',
             createdBy: req.admin.id,
             attendees: attendees || [],
-            isPublic: isPublic !== false
+            isPublic: isPublic !== false,
+            isOnline: isOnline === true,
+            meetingLink: isOnline ? meetingLink : undefined,
         });
 
         await event.save();
 
         // Notify all users if public, or just attendees if private
+        const activeUsers = await User.find({ isActive: true });
         if (event.isPublic) {
-            const users = await User.find({ isActive: true });
-            const userIds = users.map(u => u._id);
+            const userIds = activeUsers.map(u => u._id);
             await notificationService.notifyEventCreated(event, userIds);
+            // Send email in background
+            sendEventNotificationEmail(event, activeUsers).catch(err =>
+                console.error('Event email error:', err)
+            );
         } else if (attendees && attendees.length > 0) {
             await notificationService.notifyEventCreated(event, attendees);
+            const attendeeUsers = activeUsers.filter(u => attendees.includes(u._id.toString()));
+            sendEventNotificationEmail(event, attendeeUsers).catch(err =>
+                console.error('Event email error:', err)
+            );
         }
 
         // Log activity
@@ -179,7 +190,7 @@ router.post('/', auth, async (req, res) => {
 // PUT /api/events/:id - Update event (admin only)
 router.put('/:id', auth, async (req, res) => {
     try {
-        const { title, description, eventDate, eventTime, location, eventType, attendees, isPublic } = req.body;
+        const { title, description, eventDate, eventTime, location, eventType, attendees, isPublic, isOnline, meetingLink } = req.body;
 
         const event = await Event.findById(req.params.id);
 
@@ -198,6 +209,8 @@ router.put('/:id', auth, async (req, res) => {
         if (eventType) event.eventType = eventType;
         if (attendees) event.attendees = attendees;
         if (isPublic !== undefined) event.isPublic = isPublic;
+        if (isOnline !== undefined) event.isOnline = isOnline;
+        event.meetingLink = isOnline ? (meetingLink || event.meetingLink) : undefined;
 
         await event.save();
 

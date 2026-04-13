@@ -44,6 +44,24 @@ const navItems = [
         ),
     },
     {
+        label: 'Rota',
+        href: '/portal/rota',
+        icon: (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 12h6m-3-3v6" />
+            </svg>
+        ),
+    },
+    {
+        label: 'Availability',
+        href: '/portal/availability',
+        icon: (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+        ),
+    },
+    {
         label: 'Profile',
         href: '/portal/profile',
         icon: (
@@ -85,11 +103,11 @@ function PortalSidebar() {
 
             {/* Sidebar */}
             <aside
-                className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+                className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out lg:translate-x-0 flex flex-col ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'
                     }`}
             >
                 {/* Logo */}
-                <div className="h-16 flex items-center gap-3 px-5 border-b border-gray-200">
+                <div className="h-16 flex items-center gap-3 px-5 border-b border-gray-200 flex-shrink-0">
                     <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow">
                         <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -102,7 +120,7 @@ function PortalSidebar() {
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+                <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto min-h-0">
                     {navItems.map((item) => {
                         const isActive = item.href === '/portal' ? pathname === '/portal' : pathname.startsWith(item.href);
                         return (
@@ -127,8 +145,8 @@ function PortalSidebar() {
                     })}
                 </nav>
 
-                {/* User section */}
-                <div className="border-t border-gray-200 p-4">
+                {/* User section — pinned to bottom */}
+                <div className="mt-auto border-t border-gray-200 p-4 flex-shrink-0">
                     <div className="flex items-center gap-3 mb-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-purple-400 to-indigo-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
                             {user?.fullName?.charAt(0) || 'U'}

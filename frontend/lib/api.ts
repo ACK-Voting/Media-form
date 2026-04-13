@@ -242,6 +242,32 @@ export const meetingMinutesAPI = {
     downloadAttachment: (id: string, fileIndex: number): string => {
         return `${API_URL}/meeting-minutes/${id}/download/${fileIndex}`;
     },
+
+    downloadAttachmentBlob: async (id: string, fileIndex: number, filename: string): Promise<void> => {
+        const response = await api.get(`/meeting-minutes/${id}/download/${fileIndex}`, {
+            responseType: 'blob',
+        });
+        const url = window.URL.createObjectURL(new Blob([response.data]));
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    },
+
+    adminGetAll: async (page = 1, limit = 20, search = ''): Promise<any> => {
+        const response = await api.get('/meeting-minutes/admin/all', {
+            params: { page, limit, search },
+        });
+        return response.data;
+    },
+
+    togglePublish: async (id: string): Promise<any> => {
+        const response = await api.patch(`/meeting-minutes/${id}/publish`);
+        return response.data;
+    },
 };
 
 // Users API
@@ -327,6 +353,84 @@ export const reportsAPI = {
         const response = await api.get('/reports/events', {
             params: { startDate, endDate },
         });
+        return response.data;
+    },
+};
+
+// Rota API
+export const rotaAPI = {
+    list: async (): Promise<any> => {
+        const response = await api.get('/rota');
+        return response.data;
+    },
+
+    getByDate: async (date: string): Promise<any> => {
+        const response = await api.get(`/rota/${date}`);
+        return response.data;
+    },
+
+    getAvailableMembers: async (date: string): Promise<any> => {
+        const response = await api.get(`/rota/available/${date}`);
+        return response.data;
+    },
+
+    save: async (date: string, data: {
+        services: Array<{
+            time: string;
+            assignments: Array<{ role: string; userId: string | null; memberName: string }>;
+        }>;
+        closingMessage?: string;
+        published?: boolean;
+    }): Promise<any> => {
+        const response = await api.put(`/rota/${date}`, data);
+        return response.data;
+    },
+
+    generateText: async (date: string): Promise<any> => {
+        const response = await api.get(`/rota/${date}/text`);
+        return response.data;
+    },
+
+    getPublishedForMember: async (): Promise<any> => {
+        const response = await api.get('/rota/member/published');
+        return response.data;
+    },
+
+    delete: async (date: string): Promise<any> => {
+        const response = await api.delete(`/rota/${date}`);
+        return response.data;
+    },
+};
+
+// Availability API
+export const availabilityAPI = {
+    getMyAvailability: async (): Promise<any> => {
+        const response = await api.get('/availability/me');
+        return response.data;
+    },
+
+    saveAvailability: async (data: {
+        dateAvailability?: { date: string; services: string[] }[];
+        blockedDates?: { startDate: string; endDate: string; reason?: string }[];
+        googleCalendarConnected?: boolean;
+        notes?: string;
+    }): Promise<any> => {
+        const response = await api.put('/availability/me', data);
+        return response.data;
+    },
+
+    addBlockedDate: async (startDate: string, endDate: string, reason?: string): Promise<any> => {
+        const response = await api.post('/availability/me/blocked-date', { startDate, endDate, reason });
+        return response.data;
+    },
+
+    removeBlockedDate: async (dateId: string): Promise<any> => {
+        const response = await api.delete(`/availability/me/blocked-date/${dateId}`);
+        return response.data;
+    },
+
+    getSundayAvailability: async (date: string): Promise<any> => {
+        const response = await api.get(`/availability/sunday/${date}`);
         return response.data;
     },
 };

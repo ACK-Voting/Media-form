@@ -194,25 +194,16 @@ export default function MeetingMinutesPage() {
                                 </div>
                             )}
 
-                            <div>
-                                <h3 className="text-base font-semibold text-gray-700 mb-2">Content</h3>
-                                <div className="prose prose-sm max-w-none text-gray-600 bg-gray-50 rounded-xl p-4 whitespace-pre-wrap">
-                                    {selectedMinutes.content}
-                                </div>
-                            </div>
-
                             {/* Attachments */}
-                            {selectedMinutes.attachments && selectedMinutes.attachments.length > 0 && (
+                            {selectedMinutes.attachments && selectedMinutes.attachments.length > 0 ? (
                                 <div>
-                                    <h3 className="text-base font-semibold text-gray-700 mb-2">Attachments</h3>
+                                    <h3 className="text-base font-semibold text-gray-700 mb-2">Files</h3>
                                     <div className="space-y-2">
                                         {selectedMinutes.attachments.map((file, idx) => (
-                                            <a
+                                            <button
                                                 key={idx}
-                                                href={meetingMinutesAPI.downloadAttachment(selectedMinutes._id, idx)}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 transition-all"
+                                                onClick={() => meetingMinutesAPI.downloadAttachmentBlob(selectedMinutes._id, idx, file.originalName)}
+                                                className="w-full flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-purple-300 hover:bg-purple-50/50 transition-all text-left"
                                             >
                                                 <span className="text-xl">{getFileIcon(file.mimetype)}</span>
                                                 <div className="flex-1 min-w-0">
@@ -222,10 +213,12 @@ export default function MeetingMinutesPage() {
                                                 <svg className="w-4 h-4 text-purple-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                                                 </svg>
-                                            </a>
+                                            </button>
                                         ))}
                                     </div>
                                 </div>
+                            ) : (
+                                <p className="text-base text-gray-400 italic">No attachments for this meeting.</p>
                             )}
                         </div>
                     </div>

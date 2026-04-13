@@ -314,7 +314,8 @@ function MembersPage() {
           </Card>
         ) : (
           <Card>
-            <div className="overflow-x-auto">
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -429,6 +430,83 @@ function MembersPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="md:hidden divide-y divide-gray-200">
+              {members.map((member) => (
+                <div key={member._id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{member.fullName}</p>
+                      <p className="text-xs text-gray-500">@{member.username}</p>
+                      <p className="text-xs text-gray-600 mt-0.5">{member.email}</p>
+                      {member.phone && <p className="text-xs text-gray-500">{member.phone}</p>}
+                    </div>
+                    <span
+                      className={`flex-shrink-0 px-2 py-1 text-xs font-medium rounded-full ${
+                        member.isActive
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-red-100 text-red-800'
+                      }`}
+                    >
+                      {member.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+
+                  {(member.registrationId?.mediaSkills?.length || 0) > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {member.registrationId?.mediaSkills?.slice(0, 3).map((skill, idx) => (
+                        <span key={idx} className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                          {skill}
+                        </span>
+                      ))}
+                      {(member.registrationId?.mediaSkills?.length || 0) > 3 && (
+                        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                          +{member.registrationId!.mediaSkills.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {(member.roles?.length || 0) > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {member.roles?.slice(0, 2).map((role) => (
+                        <span key={role._id} className="px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                          {role.name}
+                        </span>
+                      ))}
+                      {(member.roles?.length || 0) > 2 && (
+                        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                          +{member.roles!.length - 2}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-1">
+                    <Button variant="secondary" onClick={() => viewMemberDetails(member)} className="text-xs flex-1">
+                      View
+                    </Button>
+                    <Button variant="primary" onClick={() => openAssignRoleModal(member)} className="text-xs flex-1">
+                      Assign Role
+                    </Button>
+                    <Button
+                      variant={member.isActive ? 'danger' : 'success'}
+                      onClick={() =>
+                        setConfirmAction({
+                          isOpen: true,
+                          type: 'toggleStatus',
+                          data: { userId: member._id, currentStatus: member.isActive },
+                        })
+                      }
+                      className="text-xs flex-1"
+                    >
+                      {member.isActive ? 'Deactivate' : 'Activate'}
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
           </Card>
         )}

@@ -281,7 +281,29 @@ export default function CalendarPage() {
                                     {selectedEvent.eventTime}
                                 </div>
                             )}
-                            {selectedEvent.location && (
+                            {(selectedEvent as any).isOnline ? (
+                                <div className="flex flex-col gap-2">
+                                    <div className="flex items-center gap-2">
+                                        <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        </svg>
+                                        <span className="text-base text-indigo-700 font-medium">Online Meeting</span>
+                                    </div>
+                                    {(selectedEvent as any).meetingLink && (
+                                        <a
+                                            href={(selectedEvent as any).meetingLink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="ml-6 inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors w-fit"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                            </svg>
+                                            Join Meeting
+                                        </a>
+                                    )}
+                                </div>
+                            ) : selectedEvent.location ? (
                                 <div className="flex items-center gap-3 text-base text-gray-600">
                                     <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -289,7 +311,7 @@ export default function CalendarPage() {
                                     </svg>
                                     {selectedEvent.location}
                                 </div>
-                            )}
+                            ) : null}
                         </div>
 
                         {selectedEvent.description && (

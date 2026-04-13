@@ -656,11 +656,99 @@ const sendPasswordResetEmail = async (user, resetToken) => {
     }
 };
 
+// Send event notification email to all members
+const sendEventNotificationEmail = async (event, users) => {
+    if (!users || users.length === 0) return;
+    try {
+        const transporter = createTransporter();
+
+        const eventDate = new Date(event.eventDate).toLocaleDateString('en-GB', {
+            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+        });
+        const eventTime = event.eventTime || '';
+        const typeLabel = (event.eventType || 'event').charAt(0).toUpperCase() + (event.eventType || 'event').slice(1);
+
+        const meetingLinkSection = event.isOnline && event.meetingLink ? `
+            <div style="background:#f0f4ff;border-left:4px solid #6366f1;padding:16px;margin:20px 0;border-radius:0 8px 8px 0;">
+                <p style="margin:0 0 8px 0;font-weight:600;color:#4338ca;">Online Meeting Link</p>
+                <a href="${event.meetingLink}" style="color:#6366f1;word-break:break-all;">${event.meetingLink}</a>
+            </div>` : '';
+
+        const emails = users.map(u => u.email).filter(Boolean);
+
+        const mailOptions = {
+            from: `"ACK Mombasa Media Team" <${process.env.EMAIL_USER}>`,
+            bcc: emails,
+            subject: `[${typeLabel}] ${event.title} – ${eventDate}`,
+            html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+              <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+                .content { background: #f8f9fa; padding: 30px; border-radius: 0 0 8px 8px; }
+                .detail-row { display: flex; gap: 8px; margin: 8px 0; font-size: 15px; }
+                .footer { text-align: center; margin-top: 24px; padding-top: 16px; border-top: 1px solid #ddd; color: #888; font-size: 13px; }
+              </style>
+            </head>
+            <body>
+              <div class="header">
+                <h1 style="margin:0;font-size:22px;">📅 ${event.title}</h1>
+                <p style="margin:8px 0 0 0;opacity:0.9;">${typeLabel}</p>
+              </div>
+              <div class="content">
+                <p>Dear team member,</p>
+                <p>A new event has been scheduled. Please take note of the details below.</p>
+
+                <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+                  <tr style="border-bottom:1px solid #e5e7eb;">
+                    <td style="padding:10px 8px;color:#6b7280;width:120px;font-weight:600;">Date</td>
+                    <td style="padding:10px 8px;color:#111827;">${eventDate}</td>
+                  </tr>
+                  ${eventTime ? `<tr style="border-bottom:1px solid #e5e7eb;">
+                    <td style="padding:10px 8px;color:#6b7280;font-weight:600;">Time</td>
+                    <td style="padding:10px 8px;color:#111827;">${eventTime}</td>
+                  </tr>` : ''}
+                  <tr style="border-bottom:1px solid #e5e7eb;">
+                    <td style="padding:10px 8px;color:#6b7280;font-weight:600;">Location</td>
+                    <td style="padding:10px 8px;color:#111827;">${event.isOnline ? 'Online' : (event.location || '—')}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding:10px 8px;color:#6b7280;font-weight:600;">Type</td>
+                    <td style="padding:10px 8px;color:#111827;">${typeLabel}</td>
+                  </tr>
+                </table>
+
+                ${event.description ? `<p style="color:#374151;">${event.description}</p>` : ''}
+
+                ${meetingLinkSection}
+
+                <p>Log in to the team portal to view full event details.</p>
+                <p>God bless you!<br><strong>ACK Mombasa Memorial Cathedral Media Team</strong></p>
+              </div>
+              <div class="footer">
+                <p>&copy; ${new Date().getFullYear()} ACK Mombasa Memorial Cathedral. All rights reserved.</p>
+              </div>
+            </body>
+            </html>`
+        };
+
+        const info = await transporter.sendMail(mailOptions);
+        console.log('✅ Event notification email sent:', info.messageId);
+        return { success: true, messageId: info.messageId };
+    } catch (error) {
+        console.error('❌ Error sending event notification email:', error);
+        return { success: false, error: error.message };
+    }
+};
+
 module.exports = {
     sendConfirmationEmail,
     sendAdminNotification,
     sendStatusUpdateEmail,
     sendWelcomeEmail,
     sendRoleAssignmentEmail,
-    sendPasswordResetEmail
+    sendPasswordResetEmail,
+    sendEventNotificationEmail
 };

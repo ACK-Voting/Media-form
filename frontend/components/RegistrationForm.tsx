@@ -3,7 +3,6 @@
 import { useState, useRef } from 'react';
 import { submissionsAPI } from '@/lib/api';
 import Input from './ui/Input';
-import Button from './ui/Button';
 import jsPDF from 'jspdf';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
 import { saveAs } from 'file-saver';
@@ -609,46 +608,67 @@ export default function RegistrationForm() {
 
     if (success) {
         return (
-            <div className="max-w-2xl mx-auto p-8 bg-green-50 border border-green-200 rounded-lg">
-                <div className="text-center">
-                    <div className="text-6xl mb-4">✅</div>
-                    <h2 className="text-3xl font-bold text-green-800 mb-4">Registration Successful!</h2>
-                    <p className="text-green-700 mb-2">
-                        Thank you for your interest in joining the ACK Mombasa Memorial Cathedral Media Team!
+            <div className="max-w-xl mx-auto">
+                <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-10 text-center">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-5">
+                        <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-3">Application Submitted!</h2>
+                    <p className="text-gray-500 mb-2">
+                        Thank you for your interest in the ACK Mombasa Memorial Cathedral Media Team.
                     </p>
-                    <p className="text-green-700 mb-6">
-                        We have received your application and will review it soon. You will receive a confirmation email shortly.
+                    <p className="text-gray-500 mb-8">
+                        We&apos;ve received your application and will be in touch soon via email.
                     </p>
-                    <Button onClick={() => {
-                        setSuccess(false);
-                        window.location.reload();
-                    }} variant="primary">
+                    <button
+                        onClick={() => { setSuccess(false); window.location.reload(); }}
+                        className="inline-flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white font-medium px-6 py-3 rounded-xl transition-colors"
+                    >
                         Submit Another Application
-                    </Button>
+                    </button>
                 </div>
+                <p className="text-center text-gray-400 text-sm mt-6 italic">
+                    &quot;Each of you should use whatever gift you have received to serve others.&quot; — 1 Peter 4:10
+                </p>
             </div>
         );
     }
 
     return (
-        <form ref={formRef} onSubmit={handleSubmit} className="max-w-4xl mx-auto space-y-8">
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
             {/* Introduction */}
-            <div className="bg-gradient-to-br from-purple-50 to-indigo-50 p-6 rounded-lg border-l-4 border-purple-600">
-                <p className="font-semibold text-gray-800 mb-2">Thank you for your interest in joining the ACK Mombasa Memorial Cathedral Media Team!</p>
-                <p className="text-gray-700">Your skills and dedication will help us spread the Gospel, document church activities, and enhance our digital presence. Please complete this form to register as a volunteer.</p>
+            <div className="bg-purple-600 text-white p-5 rounded-2xl flex gap-4 items-start">
+                <div className="flex-shrink-0 w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <p className="font-semibold mb-1">Welcome — we&apos;re glad you&apos;re here!</p>
+                    <p className="text-white/80 text-sm leading-relaxed">Your skills and dedication will help us spread the Gospel, document church activities, and enhance our digital presence. Please complete all required fields marked with <span className="text-yellow-300 font-bold">*</span>.</p>
+                </div>
             </div>
 
             {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-600">{error}</p>
+                <div className="p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3">
+                    <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <p className="text-red-700 text-sm">{error}</p>
                 </div>
             )}
 
             {/* Personal Information */}
-            <section className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6 pb-3 border-b-2 border-purple-600">Personal Information</h2>
-
-                <div className="space-y-6">
+            <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+                    <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-900">Personal Information</h2>
+                </div>
+                <div className="p-6 space-y-6">
                     <Input
                         label="1. Full Name"
                         name="fullName"
@@ -674,13 +694,12 @@ export default function RegistrationForm() {
                         />
 
                         <Input
-                            label="3. Age"
+                            label="3. Age (Optional)"
                             name="age"
                             type="number"
                             value={formData.age}
                             onChange={handleInputChange}
                             placeholder="Enter age"
-                            required
                             min="16"
                             max="100"
                         />
@@ -737,8 +756,8 @@ export default function RegistrationForm() {
                         <label className="block text-sm font-semibold text-gray-700 mb-3">
                             8. Are you a member of ACK Mombasa Memorial Cathedral? <span className="text-red-500">*</span>
                         </label>
-                        <div className="flex gap-4 mb-4">
-                            <label className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-purple-50">
+                        <div className="flex gap-3 mb-4">
+                            <label className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all ${formData.isMember === true ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-purple-300'}`}>
                                 <input
                                     type="radio"
                                     name="isMember"
@@ -748,9 +767,9 @@ export default function RegistrationForm() {
                                     required
                                     className="w-4 h-4 text-purple-600"
                                 />
-                                <span className="text-sm text-gray-700">Yes</span>
+                                <span className="text-sm font-medium">Yes</span>
                             </label>
-                            <label className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-purple-50">
+                            <label className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all ${formData.isMember === false ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-purple-300'}`}>
                                 <input
                                     type="radio"
                                     name="isMember"
@@ -760,7 +779,7 @@ export default function RegistrationForm() {
                                     required
                                     className="w-4 h-4 text-purple-600"
                                 />
-                                <span className="text-sm text-gray-700">No</span>
+                                <span className="text-sm font-medium">No</span>
                             </label>
                         </div>
 
@@ -788,17 +807,21 @@ export default function RegistrationForm() {
             </section>
 
             {/* Media Team Skills & Interests */}
-            <section className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6 pb-3 border-b-2 border-purple-600">Media Team Skills & Interests</h2>
-
-                <div className="space-y-6">
+            <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-900">Media Team Skills &amp; Interests</h2>
+                </div>
+                <div className="p-6 space-y-6">
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-3">
                             9. Which media team roles are you interested in? (Check all that apply) <span className="text-red-500">*</span>
                         </label>
-                        <div className="grid md:grid-cols-2 gap-3">
+                        <div className="grid md:grid-cols-2 gap-2">
                             {mediaRolesOptions.map((role) => (
-                                <label key={role} className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-purple-50 hover:border-purple-300 cursor-pointer">
+                                <label key={role} className={`flex items-center gap-2.5 p-3 rounded-xl border-2 cursor-pointer transition-all ${formData.mediaRoles.includes(role) ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-purple-300'}`}>
                                     <input
                                         type="checkbox"
                                         name="mediaRoles"
@@ -807,7 +830,7 @@ export default function RegistrationForm() {
                                         onChange={handleInputChange}
                                         className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
                                     />
-                                    <span className="text-sm text-gray-700">{role}</span>
+                                    <span className="text-sm font-medium">{role}</span>
                                 </label>
                             ))}
                         </div>
@@ -825,30 +848,14 @@ export default function RegistrationForm() {
                         <label className="block text-sm font-semibold text-gray-700 mb-3">
                             10. Do you have prior experience in media work? <span className="text-red-500">*</span>
                         </label>
-                        <div className="flex gap-4 mb-4">
-                            <label className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-purple-50">
-                                <input
-                                    type="radio"
-                                    name="hasExperience"
-                                    value="yes"
-                                    checked={formData.hasExperience === true}
-                                    onChange={() => setFormData({ ...formData, hasExperience: true })}
-                                    required
-                                    className="w-4 h-4 text-purple-600"
-                                />
-                                <span className="text-sm text-gray-700">Yes</span>
+                        <div className="flex gap-3 mb-4">
+                            <label className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all ${formData.hasExperience === true ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-purple-300'}`}>
+                                <input type="radio" name="hasExperience" value="yes" checked={formData.hasExperience === true} onChange={() => setFormData({ ...formData, hasExperience: true })} required className="w-4 h-4 text-purple-600" />
+                                <span className="text-sm font-medium">Yes</span>
                             </label>
-                            <label className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-purple-50">
-                                <input
-                                    type="radio"
-                                    name="hasExperience"
-                                    value="no"
-                                    checked={formData.hasExperience === false}
-                                    onChange={() => setFormData({ ...formData, hasExperience: false })}
-                                    required
-                                    className="w-4 h-4 text-purple-600"
-                                />
-                                <span className="text-sm text-gray-700">No</span>
+                            <label className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all ${formData.hasExperience === false ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-purple-300'}`}>
+                                <input type="radio" name="hasExperience" value="no" checked={formData.hasExperience === false} onChange={() => setFormData({ ...formData, hasExperience: false })} required className="w-4 h-4 text-purple-600" />
+                                <span className="text-sm font-medium">No</span>
                             </label>
                         </div>
 
@@ -869,28 +876,14 @@ export default function RegistrationForm() {
                         <label className="block text-sm font-semibold text-gray-700 mb-3">
                             11. Do you have your own equipment? (Camera, laptop, editing software, etc.)
                         </label>
-                        <div className="flex gap-4 mb-4">
-                            <label className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-purple-50">
-                                <input
-                                    type="radio"
-                                    name="hasEquipment"
-                                    value="yes"
-                                    checked={formData.hasEquipment === true}
-                                    onChange={() => setFormData({ ...formData, hasEquipment: true })}
-                                    className="w-4 h-4 text-purple-600"
-                                />
-                                <span className="text-sm text-gray-700">Yes</span>
+                        <div className="flex gap-3 mb-4">
+                            <label className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all ${formData.hasEquipment === true ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-purple-300'}`}>
+                                <input type="radio" name="hasEquipment" value="yes" checked={formData.hasEquipment === true} onChange={() => setFormData({ ...formData, hasEquipment: true })} className="w-4 h-4 text-purple-600" />
+                                <span className="text-sm font-medium">Yes</span>
                             </label>
-                            <label className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-purple-50">
-                                <input
-                                    type="radio"
-                                    name="hasEquipment"
-                                    value="no"
-                                    checked={formData.hasEquipment === false}
-                                    onChange={() => setFormData({ ...formData, hasEquipment: false })}
-                                    className="w-4 h-4 text-purple-600"
-                                />
-                                <span className="text-sm text-gray-700">No</span>
+                            <label className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all ${formData.hasEquipment === false ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-purple-300'}`}>
+                                <input type="radio" name="hasEquipment" value="no" checked={formData.hasEquipment === false} onChange={() => setFormData({ ...formData, hasEquipment: false })} className="w-4 h-4 text-purple-600" />
+                                <span className="text-sm font-medium">No</span>
                             </label>
                         </div>
 
@@ -911,27 +904,23 @@ export default function RegistrationForm() {
             </section>
 
             {/* Availability & Commitment */}
-            <section className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6 pb-3 border-b-2 border-purple-600">Availability & Commitment</h2>
-
-                <div className="space-y-6">
+            <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+                    <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-900">Availability &amp; Commitment</h2>
+                </div>
+                <div className="p-6 space-y-6">
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-3">
                             12. How often can you volunteer? <span className="text-red-500">*</span>
                         </label>
-                        <div className="grid md:grid-cols-2 gap-3">
+                        <div className="grid md:grid-cols-2 gap-2">
                             {['Weekly', 'Bi-weekly', 'Monthly', 'Special Events Only'].map((freq) => (
-                                <label key={freq} className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-purple-50">
-                                    <input
-                                        type="radio"
-                                        name="volunteerFrequency"
-                                        value={freq}
-                                        checked={formData.volunteerFrequency === freq}
-                                        onChange={handleInputChange}
-                                        required
-                                        className="w-4 h-4 text-purple-600"
-                                    />
-                                    <span className="text-sm text-gray-700">{freq}</span>
+                                <label key={freq} className={`flex items-center gap-2.5 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all ${formData.volunteerFrequency === freq ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-purple-300'}`}>
+                                    <input type="radio" name="volunteerFrequency" value={freq} checked={formData.volunteerFrequency === freq} onChange={handleInputChange} required className="w-4 h-4 text-purple-600" />
+                                    <span className="text-sm font-medium">{freq}</span>
                                 </label>
                             ))}
                         </div>
@@ -941,18 +930,11 @@ export default function RegistrationForm() {
                         <label className="block text-sm font-semibold text-gray-700 mb-3">
                             13. Preferred Days/Times for Service (Check all that apply)
                         </label>
-                        <div className="grid md:grid-cols-2 gap-3">
+                        <div className="grid md:grid-cols-2 gap-2">
                             {preferredTimesOptions.map((time) => (
-                                <label key={time} className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-purple-50 hover:border-purple-300 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        name="preferredTimes"
-                                        value={time}
-                                        checked={formData.preferredTimes.includes(time)}
-                                        onChange={handleInputChange}
-                                        className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
-                                    />
-                                    <span className="text-sm text-gray-700">{time}</span>
+                                <label key={time} className={`flex items-center gap-2.5 p-3 rounded-xl border-2 cursor-pointer transition-all ${formData.preferredTimes.includes(time) ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-purple-300'}`}>
+                                    <input type="checkbox" name="preferredTimes" value={time} checked={formData.preferredTimes.includes(time)} onChange={handleInputChange} className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500" />
+                                    <span className="text-sm font-medium">{time}</span>
                                 </label>
                             ))}
                         </div>
@@ -962,30 +944,14 @@ export default function RegistrationForm() {
                         <label className="block text-sm font-semibold text-gray-700 mb-3">
                             14. Are you willing to attend media team training sessions? <span className="text-red-500">*</span>
                         </label>
-                        <div className="flex gap-4">
-                            <label className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-purple-50">
-                                <input
-                                    type="radio"
-                                    name="willingToTrain"
-                                    value="yes"
-                                    checked={formData.willingToTrain === true}
-                                    onChange={() => setFormData({ ...formData, willingToTrain: true })}
-                                    required
-                                    className="w-4 h-4 text-purple-600"
-                                />
-                                <span className="text-sm text-gray-700">Yes</span>
+                        <div className="flex gap-3">
+                            <label className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all ${formData.willingToTrain === true ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-purple-300'}`}>
+                                <input type="radio" name="willingToTrain" value="yes" checked={formData.willingToTrain === true} onChange={() => setFormData({ ...formData, willingToTrain: true })} required className="w-4 h-4 text-purple-600" />
+                                <span className="text-sm font-medium">Yes</span>
                             </label>
-                            <label className="flex items-center space-x-2 px-4 py-2 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-purple-50">
-                                <input
-                                    type="radio"
-                                    name="willingToTrain"
-                                    value="no"
-                                    checked={formData.willingToTrain === false}
-                                    onChange={() => setFormData({ ...formData, willingToTrain: false })}
-                                    required
-                                    className="w-4 h-4 text-purple-600"
-                                />
-                                <span className="text-sm text-gray-700">No</span>
+                            <label className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 cursor-pointer transition-all ${formData.willingToTrain === false ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-purple-300'}`}>
+                                <input type="radio" name="willingToTrain" value="no" checked={formData.willingToTrain === false} onChange={() => setFormData({ ...formData, willingToTrain: false })} required className="w-4 h-4 text-purple-600" />
+                                <span className="text-sm font-medium">No</span>
                             </label>
                         </div>
                     </div>
@@ -993,10 +959,14 @@ export default function RegistrationForm() {
             </section>
 
             {/* Spiritual & Volunteer Commitment */}
-            <section className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6 pb-3 border-b-2 border-purple-600">Spiritual & Volunteer Commitment</h2>
-
-                <div className="space-y-6">
+            <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+                    <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-900">Spiritual &amp; Volunteer Commitment</h2>
+                </div>
+                <div className="p-6 space-y-6">
                     <Input
                         label="15. Why do you want to join the ACK Mombasa Media Team?"
                         name="motivation"
@@ -1012,7 +982,7 @@ export default function RegistrationForm() {
                         <label className="block text-sm font-semibold text-gray-700 mb-3">
                             16. Do you commit to serving with integrity, teamwork, and dedication? <span className="text-red-500">*</span>
                         </label>
-                        <label className="flex items-center space-x-2 px-4 py-3 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-purple-50">
+                        <label className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 cursor-pointer transition-all ${formData.commitmentDeclaration ? 'border-purple-500 bg-purple-50' : 'border-gray-200 bg-gray-50 hover:border-purple-300'}`}>
                             <input
                                 type="checkbox"
                                 name="commitmentDeclaration"
@@ -1021,101 +991,111 @@ export default function RegistrationForm() {
                                 required
                                 className="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
                             />
-                            <span className="text-sm font-semibold text-gray-700">Yes, I commit</span>
+                            <span className="text-sm font-medium text-gray-700">Yes, I commit to serving with integrity, teamwork, and dedication</span>
                         </label>
                     </div>
                 </div>
             </section>
 
             {/* Emergency Contact */}
-            <section className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6 pb-3 border-b-2 border-purple-600">Emergency Contact</h2>
+            <section className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+                    <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
+                        <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                    </div>
+                    <h2 className="text-lg font-semibold text-gray-900">Emergency Contact</h2>
+                </div>
+                <div className="p-6">
+                    <div className="grid md:grid-cols-3 gap-6">
+                        <Input
+                            label="17. Emergency Contact Name"
+                            name="emergencyContactName"
+                            value={formData.emergencyContactName}
+                            onChange={handleInputChange}
+                            placeholder="Full name"
+                            required
+                        />
 
-                <div className="grid md:grid-cols-3 gap-6">
-                    <Input
-                        label="17. Emergency Contact Name"
-                        name="emergencyContactName"
-                        value={formData.emergencyContactName}
-                        onChange={handleInputChange}
-                        placeholder="Full name"
-                        required
-                    />
+                        <Input
+                            label="18. Relationship"
+                            name="emergencyContactRelationship"
+                            value={formData.emergencyContactRelationship}
+                            onChange={handleInputChange}
+                            placeholder="e.g., Spouse, Parent, Sibling"
+                            required
+                        />
 
-                    <Input
-                        label="18. Relationship"
-                        name="emergencyContactRelationship"
-                        value={formData.emergencyContactRelationship}
-                        onChange={handleInputChange}
-                        placeholder="e.g., Spouse, Parent, Sibling"
-                        required
-                    />
-
-                    <Input
-                        label="19. Emergency Contact Phone"
-                        name="emergencyContactPhone"
-                        type="tel"
-                        value={formData.emergencyContactPhone}
-                        onChange={handleInputChange}
-                        placeholder="+254..."
-                        required
-                    />
+                        <Input
+                            label="19. Emergency Contact Phone"
+                            name="emergencyContactPhone"
+                            type="tel"
+                            value={formData.emergencyContactPhone}
+                            onChange={handleInputChange}
+                            placeholder="+254..."
+                            required
+                        />
+                    </div>
                 </div>
             </section>
 
             {/* Bible Verse */}
-            <div className="bg-gradient-to-br from-gray-50 to-slate-50 p-6 rounded-lg border border-gray-200 text-center">
-                <p className="text-lg font-semibold text-gray-800 italic mb-2">
-                    "Each of you should use whatever gift you have received to serve others, as faithful stewards of God's grace."
+            <div className="bg-purple-600 rounded-2xl p-6 text-center">
+                <p className="text-base font-medium text-white/90 italic mb-2 leading-relaxed">
+                    &quot;Each of you should use whatever gift you have received to serve others,<br className="hidden md:block" /> as faithful stewards of God&apos;s grace.&quot;
                 </p>
-                <p className="text-gray-600">– 1 Peter 4:10</p>
-            </div>
-
-            <div className="text-center text-xl font-semibold text-gray-800">
-                Thank you for your willingness to serve!
+                <p className="text-yellow-300 text-sm font-medium">– 1 Peter 4:10</p>
             </div>
 
             {/* Action Buttons */}
             <div className="space-y-4 pb-8">
-                {/* Submit Button */}
-                <div className="flex justify-center">
-                    <Button
-                        type="submit"
-                        variant="primary"
-                        size="lg"
-                        isLoading={isLoading}
-                        className="w-full md:w-auto md:px-16 text-lg py-4"
-                    >
-                        {isLoading ? 'Submitting...' : '📤 Submit Form'}
-                    </Button>
-                </div>
+                <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold py-4 rounded-2xl transition-all duration-200 hover:scale-[1.01] shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2 text-base"
+                >
+                    {isLoading ? (
+                        <>
+                            <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                            Submitting…
+                        </>
+                    ) : (
+                        <>
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>
+                            Submit Application
+                        </>
+                    )}
+                </button>
 
-                {/* Download and Print Options */}
-                <div className="grid md:grid-cols-3 gap-4">
-                    <Button
+                <div className="grid grid-cols-3 gap-3">
+                    <button
                         type="button"
                         onClick={handleDownloadPDF}
-                        isLoading={isDownloading}
-                        className="w-full bg-red-600 hover:bg-red-700 text-white py-3"
+                        disabled={isDownloading}
+                        className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-white border border-gray-200 hover:border-red-300 hover:bg-red-50 text-gray-600 hover:text-red-700 text-sm font-medium rounded-xl transition-all disabled:opacity-50"
                     >
-                        📄 Download as PDF
-                    </Button>
-
-                    <Button
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        PDF
+                    </button>
+                    <button
                         type="button"
                         onClick={handleDownloadDOCX}
-                        isLoading={isDownloading}
-                        className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3"
+                        disabled={isDownloading}
+                        className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-white border border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-600 hover:text-blue-700 text-sm font-medium rounded-xl transition-all disabled:opacity-50"
                     >
-                        📝 Download as DOCX
-                    </Button>
-
-                    <Button
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                        DOCX
+                    </button>
+                    <button
                         type="button"
                         onClick={handlePrint}
-                        className="w-full bg-green-600 hover:bg-green-700 text-white py-3"
+                        className="flex items-center justify-center gap-1.5 px-3 py-2.5 bg-white border border-gray-200 hover:border-green-300 hover:bg-green-50 text-gray-600 hover:text-green-700 text-sm font-medium rounded-xl transition-all"
                     >
-                        🖨️ Print Form
-                    </Button>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+                        Print
+                    </button>
                 </div>
             </div>
         </form>

@@ -20,7 +20,7 @@ const meetingMinutesSchema = new mongoose.Schema({
     },
     content: {
         type: String,
-        required: true
+        default: '',
     },
     attachments: [{
         filename: {

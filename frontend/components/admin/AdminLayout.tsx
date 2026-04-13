@@ -15,7 +15,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   const pathname = usePathname();
   const router = useRouter();
   const { admin, logout } = useAuth();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [quickStats, setQuickStats] = useState({
     todayApplications: 0,
     pendingReview: 0,
@@ -65,6 +65,24 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
       icon: (
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Meeting Minutes',
+      href: '/admin/minutes',
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Rota Builder',
+      href: '/admin/rota',
+      icon: (
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
         </svg>
       ),
     },
@@ -175,18 +193,27 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         </div>
       </nav>
 
+      {/* Mobile overlay */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
       <aside
-        className={`fixed top-0 left-0 z-20 w-64 h-screen pt-20 transition-transform ${
-          isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        } bg-white border-r border-gray-200`}
+        className={`fixed top-0 left-0 z-40 w-64 h-screen pt-16 transition-transform duration-200 bg-white border-r border-gray-200
+          ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0`}
       >
         <div className="h-full px-3 pb-4 overflow-y-auto bg-white">
-          <ul className="space-y-2 font-medium">
+          <ul className="space-y-1 font-medium pt-2">
             {navigation.map((item) => (
               <li key={item.name}>
                 <Link
                   href={item.href}
+                  onClick={() => setIsSidebarOpen(false)}
                   className={`flex items-center p-2 rounded-lg transition-colors group ${
                     isActive(item.href)
                       ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white'
@@ -203,7 +230,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           </ul>
 
           {/* Quick Stats in Sidebar */}
-          <div className="mt-8 p-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg border border-purple-100">
+          <div className="mt-6 p-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg border border-purple-100">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">Quick Stats</h3>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
@@ -224,7 +251,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
       </aside>
 
       {/* Main Content */}
-      <div className={`p-4 pt-20 transition-all ${isSidebarOpen ? 'ml-64' : 'ml-0'}`}>
+      <div className="p-4 pt-20 lg:ml-64">
         {children}
       </div>
     </div>

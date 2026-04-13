@@ -41,6 +41,14 @@ const eventSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
+    isOnline: {
+        type: Boolean,
+        default: false
+    },
+    meetingLink: {
+        type: String,
+        trim: true
+    },
     reminderSent: {
         type: Boolean,
         default: false

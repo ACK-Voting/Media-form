@@ -20,6 +20,8 @@ interface EventFormData {
   eventTime: string;
   location: string;
   eventType: 'service' | 'rehearsal' | 'meeting' | 'training' | 'special' | 'other';
+  isOnline: boolean;
+  meetingLink: string;
 }
 
 function EventsPage() {
@@ -46,6 +48,8 @@ function EventsPage() {
     eventTime: '',
     location: '',
     eventType: 'meeting',
+    isOnline: false,
+    meetingLink: '',
   });
 
   // Fetch events
@@ -86,8 +90,11 @@ function EventsPage() {
 
   // Handle create event
   const handleCreate = async () => {
-    if (!formData.title || !formData.eventDate || !formData.location) {
-      showError('Validation Error', 'Please fill in all required fields');
+    const locationOk = formData.isOnline ? !!formData.meetingLink : !!formData.location;
+    if (!formData.title || !formData.eventDate || !locationOk) {
+      showError('Validation Error', formData.isOnline
+        ? 'Please fill in the title, date, and meeting link'
+        : 'Please fill in the title, date, and location');
       return;
     }
 
@@ -107,8 +114,11 @@ function EventsPage() {
 
   // Handle edit event
   const handleEdit = async () => {
-    if (!editingEvent || !formData.title || !formData.eventDate || !formData.location) {
-      showError('Validation Error', 'Please fill in all required fields');
+    const locationOk = formData.isOnline ? !!formData.meetingLink : !!formData.location;
+    if (!editingEvent || !formData.title || !formData.eventDate || !locationOk) {
+      showError('Validation Error', formData.isOnline
+        ? 'Please fill in the title, date, and meeting link'
+        : 'Please fill in the title, date, and location');
       return;
     }
 
@@ -153,6 +163,8 @@ function EventsPage() {
       eventTime: event.eventTime || '',
       location: event.location || '',
       eventType: event.eventType,
+      isOnline: event.isOnline || false,
+      meetingLink: event.meetingLink || '',
     });
   };
 
@@ -165,6 +177,8 @@ function EventsPage() {
       eventTime: '',
       location: '',
       eventType: 'meeting',
+      isOnline: false,
+      meetingLink: '',
     });
   };
 
@@ -396,30 +410,30 @@ function EventsPage() {
                     {event.eventTime && ` at ${event.eventTime}`}
                   </div>
 
-                  {event.location && (
+                  {event.isOnline ? (
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                        Online
+                      </span>
+                      {event.meetingLink && (
+                        <a href={event.meetingLink} target="_blank" rel="noopener noreferrer"
+                          className="text-xs text-indigo-600 hover:underline truncate max-w-[140px]">
+                          Join meeting
+                        </a>
+                      )}
+                    </div>
+                  ) : event.location ? (
                     <div className="flex items-center text-sm text-gray-600">
-                      <svg
-                        className="w-4 h-4 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
+                      <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                       </svg>
                       {event.location}
                     </div>
-                  )}
+                  ) : null}
 
                   <div className="flex items-center text-sm text-gray-600">
                     <svg
@@ -516,13 +530,36 @@ function EventsPage() {
             </div>
           </div>
 
-          <Input
-            label="Location *"
-            placeholder="Enter event location"
-            value={formData.location}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            required
-          />
+          {/* Online meeting toggle */}
+          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <input
+              type="checkbox"
+              id="create-isOnline"
+              checked={formData.isOnline}
+              onChange={(e) => setFormData({ ...formData, isOnline: e.target.checked, meetingLink: '' })}
+              className="w-4 h-4 text-purple-600 border-gray-300 rounded cursor-pointer"
+            />
+            <label htmlFor="create-isOnline" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
+              This is an online meeting
+            </label>
+          </div>
+
+          {formData.isOnline ? (
+            <Input
+              label="Meeting Link *"
+              placeholder="https://meet.google.com/... or https://zoom.us/..."
+              value={formData.meetingLink}
+              onChange={(e) => setFormData({ ...formData, meetingLink: e.target.value })}
+            />
+          ) : (
+            <Input
+              label="Location *"
+              placeholder="Enter event location"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              required
+            />
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -630,13 +667,36 @@ function EventsPage() {
             </div>
           </div>
 
-          <Input
-            label="Location *"
-            placeholder="Enter event location"
-            value={formData.location}
-            onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-            required
-          />
+          {/* Online meeting toggle */}
+          <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <input
+              type="checkbox"
+              id="edit-isOnline"
+              checked={formData.isOnline}
+              onChange={(e) => setFormData({ ...formData, isOnline: e.target.checked, meetingLink: '' })}
+              className="w-4 h-4 text-purple-600 border-gray-300 rounded cursor-pointer"
+            />
+            <label htmlFor="edit-isOnline" className="text-sm font-medium text-gray-700 cursor-pointer select-none">
+              This is an online meeting
+            </label>
+          </div>
+
+          {formData.isOnline ? (
+            <Input
+              label="Meeting Link *"
+              placeholder="https://meet.google.com/... or https://zoom.us/..."
+              value={formData.meetingLink}
+              onChange={(e) => setFormData({ ...formData, meetingLink: e.target.value })}
+            />
+          ) : (
+            <Input
+              label="Location *"
+              placeholder="Enter event location"
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              required
+            />
+          )}
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">

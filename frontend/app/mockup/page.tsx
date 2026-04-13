@@ -5,36 +5,8 @@ import Link from 'next/link';
 
 export default function ACKCathedralMockup() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [currentSlide, setCurrentSlide] = useState(0);
     const [activeTab, setActiveTab] = useState('upcoming');
     const [scrollY, setScrollY] = useState(0);
-
-    // Hero carousel slides
-    const heroSlides = [
-        {
-            title: "A House of Prayer for All Nations",
-            subtitle: "Join us in worship, fellowship, and service",
-            cta: "Join Us This Sunday"
-        },
-        {
-            title: "Growing Together in Faith",
-            subtitle: "Building a community rooted in Christ's love",
-            cta: "Explore Our Ministries"
-        },
-        {
-            title: "Serving Mombasa Since 1903",
-            subtitle: "Over 120 years of faithful ministry",
-            cta: "Discover Our History"
-        }
-    ];
-
-    // Auto-rotate hero slides
-    useEffect(() => {
-        const timer = setInterval(() => {
-            setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
-        }, 5000);
-        return () => clearInterval(timer);
-    }, []);
 
     // Parallax effect
     useEffect(() => {
@@ -43,10 +15,13 @@ export default function ACKCathedralMockup() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    const navTransparent = scrollY < 80;
+
     return (
         <div className="min-h-screen bg-white">
-            {/* Top Bar */}
-            <div className="bg-blue-950 text-white text-sm py-2">
+            {/* Top Bar — fixed, transparent over hero, slides away on scroll */}
+            <div className={`fixed top-0 left-0 right-0 z-50 text-white text-sm py-2 transition-all duration-300 ${navTransparent ? 'bg-transparent opacity-100 translate-y-0' : 'opacity-0 -translate-y-full pointer-events-none'
+                }`}>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-wrap justify-between items-center gap-2">
                         <div className="flex items-center gap-4">
@@ -54,7 +29,7 @@ export default function ACKCathedralMockup() {
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                                 </svg>
-                                +254 700 123 456
+                                +254 700 000 000
                             </a>
                             <a href="mailto:info@ackmombasa.org" className="flex items-center gap-1.5 hover:text-amber-400 transition-colors">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,8 +59,14 @@ export default function ACKCathedralMockup() {
                 </div>
             </div>
 
-            {/* Navigation */}
-            <nav className="bg-white shadow-md sticky top-0 z-50">
+            {/* Navigation — fixed, sits below top bar when transparent, rises to top-0 on scroll */}
+            <nav
+                style={{ top: navTransparent ? '36px' : '0px' }}
+                className={`fixed left-0 right-0 z-40 transition-all duration-300 ${navTransparent
+                        ? 'bg-transparent'
+                        : 'bg-white/95 backdrop-blur-md shadow-md'
+                    }`}
+            >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center h-20">
                         {/* Logo */}
@@ -96,16 +77,38 @@ export default function ACKCathedralMockup() {
                                 </svg>
                             </div>
                             <div>
-                                <h1 className="text-xl font-bold text-blue-900">ACK Cathedral Mombasa</h1>
-                                <p className="text-xs text-gray-600">Anglican Church of Kenya</p>
+                                <h1 className={`text-xl font-bold transition-colors duration-300 ${navTransparent ? 'text-white' : 'text-blue-900'}`}>
+                                    ACK Cathedral Mombasa
+                                </h1>
+                                <p className={`text-xs transition-colors duration-300 ${navTransparent ? 'text-white/70' : 'text-gray-600'}`}>
+                                    Anglican Church of Kenya
+                                </p>
                             </div>
                         </div>
 
                         {/* Desktop Navigation */}
                         <div className="hidden lg:flex items-center gap-8">
-                            <a href="#home" className="text-gray-700 hover:text-blue-900 font-medium transition-colors">Home</a>
+                            {[
+                                { label: 'Home', href: '#home' },
+                                { label: 'Worship', href: '#worship' },
+                                { label: 'Events', href: '/mockup/events' },
+                                { label: 'Sermons', href: '/mockup/sermons' },
+                            ].map((item) => (
+                                <a
+                                    key={item.label}
+                                    href={item.href}
+                                    className={`font-medium transition-colors duration-300 ${navTransparent
+                                            ? 'text-white/90 hover:text-white'
+                                            : 'text-gray-700 hover:text-blue-900'
+                                        }`}
+                                >
+                                    {item.label}
+                                </a>
+                            ))}
+                            {/* About dropdown */}
                             <div className="relative group">
-                                <button className="text-gray-700 hover:text-blue-900 font-medium transition-colors flex items-center gap-1">
+                                <button className={`font-medium transition-colors duration-300 flex items-center gap-1 ${navTransparent ? 'text-white/90 hover:text-white' : 'text-gray-700 hover:text-blue-900'
+                                    }`}>
                                     About
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -113,36 +116,38 @@ export default function ACKCathedralMockup() {
                                 </button>
                                 <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                                     <a href="/mockup/history" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Cathedral History</a>
-                                    <a href="#leadership" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Leadership</a>
-                                    <a href="#mission" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Mission & Vision</a>
+                                    <a href="/mockup/about" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Leadership</a>
+                                    <a href="/mockup/about#mission" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Mission &amp; Vision</a>
+                                    <a href="/mockup/gallery" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Photo Gallery</a>
                                 </div>
                             </div>
-                            <a href="#worship" className="text-gray-700 hover:text-blue-900 font-medium transition-colors">Worship</a>
+                            {/* Ministries dropdown */}
                             <div className="relative group">
-                                <button className="text-gray-700 hover:text-blue-900 font-medium transition-colors flex items-center gap-1">
+                                <button className={`font-medium transition-colors duration-300 flex items-center gap-1 ${navTransparent ? 'text-white/90 hover:text-white' : 'text-gray-700 hover:text-blue-900'
+                                    }`}>
                                     Ministries
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                     </svg>
                                 </button>
                                 <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-                                    <a href="#children" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Children's Ministry</a>
-                                    <a href="#youth" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Youth Ministry</a>
-                                    <a href="#women" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Women's Fellowship</a>
-                                    <a href="#men" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Men's Fellowship</a>
+                                    <a href="/mockup/ministries" className="block px-4 py-3 hover:bg-gray-50 font-semibold text-blue-900 transition-colors border-b border-gray-100">All Ministries →</a>
+                                    <a href="/mockup/ministries#children" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Children&apos;s Ministry</a>
+                                    <a href="/mockup/ministries#youth" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Youth Ministry</a>
+                                    <a href="/mockup/ministries#women" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Women&apos;s Fellowship</a>
+                                    <a href="/mockup/ministries#men" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Men&apos;s Fellowship</a>
                                 </div>
                             </div>
-                            <a href="#events" className="text-gray-700 hover:text-blue-900 font-medium transition-colors">Events</a>
-                            <a href="#sermons" className="text-gray-700 hover:text-blue-900 font-medium transition-colors">Sermons</a>
-                            <a href="#give" className="bg-gradient-to-r from-amber-600 to-amber-500 text-white px-6 py-2.5 rounded-lg font-semibold hover:shadow-lg transition-all">Give</a>
+                            <a href="/mockup/contact" className={`font-medium transition-colors duration-300 ${navTransparent ? 'text-white/90 hover:text-white' : 'text-gray-700 hover:text-blue-900'}`}>Contact</a>
+                            <a href="/mockup/give" className="bg-gradient-to-r from-amber-600 to-amber-500 text-white px-6 py-2.5 rounded-lg font-semibold hover:shadow-lg transition-all">Give</a>
                         </div>
 
                         {/* Mobile Menu Button */}
                         <button
                             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                            className="lg:hidden p-2 rounded-lg hover:bg-gray-100"
+                            className="lg:hidden p-2 rounded-lg hover:bg-white/10"
                         >
-                            <svg className="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className={`w-6 h-6 transition-colors duration-300 ${navTransparent ? 'text-white' : 'text-gray-700'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 {mobileMenuOpen ? (
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 ) : (
@@ -154,79 +159,88 @@ export default function ACKCathedralMockup() {
 
                     {/* Mobile Menu */}
                     {mobileMenuOpen && (
-                        <div className="lg:hidden py-4 border-t border-gray-200">
+                        <div className={`lg:hidden py-4 border-t ${navTransparent ? 'border-white/20 bg-blue-950/80 backdrop-blur-md' : 'border-gray-200'}`}>
                             <div className="flex flex-col gap-3">
-                                <a href="#home" className="text-gray-700 hover:text-blue-900 font-medium py-2">Home</a>
-                                <a href="#about" className="text-gray-700 hover:text-blue-900 font-medium py-2">About</a>
-                                <a href="#worship" className="text-gray-700 hover:text-blue-900 font-medium py-2">Worship</a>
-                                <a href="#ministries" className="text-gray-700 hover:text-blue-900 font-medium py-2">Ministries</a>
-                                <a href="#events" className="text-gray-700 hover:text-blue-900 font-medium py-2">Events</a>
-                                <a href="#sermons" className="text-gray-700 hover:text-blue-900 font-medium py-2">Sermons</a>
-                                <a href="#give" className="bg-gradient-to-r from-amber-600 to-amber-500 text-white px-5 py-2.5 rounded-lg font-semibold text-center">Give</a>
+                                {[
+                                    { label: 'Home', href: '#home' },
+                                    { label: 'Worship', href: '#worship' },
+                                    { label: 'Events', href: '/mockup/events' },
+                                    { label: 'Sermons', href: '/mockup/sermons' },
+                                    { label: 'About', href: '/mockup/about' },
+                                    { label: 'Ministries', href: '/mockup/ministries' },
+                                    { label: 'Gallery', href: '/mockup/gallery' },
+                                    { label: 'Prayer', href: '/mockup/prayer' },
+                                    { label: 'Contact', href: '/mockup/contact' },
+                                ].map((item) => (
+                                    <a key={item.label} href={item.href} className={`font-medium py-2 transition-colors ${navTransparent ? 'text-white/90 hover:text-white' : 'text-gray-700 hover:text-blue-900'}`}>{item.label}</a>
+                                ))}
+                                <a href="/mockup/give" className="bg-gradient-to-r from-amber-600 to-amber-500 text-white px-5 py-2.5 rounded-lg font-semibold text-center">Give Online</a>
                             </div>
                         </div>
                     )}
                 </div>
             </nav>
 
-            {/* Dynamic Hero Section with Carousel */}
-            <section id="home" className="relative bg-gradient-to-br from-blue-950 via-blue-900 to-blue-800 text-white overflow-hidden h-[600px]">
-                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30" style={{ transform: `translateY(${scrollY * 0.5}px)` }}></div>
+            {/* Full-Screen Video Hero Section */}
+            <section id="home" className="relative overflow-hidden text-white" style={{ minHeight: '100vh' }}>
+                {/* Background video — swap src for the cathedral's own footage */}
+                <video
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="absolute inset-0 w-full h-full object-cover"
+                    style={{ transform: `scale(1.05) translateY(${scrollY * 0.08}px)` }}
+                >
+                    <source src="https://assets.mixkit.co/videos/22712/22712-1080.mp4" type="video/mp4" />
+                </video>
 
-                {/* Carousel Slides */}
-                <div className="relative h-full">
-                    {heroSlides.map((slide, index) => (
-                        <div
-                            key={index}
-                            className={`absolute inset-0 transition-opacity duration-1000 ${index === currentSlide ? 'opacity-100' : 'opacity-0'
-                                }`}
-                        >
-                            <div className="relative h-full flex items-center">
-                                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
-                                    <div className="max-w-3xl">
-                                        <div className="inline-block bg-amber-500/20 backdrop-blur-sm border border-amber-500/30 rounded-full px-4 py-2 mb-6 animate-pulse">
-                                            <p className="text-amber-300 text-sm font-medium">Welcome to Our Cathedral</p>
-                                        </div>
-                                        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight animate-fade-in">
-                                            {slide.title}
-                                        </h1>
-                                        <p className="text-xl text-blue-100 mb-8 leading-relaxed animate-fade-in-delay">
-                                            {slide.subtitle}
-                                        </p>
-                                        <div className="flex flex-wrap gap-4">
-                                            <a href="#worship" className="bg-white text-blue-900 px-8 py-4 rounded-lg font-semibold hover:shadow-xl hover:scale-105 transition-all inline-flex items-center gap-2">
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                {slide.cta}
-                                            </a>
-                                            <a href="#visit" className="bg-blue-800/50 backdrop-blur-sm border-2 border-white/30 text-white px-8 py-4 rounded-lg font-semibold hover:bg-blue-800/70 hover:scale-105 transition-all inline-flex items-center gap-2">
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                                </svg>
-                                                Visit Us
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                {/* Layered dark overlay — deep blue tint for brand consistency */}
+                <div className="absolute inset-0 bg-gradient-to-b from-blue-950/70 via-blue-950/50 to-blue-950/80" />
+
+                {/* Content centred in the viewport */}
+                <div className="relative flex flex-col items-center justify-center text-center px-4 sm:px-6 lg:px-8" style={{ minHeight: '100vh' }}>
+                    <div className="max-w-4xl mx-auto">
+                        <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-5 py-2 mb-8">
+                            <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+                            <p className="text-amber-300 text-sm font-semibold tracking-widest uppercase">Welcome to Our Cathedral</p>
                         </div>
-                    ))}
+
+                        <h1 className="text-5xl sm:text-6xl lg:text-8xl font-bold leading-[1.05] tracking-tight mb-6 drop-shadow-2xl">
+                            A House of Prayer<br />
+                            <span className="text-amber-400">for All Nations</span>
+                        </h1>
+
+                        <p className="text-xl sm:text-2xl text-white/80 font-light tracking-wide mb-10 drop-shadow-lg">
+                            Your Cathedral &middot; 120 Years in the Making
+                        </p>
+
+                        <div className="flex flex-wrap gap-4 justify-center">
+                            <a href="#worship" className="bg-white text-blue-900 px-8 py-4 rounded-lg font-semibold hover:shadow-2xl hover:scale-105 transition-all inline-flex items-center gap-2">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Join Us This Sunday
+                            </a>
+                            <a href="#history" className="bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white px-8 py-4 rounded-lg font-semibold hover:bg-white/20 hover:scale-105 transition-all inline-flex items-center gap-2">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                </svg>
+                                Visit Us
+                            </a>
+                        </div>
+                    </div>
+
+                    {/* Scroll-down chevron */}
+                    <div className="absolute bottom-10 animate-bounce">
+                        <svg className="w-7 h-7 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </div>
                 </div>
 
-                {/* Carousel Indicators */}
-                <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-3">
-                    {heroSlides.map((_, index) => (
-                        <button
-                            key={index}
-                            onClick={() => setCurrentSlide(index)}
-                            className={`h-2 rounded-full transition-all ${index === currentSlide ? 'bg-white w-8' : 'bg-white/50 w-2'
-                                }`}
-                        />
-                    ))}
-                </div>
-
-                <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent"></div>
+                {/* White fade at the bottom so the next section blends in */}
+                <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-white to-transparent pointer-events-none" />
             </section>
 
             {/* Live Stream Banner */}
@@ -815,9 +829,11 @@ export default function ACKCathedralMockup() {
                                 <li><a href="#home" className="hover:text-white transition-colors">Home</a></li>
                                 <li><a href="/mockup/history" className="hover:text-white transition-colors">Cathedral History</a></li>
                                 <li><a href="#worship" className="hover:text-white transition-colors">Worship Services</a></li>
-                                <li><a href="#events" className="hover:text-white transition-colors">Events</a></li>
-                                <li><a href="#sermons" className="hover:text-white transition-colors">Sermons</a></li>
-                                <li><a href="#give" className="hover:text-white transition-colors">Give Online</a></li>
+                                <li><a href="/mockup/events" className="hover:text-white transition-colors">Events</a></li>
+                                <li><a href="/mockup/sermons" className="hover:text-white transition-colors">Sermons</a></li>
+                                <li><a href="/mockup/gallery" className="hover:text-white transition-colors">Photo Gallery</a></li>
+                                <li><a href="/mockup/prayer" className="hover:text-white transition-colors">Prayer Requests</a></li>
+                                <li><a href="/mockup/give" className="hover:text-white transition-colors">Give Online</a></li>
                             </ul>
                         </div>
 
@@ -825,11 +841,12 @@ export default function ACKCathedralMockup() {
                         <div>
                             <h3 className="font-bold text-lg mb-4">Ministries</h3>
                             <ul className="space-y-2 text-gray-400 text-sm">
-                                <li><a href="#children" className="hover:text-white transition-colors">Children's Ministry</a></li>
-                                <li><a href="#youth" className="hover:text-white transition-colors">Youth Ministry</a></li>
-                                <li><a href="#women" className="hover:text-white transition-colors">Women's Fellowship</a></li>
-                                <li><a href="#men" className="hover:text-white transition-colors">Men's Fellowship</a></li>
-                                <li><a href="#music" className="hover:text-white transition-colors">Music & Worship</a></li>
+                                <li><a href="/mockup/ministries#children" className="hover:text-white transition-colors">Children&apos;s Ministry</a></li>
+                                <li><a href="/mockup/ministries#youth" className="hover:text-white transition-colors">Youth Ministry</a></li>
+                                <li><a href="/mockup/ministries#women" className="hover:text-white transition-colors">Women&apos;s Fellowship</a></li>
+                                <li><a href="/mockup/ministries#men" className="hover:text-white transition-colors">Men&apos;s Fellowship</a></li>
+                                <li><a href="/mockup/ministries#choir" className="hover:text-white transition-colors">Music &amp; Worship</a></li>
+                                <li><a href="/mockup/contact" className="hover:text-white transition-colors">Contact Us</a></li>
                             </ul>
                         </div>
 
@@ -869,18 +886,6 @@ export default function ACKCathedralMockup() {
                 </div>
             </footer>
 
-            <style jsx global>{`
-        @keyframes fade-in {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fade-in {
-          animation: fade-in 0.8s ease-out;
-        }
-        .animate-fade-in-delay {
-          animation: fade-in 0.8s ease-out 0.3s backwards;
-        }
-      `}</style>
         </div>
     );
 }

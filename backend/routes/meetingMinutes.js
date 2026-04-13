@@ -9,6 +9,65 @@ const { verifyUserToken, checkPermissions } = require('../middleware/roleAuth');
 const upload = require('../middleware/upload');
 const notificationService = require('../services/notificationService');
 
+// GET /api/meeting-minutes/admin/all - Get ALL minutes for admin (including unpublished)
+router.get('/admin/all', auth, async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const search = req.query.search || '';
+        const skip = (page - 1) * limit;
+
+        let query = {};
+        if (search) {
+            query.$or = [
+                { title: { $regex: search, $options: 'i' } },
+                { summary: { $regex: search, $options: 'i' } },
+            ];
+        }
+
+        const minutes = await MeetingMinutes.find(query)
+            .sort({ meetingDate: -1 })
+            .skip(skip)
+            .limit(limit)
+            .populate('uploadedBy', 'username email');
+
+        const total = await MeetingMinutes.countDocuments(query);
+
+        res.json({
+            success: true,
+            minutes,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit),
+        });
+    } catch (error) {
+        console.error('Admin get minutes error:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// PATCH /api/meeting-minutes/:id/publish - Toggle publish status
+router.patch('/:id/publish', auth, async (req, res) => {
+    try {
+        const minutes = await MeetingMinutes.findById(req.params.id);
+        if (!minutes) return res.status(404).json({ success: false, message: 'Not found' });
+
+        minutes.isPublished = !minutes.isPublished;
+        await minutes.save();
+
+        // Notify members when publishing for the first time
+        if (minutes.isPublished) {
+            const users = await User.find({ isActive: true });
+            const userIds = users.map(u => u._id);
+            await notificationService.notifyMeetingUploaded(minutes, userIds);
+        }
+
+        res.json({ success: true, minutes, message: minutes.isPublished ? 'Published' : 'Unpublished' });
+    } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
 // GET /api/meeting-minutes - Get all published minutes (paginated, searchable)
 router.get('/', verifyUserToken, async (req, res) => {
     try {
@@ -88,10 +147,10 @@ router.post('/', auth, upload.array('attachments', 5), async (req, res) => {
     try {
         const { title, meetingDate, attendees, summary, content, isPublished } = req.body;
 
-        if (!title || !meetingDate || !content) {
+        if (!title || !meetingDate) {
             return res.status(400).json({
                 success: false,
-                message: 'Title, meeting date, and content are required'
+                message: 'Title and meeting date are required'
             });
         }
 

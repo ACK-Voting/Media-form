@@ -91,6 +91,8 @@ export interface Event {
     createdBy: string;
     attendees: string[];
     isPublic: boolean;
+    isOnline: boolean;
+    meetingLink?: string;
     createdAt: string;
 }
 
