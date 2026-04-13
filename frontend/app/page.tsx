@@ -35,12 +35,23 @@ export default function Home() {
                 {/* Hero */}
                 <main className="flex-1 flex flex-col items-center justify-center px-6 text-center py-16">
                     {/* Cross icon */}
-                    <div className="mb-8">
-                        <div className="w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/25 flex items-center justify-center mx-auto shadow-xl">
-                            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 2v20M2 12h20" />
-                            </svg>
-                        </div>
+                    <div className="mb-8 flex items-center justify-center">
+                        <svg className="w-16 h-16 drop-shadow-2xl" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            {/* Vertical beam */}
+                            <rect x="27" y="4" width="10" height="56" rx="3" fill="url(#crossGold)" />
+                            {/* Horizontal beam */}
+                            <rect x="8" y="18" width="48" height="10" rx="3" fill="url(#crossGold)" />
+                            {/* Center jewel */}
+                            <circle cx="32" cy="23" r="5" fill="white" fillOpacity="0.25" />
+                            <circle cx="32" cy="23" r="3" fill="white" fillOpacity="0.5" />
+                            <defs>
+                                <linearGradient id="crossGold" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+                                    <stop stopColor="#FDE68A" />
+                                    <stop offset="0.5" stopColor="#F59E0B" />
+                                    <stop offset="1" stopColor="#D97706" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
                     </div>
 
                     <p className="text-white/70 text-sm font-medium tracking-[0.2em] uppercase mb-3">
