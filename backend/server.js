@@ -7,6 +7,9 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust Render's proxy
+app.set('trust proxy', 1);
+
 // Middleware
 const corsOptions = {
     origin: process.env.NODE_ENV === 'production'
