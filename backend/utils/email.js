@@ -1,31 +1,25 @@
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
-// Create reusable transporter
-const createTransporter = () => {
-    // For development/testing, use Gmail or a service like Mailtrap
-    // For production, use a proper email service like SendGrid, AWS SES, etc.
+const resend = new Resend(process.env.RESEND_API_KEY);
+const FROM_ADDRESS = process.env.EMAIL_FROM || `ACK Mombasa Media Team <${process.env.EMAIL_USER}>`;
 
-    if (process.env.EMAIL_SERVICE === 'gmail') {
-        return nodemailer.createTransport({
-            service: 'gmail',
-            auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASSWORD // Use App Password for Gmail
-            }
-        });
+// Thin wrapper so existing call sites (sendMail) still work
+const createTransporter = () => ({
+    sendMail: async (options) => {
+        const payload = {
+            from: options.from || FROM_ADDRESS,
+            to: options.to ? (Array.isArray(options.to) ? options.to : [options.to]) : [],
+            bcc: options.bcc ? (Array.isArray(options.bcc) ? options.bcc : [options.bcc]) : undefined,
+            subject: options.subject,
+            html: options.html,
+        };
+        // Remove undefined keys
+        if (!payload.bcc || payload.bcc.length === 0) delete payload.bcc;
+        const { data, error } = await resend.emails.send(payload);
+        if (error) throw new Error(error.message || JSON.stringify(error));
+        return { messageId: data.id };
     }
-
-    // Default to SMTP configuration
-    return nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: process.env.SMTP_PORT || 587,
-        secure: false, // true for 465, false for other ports
-        auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASSWORD
-        }
-    });
-};
+});
 
 // Send confirmation email to applicant
 const sendConfirmationEmail = async (registration) => {
