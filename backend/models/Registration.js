@@ -14,7 +14,7 @@ const registrationSchema = new mongoose.Schema({
     },
     ageRange: {
         type: String,
-        required: true,
+        required: false,
         trim: true
     },
     phoneNumber: {

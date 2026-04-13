@@ -10,7 +10,7 @@ const activityService = require('../services/activityService');
 const registrationValidation = [
     body('fullName').trim().notEmpty().withMessage('Full name is required'),
     body('gender').isIn(['male', 'female']).withMessage('Invalid gender'),
-    body('ageRange').notEmpty().withMessage('Age is required'),
+    body('ageRange').optional().isString().withMessage('Age range must be a string'),
     body('phoneNumber').trim().notEmpty().withMessage('Phone number is required'),
     body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
     body('isMember').isBoolean().withMessage('Member status is required'),
