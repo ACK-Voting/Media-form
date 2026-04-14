@@ -47,16 +47,75 @@ textarea::placeholder {
   animation: slide-in 0.3s ease-out;
 }
 
-/* Print styles - hide buttons when printing */
+/* Print styles */
 @media print {
-  button {
+  /* Hide everything that's not the form */
+  header,
+  nav,
+  footer,
+  button,
+  .no-print {
     display: none !important;
   }
 
-  /* Keep form content visible */
+  /* Reset background */
   body {
-    background: white;
-    color: black;
+    background: white !important;
+    color: #111827 !important;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11pt;
+  }
+
+  /* Remove cathedral background image */
+  [style*="backgroundImage"] {
+    background-image: none !important;
+    background: white !important;
+  }
+  .absolute.inset-0 {
+    display: none !important;
+  }
+
+  /* Form sections: clean white cards */
+  section {
+    border: 1px solid #e5e7eb !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    page-break-inside: avoid;
+    margin-bottom: 12pt !important;
+  }
+
+  /* Section headers */
+  section > div:first-child {
+    background: #1e1b4b !important;
+    color: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Print title injected before form */
+  form::before {
+    content: "ACK MOMBASA MEMORIAL CATHEDRAL — MEDIA TEAM REGISTRATION FORM";
+    display: block;
+    text-align: center;
+    font-size: 14pt;
+    font-weight: bold;
+    color: #1e1b4b;
+    margin-bottom: 16pt;
+    border-bottom: 3px solid #d97706;
+    padding-bottom: 8pt;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Force colour printing */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Page margins */
+  @page {
+    margin: 18mm 16mm;
   }
 }
 

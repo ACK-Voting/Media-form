@@ -4,7 +4,7 @@ import { useState, useRef } from 'react';
 import { submissionsAPI } from '@/lib/api';
 import Input from './ui/Input';
 import jsPDF from 'jspdf';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } from 'docx';
+import { Document, Packer, Paragraph, TextRun, AlignmentType, BorderStyle } from 'docx';
 import { saveAs } from 'file-saver';
 
 export default function RegistrationForm() {
@@ -160,221 +160,219 @@ export default function RegistrationForm() {
             const pdf = new jsPDF('p', 'mm', 'a4');
             const pageWidth = pdf.internal.pageSize.getWidth();
             const pageHeight = pdf.internal.pageSize.getHeight();
-            let yPos = 15;
-            const leftMargin = 15;
-            const rightMargin = pageWidth - 15;
-            const contentWidth = rightMargin - leftMargin;
+            let yPos = 0;
+            const leftMargin = 14;
+            const contentWidth = pageWidth - leftMargin * 2;
 
-            // Colors
-            const purple = [109, 40, 217]; // Purple for headers
-            const lightGray = [249, 250, 251]; // Light background
-            const darkGray = [55, 65, 81]; // Dark text
+            // ── Colour palette ──────────────────────────────────────────────
+            const C_PURPLE_DARK  = [30, 27, 75] as [number,number,number];   // #1e1b4b
+            const C_PURPLE       = [109, 40, 217] as [number,number,number];  // #6d28d9
+            const C_PURPLE_LIGHT = [245, 243, 255] as [number,number,number]; // #f5f3ff
+            const C_GOLD         = [217, 119, 6] as [number,number,number];   // #d97706
+            const C_GOLD_LIGHT   = [254, 243, 199] as [number,number,number]; // #fef3c7
+            const C_GRAY_900     = [17, 24, 39] as [number,number,number];
+            const C_GRAY_600     = [75, 85, 99] as [number,number,number];
+            const C_GRAY_200     = [229, 231, 235] as [number,number,number];
+            const C_ROW_ALT      = [249, 250, 251] as [number,number,number];
 
-            // Helper to check if new page is needed
-            const checkNewPage = (spaceNeeded: number = 30) => {
-                if (yPos + spaceNeeded > pageHeight - 15) {
-                    pdf.addPage();
-                    yPos = 15;
-                }
+            const newPage = () => {
+                pdf.addPage();
+                yPos = 14;
+            };
+            const checkPage = (need: number = 28) => {
+                if (yPos + need > pageHeight - 18) newPage();
             };
 
-            // Header banner with gradient effect
-            pdf.setFillColor(109, 40, 217);
-            pdf.rect(0, 0, pageWidth, 40, 'F');
+            // ── HEADER ──────────────────────────────────────────────────────
+            // Dark purple background
+            pdf.setFillColor(...C_PURPLE_DARK);
+            pdf.rect(0, 0, pageWidth, 46, 'F');
+            // Gold accent stripe at top
+            pdf.setFillColor(...C_GOLD);
+            pdf.rect(0, 0, pageWidth, 3, 'F');
 
             pdf.setTextColor(255, 255, 255);
-            pdf.setFontSize(18);
+            pdf.setFontSize(15);
             pdf.setFont('helvetica', 'bold');
             pdf.text('ACK MOMBASA MEMORIAL CATHEDRAL', pageWidth / 2, 18, { align: 'center' });
 
-            pdf.setFontSize(14);
+            pdf.setFontSize(10);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(253, 230, 138); // amber-200
             pdf.text('MEDIA TEAM REGISTRATION FORM', pageWidth / 2, 28, { align: 'center' });
 
-            yPos = 50;
+            // Submission meta line
+            pdf.setFontSize(8);
+            pdf.setTextColor(196, 181, 253); // purple-300
+            const submittedDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+            pdf.text(`Date: ${submittedDate}   |   Applicant: ${formData.fullName || '—'}`, pageWidth / 2, 39, { align: 'center' });
 
-            // Helper to draw a section box
-            const drawSection = (title: string, content: () => void) => {
-                checkNewPage();
+            yPos = 54;
 
-                // Section title with purple border
-                pdf.setFillColor(249, 250, 251);
-                pdf.setDrawColor(109, 40, 217);
-                pdf.setLineWidth(0.5);
-                pdf.rect(leftMargin, yPos - 5, contentWidth, 10, 'FD');
+            // ── Intro banner ────────────────────────────────────────────────
+            pdf.setFillColor(...C_PURPLE_LIGHT);
+            pdf.setDrawColor(...C_PURPLE);
+            pdf.setLineWidth(0.4);
+            pdf.roundedRect(leftMargin, yPos, contentWidth, 16, 2, 2, 'FD');
+            // Gold left accent bar
+            pdf.setFillColor(...C_GOLD);
+            pdf.rect(leftMargin, yPos, 3, 16, 'F');
 
-                pdf.setTextColor(109, 40, 217);
-                pdf.setFontSize(12);
-                pdf.setFont('helvetica', 'bold');
-                pdf.text(title, leftMargin + 3, yPos + 2);
-
-                yPos += 10;
-
-                // Content box
-                const contentStartY = yPos;
-                pdf.setTextColor(55, 65, 81);
-                content();
-
-                // Draw border around content
-                pdf.setDrawColor(229, 231, 235);
-                pdf.setLineWidth(0.3);
-                pdf.rect(leftMargin, contentStartY, contentWidth, yPos - contentStartY, 'S');
-
-                yPos += 8;
-            };
-
-            // Helper to add a field with better organization
-            const addField = (label: string, value: string, indent: number = 0, fullWidth: boolean = false) => {
-                const fieldLeftMargin = leftMargin + 5 + indent;
-
-                pdf.setFontSize(9);
-                pdf.setFont('helvetica', 'bold');
-                pdf.setTextColor(75, 85, 99);
-                pdf.text(label, fieldLeftMargin, yPos);
-
-                yPos += 4;
-
-                pdf.setFont('helvetica', 'normal');
-                pdf.setTextColor(31, 41, 55);
-                pdf.setFontSize(10);
-                const maxWidth = fullWidth ? contentWidth - 10 - indent : contentWidth - 15 - indent;
-                const lines = pdf.splitTextToSize(value, maxWidth);
-                pdf.text(lines, fieldLeftMargin, yPos);
-
-                yPos += Math.max(6, lines.length * 5);
-            };
-
-            // Helper to add inline field (label and value on same line)
-            const addInlineField = (label: string, value: string, xPos: number, maxWidth: number) => {
-                pdf.setFontSize(9);
-                pdf.setFont('helvetica', 'bold');
-                pdf.setTextColor(75, 85, 99);
-                const labelWidth = pdf.getTextWidth(label);
-                pdf.text(label, xPos, yPos);
-
-                pdf.setFont('helvetica', 'normal');
-                pdf.setTextColor(31, 41, 55);
-                const valueText = pdf.splitTextToSize(value, maxWidth - labelWidth - 2);
-                pdf.text(valueText, xPos + labelWidth + 2, yPos);
-            };
-
-            // Introduction box
-            pdf.setFillColor(245, 243, 255);
-            pdf.setDrawColor(167, 139, 250);
-            pdf.setLineWidth(0.5);
-            pdf.rect(leftMargin, yPos, contentWidth, 20, 'FD');
-
-            pdf.setTextColor(55, 65, 81);
-            pdf.setFontSize(9);
-            pdf.setFont('helvetica', 'normal');
-            const introText = pdf.splitTextToSize(
-                'Thank you for your interest in joining the ACK Mombasa Memorial Cathedral Media Team! Your skills and dedication will help us spread the Gospel, document church activities, and enhance our digital presence.',
-                contentWidth - 10
-            );
-            pdf.text(introText, leftMargin + 5, yPos + 6);
-            yPos += 28;
-
-            // Personal Information Section
-            drawSection('Personal Information', () => {
-                addField('1. Full Name', formData.fullName || 'N/A', 0, true);
-
-                // Three column layout for Gender, Age, Marital Status
-                const col1X = leftMargin + 5;
-                const col2X = leftMargin + 70;
-                const col3X = leftMargin + 125;
-
-                addInlineField('2. Gender: ', formData.gender || 'N/A', col1X, 50);
-                addInlineField('3. Age: ', (formData.age || 'N/A').toString(), col2X, 45);
-                addInlineField('4. Marital Status: ', formData.maritalStatus || 'N/A', col3X, 60);
-
-                yPos += 8;
-
-                addField('5. Phone Number', formData.phoneNumber || 'N/A', 0, true);
-                addField('6. Email Address', formData.email || 'N/A', 0, true);
-                addField('7. Residential Address', formData.residentialAddress || 'N/A', 0, true);
-
-                const memberStatus = formData.isMember === true ? 'Yes' : formData.isMember === false ? 'No' : 'N/A';
-                addField('8. Are you a member of ACK Mombasa Memorial Cathedral?', memberStatus, 0, true);
-
-                if (formData.isMember && formData.membershipNumber) {
-                    addField('   Membership Number', formData.membershipNumber, 0, true);
-                } else if (formData.isMember === false && formData.otherChurch) {
-                    addField('   Church You Attend', formData.otherChurch, 0, true);
-                }
-
-                yPos += 3;
-            });
-
-            // Media Team Skills & Interests Section
-            drawSection('Media Team Skills & Interests', () => {
-                const roles = formData.mediaRoles.length > 0 ? formData.mediaRoles.join(', ') : 'N/A';
-                addField('9. Which media team roles are you interested in? (Check all that apply)', roles, 0, true);
-
-                if (formData.otherRole) {
-                    addField('   Other role', formData.otherRole, 0, true);
-                }
-
-                const hasExp = formData.hasExperience === true ? 'Yes' : formData.hasExperience === false ? 'No' : 'N/A';
-                addField('10. Do you have prior experience in media work?', hasExp, 0, true);
-
-                if (formData.hasExperience && formData.experienceDescription) {
-                    addField('   Please describe your experience', formData.experienceDescription, 0, true);
-                }
-
-                const hasEquip = formData.hasEquipment === true ? 'Yes' : formData.hasEquipment === false ? 'No' : 'N/A';
-                addField('11. Do you have your own equipment?', hasEquip, 0, true);
-
-                if (formData.hasEquipment && formData.equipmentDescription) {
-                    addField('   List your equipment', formData.equipmentDescription, 0, true);
-                }
-
-                yPos += 3;
-            });
-
-            // Availability & Commitment Section
-            drawSection('Availability & Commitment', () => {
-                addField('12. How often can you volunteer?', formData.volunteerFrequency || 'N/A', 0, true);
-
-                const times = formData.preferredTimes.length > 0 ? formData.preferredTimes.join(', ') : 'N/A';
-                addField('13. Preferred Days/Times for Service (Check all that apply)', times, 0, true);
-
-                const willing = formData.willingToTrain === true ? 'Yes' : formData.willingToTrain === false ? 'No' : 'N/A';
-                addField('14. Are you willing to attend media team training sessions?', willing, 0, true);
-
-                yPos += 3;
-            });
-
-            // Spiritual & Volunteer Commitment Section
-            drawSection('Spiritual & Volunteer Commitment', () => {
-                addField('15. Why do you want to join the ACK Mombasa Media Team?', formData.motivation || 'N/A', 0, true);
-
-                const commitment = formData.commitmentDeclaration ? 'Yes, I commit' : 'Not confirmed';
-                addField('16. Do you commit to serving with integrity, teamwork, and dedication?', commitment, 0, true);
-
-                yPos += 3;
-            });
-
-            // Emergency Contact Section
-            drawSection('Emergency Contact', () => {
-                addField('17. Emergency Contact Name', formData.emergencyContactName || 'N/A', 0, true);
-                addField('18. Relationship', formData.emergencyContactRelationship || 'N/A', 0, true);
-                addField('19. Emergency Contact Phone', formData.emergencyContactPhone || 'N/A', 0, true);
-
-                yPos += 3;
-            });
-
-            // Bible verse footer
-            checkNewPage(25);
-            pdf.setFillColor(249, 250, 251);
-            pdf.setDrawColor(209, 213, 219);
-            pdf.rect(leftMargin, yPos, contentWidth, 18, 'FD');
-
-            pdf.setTextColor(75, 85, 99);
-            pdf.setFontSize(9);
             pdf.setFont('helvetica', 'italic');
-            const verse = '"Each of you should use whatever gift you have received to serve others, as faithful stewards of God\'s grace."';
-            pdf.text(verse, pageWidth / 2, yPos + 8, { align: 'center', maxWidth: contentWidth - 10 });
-            pdf.setFont('helvetica', 'normal');
-            pdf.text('– 1 Peter 4:10', pageWidth / 2, yPos + 14, { align: 'center' });
+            pdf.setFontSize(8.5);
+            pdf.setTextColor(...C_GRAY_600);
+            const introLines = pdf.splitTextToSize(
+                'Thank you for your interest in joining the ACK Mombasa Memorial Cathedral Media Team. Your skills and dedication will help us spread the Gospel, document church activities, and enhance our digital presence.',
+                contentWidth - 14
+            );
+            pdf.text(introLines, leftMargin + 7, yPos + 6);
+            yPos += 22;
+
+            // ── Section helpers ─────────────────────────────────────────────
+            const drawSectionHeader = (title: string, icon: string) => {
+                checkPage(14);
+                pdf.setFillColor(...C_PURPLE);
+                pdf.rect(leftMargin, yPos, contentWidth, 10, 'F');
+                // Gold left bar
+                pdf.setFillColor(...C_GOLD);
+                pdf.rect(leftMargin, yPos, 3, 10, 'F');
+
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(9.5);
+                pdf.setTextColor(255, 255, 255);
+                pdf.text(`${icon}  ${title.toUpperCase()}`, leftMargin + 7, yPos + 7);
+                yPos += 13;
+            };
+
+            let rowIndex = 0;
+            const addRow = (label: string, value: string, fullWidth = true) => {
+                const valText = value || '—';
+                const labelLines = pdf.splitTextToSize(label, contentWidth * 0.38);
+                const valueLines = pdf.splitTextToSize(valText, contentWidth * 0.56);
+                const lineCount = Math.max(labelLines.length, valueLines.length);
+                const rowH = Math.max(10, lineCount * 5 + 4);
+                checkPage(rowH + 2);
+
+                if (rowIndex % 2 === 0) {
+                    pdf.setFillColor(...C_ROW_ALT);
+                    pdf.rect(leftMargin, yPos, contentWidth, rowH, 'F');
+                }
+                rowIndex++;
+
+                // Label
+                pdf.setFont('helvetica', 'bold');
+                pdf.setFontSize(8.5);
+                pdf.setTextColor(...C_GRAY_600);
+                pdf.text(labelLines, leftMargin + 4, yPos + 6);
+
+                // Value
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(9.5);
+                pdf.setTextColor(...C_GRAY_900);
+                pdf.text(valueLines, leftMargin + contentWidth * 0.42, yPos + 6);
+
+                // Row divider
+                pdf.setDrawColor(...C_GRAY_200);
+                pdf.setLineWidth(0.2);
+                pdf.line(leftMargin, yPos + rowH, leftMargin + contentWidth, yPos + rowH);
+
+                yPos += rowH;
+            };
+
+            const endSection = () => {
+                // Outer border around section rows
+                rowIndex = 0;
+                yPos += 6;
+            };
+
+            // ── PERSONAL INFORMATION ────────────────────────────────────────
+            drawSectionHeader('Personal Information', '01');
+            rowIndex = 0;
+            addRow('Full Name', formData.fullName);
+            addRow('Gender', formData.gender || '—');
+            addRow('Age', formData.age || 'Not provided');
+            addRow('Marital Status', formData.maritalStatus || '—');
+            addRow('Phone Number', formData.phoneNumber);
+            addRow('Email Address', formData.email);
+            addRow('Residential Address', formData.residentialAddress || '—');
+            const memberStatus = formData.isMember === true ? 'Yes — ACK member' : formData.isMember === false ? 'No' : '—';
+            addRow('ACK Mombasa Cathedral Member?', memberStatus);
+            if (formData.isMember && formData.membershipNumber)
+                addRow('Membership Number', formData.membershipNumber);
+            if (formData.isMember === false && formData.otherChurch)
+                addRow('Church Attended', formData.otherChurch);
+            endSection();
+
+            // ── MEDIA SKILLS & INTERESTS ────────────────────────────────────
+            drawSectionHeader('Media Team Skills & Interests', '02');
+            rowIndex = 0;
+            addRow('Roles Interested In', formData.mediaRoles.length > 0 ? formData.mediaRoles.join(', ') : '—');
+            if (formData.otherRole) addRow('Other Role', formData.otherRole);
+            const hasExp = formData.hasExperience === true ? 'Yes' : formData.hasExperience === false ? 'No' : '—';
+            addRow('Prior Media Experience?', hasExp);
+            if (formData.hasExperience && formData.experienceDescription)
+                addRow('Experience Details', formData.experienceDescription);
+            const hasEquip = formData.hasEquipment === true ? 'Yes' : formData.hasEquipment === false ? 'No' : '—';
+            addRow('Own Equipment?', hasEquip);
+            if (formData.hasEquipment && formData.equipmentDescription)
+                addRow('Equipment Details', formData.equipmentDescription);
+            endSection();
+
+            // ── AVAILABILITY & COMMITMENT ───────────────────────────────────
+            drawSectionHeader('Availability & Commitment', '03');
+            rowIndex = 0;
+            addRow('Volunteer Frequency', formData.volunteerFrequency || '—');
+            addRow('Preferred Times', formData.preferredTimes.length > 0 ? formData.preferredTimes.join(', ') : '—');
+            const willing = formData.willingToTrain === true ? 'Yes' : formData.willingToTrain === false ? 'No' : '—';
+            addRow('Willing to Attend Training?', willing);
+            endSection();
+
+            // ── SPIRITUAL & VOLUNTEER COMMITMENT ───────────────────────────
+            drawSectionHeader('Spiritual & Volunteer Commitment', '04');
+            rowIndex = 0;
+            addRow('Motivation to Join', formData.motivation || '—');
+            addRow('Commitment Declaration', formData.commitmentDeclaration ? 'Yes — I commit to serve with integrity, teamwork, and dedication' : 'Not confirmed');
+            endSection();
+
+            // ── EMERGENCY CONTACT ───────────────────────────────────────────
+            drawSectionHeader('Emergency Contact', '05');
+            rowIndex = 0;
+            addRow('Contact Name', formData.emergencyContactName || '—');
+            addRow('Relationship', formData.emergencyContactRelationship || '—');
+            addRow('Contact Phone', formData.emergencyContactPhone || '—');
+            endSection();
+
+            // ── FOOTER ──────────────────────────────────────────────────────
+            checkPage(22);
+            pdf.setFillColor(...C_GOLD_LIGHT);
+            pdf.setDrawColor(...C_GOLD);
+            pdf.setLineWidth(0.4);
+            pdf.roundedRect(leftMargin, yPos, contentWidth, 18, 2, 2, 'FD');
+            pdf.setFillColor(...C_GOLD);
+            pdf.rect(leftMargin, yPos, 3, 18, 'F');
+
+            pdf.setFont('helvetica', 'italic');
+            pdf.setFontSize(8.5);
+            pdf.setTextColor(...C_GRAY_600);
+            pdf.text(
+                '"Each of you should use whatever gift you have received to serve others, as faithful stewards of God\'s grace."',
+                pageWidth / 2, yPos + 8, { align: 'center', maxWidth: contentWidth - 14 }
+            );
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(8);
+            pdf.setTextColor(...C_GOLD);
+            pdf.text('— 1 Peter 4:10', pageWidth / 2, yPos + 14, { align: 'center' });
+
+            // Page number
+            const totalPages = (pdf as any).internal.getNumberOfPages();
+            for (let i = 1; i <= totalPages; i++) {
+                pdf.setPage(i);
+                pdf.setFont('helvetica', 'normal');
+                pdf.setFontSize(7.5);
+                pdf.setTextColor(156, 163, 175);
+                pdf.text(`Page ${i} of ${totalPages}`, pageWidth - leftMargin, pageHeight - 8, { align: 'right' });
+                pdf.text('ACK Mombasa Memorial Cathedral — Media Team', leftMargin, pageHeight - 8);
+            }
 
             pdf.save(`ACK_Media_Team_Registration_${formData.fullName || 'Form'}.pdf`);
         } catch (error) {
@@ -388,209 +386,120 @@ export default function RegistrationForm() {
     const handleDownloadDOCX = async () => {
         setIsDownloading(true);
         try {
+            const PURPLE = '1E1B4B';
+            const GOLD   = 'D97706';
+            const GRAY   = '6B7280';
+
+            // Section heading paragraph
+            const sectionHeading = (label: string) => new Paragraph({
+                children: [new TextRun({ text: label.toUpperCase(), bold: true, color: 'FFFFFF', size: 22, font: 'Calibri' })],
+                spacing: { before: 280, after: 0 },
+                shading: { type: 'solid', color: PURPLE, fill: PURPLE } as any,
+                indent: { left: 120, right: 120 },
+                border: {
+                    top: { style: BorderStyle.SINGLE, size: 12, color: GOLD },
+                    left: { style: BorderStyle.SINGLE, size: 20, color: GOLD },
+                    bottom: { style: BorderStyle.NONE, size: 0, color: PURPLE },
+                    right: { style: BorderStyle.NONE, size: 0, color: PURPLE },
+                },
+            });
+
+            // Field row: bold label then value on same line
+            const field = (label: string, value: string) => new Paragraph({
+                children: [
+                    new TextRun({ text: `${label}:  `, bold: true, color: GRAY, size: 20, font: 'Calibri' }),
+                    new TextRun({ text: value || '—', color: '111827', size: 20, font: 'Calibri' }),
+                ],
+                spacing: { before: 80, after: 80 },
+                indent: { left: 240, right: 240 },
+                border: {
+                    bottom: { style: BorderStyle.SINGLE, size: 2, color: 'E5E7EB' },
+                },
+            });
+
+            const gap = () => new Paragraph({ text: '', spacing: { before: 0, after: 0 } });
+
+            const memberStatus = formData.isMember === true ? 'Yes — ACK Mombasa Cathedral member' : formData.isMember === false ? 'No' : '—';
+            const hasExp  = formData.hasExperience === true ? 'Yes' : formData.hasExperience === false ? 'No' : '—';
+            const hasEquip = formData.hasEquipment === true ? 'Yes' : formData.hasEquipment === false ? 'No' : '—';
+            const willing  = formData.willingToTrain === true ? 'Yes' : formData.willingToTrain === false ? 'No' : '—';
+
             const doc = new Document({
                 sections: [{
-                    properties: {},
+                    properties: {
+                        page: { margin: { top: 800, bottom: 800, left: 1000, right: 1000 } },
+                    },
                     children: [
+                        // ── Title ────────────────────────────────────────────
                         new Paragraph({
-                            text: 'ACK MOMBASA MEMORIAL CATHEDRAL',
-                            heading: HeadingLevel.HEADING_1,
+                            children: [new TextRun({ text: 'ACK MOMBASA MEMORIAL CATHEDRAL', bold: true, size: 30, color: PURPLE, font: 'Calibri' })],
                             alignment: AlignmentType.CENTER,
+                            spacing: { before: 0, after: 80 },
+                            border: { bottom: { style: BorderStyle.SINGLE, size: 12, color: GOLD } },
                         }),
                         new Paragraph({
-                            text: 'MEDIA TEAM REGISTRATION FORM',
-                            heading: HeadingLevel.HEADING_2,
+                            children: [new TextRun({ text: 'MEDIA TEAM REGISTRATION FORM', bold: true, size: 24, color: GOLD, font: 'Calibri' })],
                             alignment: AlignmentType.CENTER,
+                            spacing: { before: 80, after: 60 },
                         }),
-                        new Paragraph({ text: '' }),
+                        new Paragraph({
+                            children: [new TextRun({
+                                text: `Date: ${new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}   |   Applicant: ${formData.fullName || '—'}`,
+                                italics: true, size: 18, color: GRAY, font: 'Calibri',
+                            })],
+                            alignment: AlignmentType.CENTER,
+                            spacing: { before: 0, after: 200 },
+                        }),
 
-                        // Personal Information
-                        new Paragraph({
-                            text: 'PERSONAL INFORMATION',
-                            heading: HeadingLevel.HEADING_3,
-                        }),
-                        new Paragraph({
-                            children: [
-                                new TextRun({ text: '1. Full Name: ', bold: true }),
-                                new TextRun(formData.fullName || 'N/A'),
-                            ],
-                        }),
-                        new Paragraph({
-                            children: [
-                                new TextRun({ text: '2. Gender: ', bold: true }),
-                                new TextRun(formData.gender || 'N/A'),
-                            ],
-                        }),
-                        new Paragraph({
-                            children: [
-                                new TextRun({ text: '3. Age: ', bold: true }),
-                                new TextRun(formData.age || 'N/A'),
-                            ],
-                        }),
-                        new Paragraph({
-                            children: [
-                                new TextRun({ text: '4. Marital Status: ', bold: true }),
-                                new TextRun(formData.maritalStatus || 'N/A'),
-                            ],
-                        }),
-                        new Paragraph({
-                            children: [
-                                new TextRun({ text: '5. Phone Number: ', bold: true }),
-                                new TextRun(formData.phoneNumber || 'N/A'),
-                            ],
-                        }),
-                        new Paragraph({
-                            children: [
-                                new TextRun({ text: '6. Email Address: ', bold: true }),
-                                new TextRun(formData.email || 'N/A'),
-                            ],
-                        }),
-                        new Paragraph({
-                            children: [
-                                new TextRun({ text: '7. Residential Address: ', bold: true }),
-                                new TextRun(formData.residentialAddress || 'N/A'),
-                            ],
-                        }),
-                        new Paragraph({
-                            children: [
-                                new TextRun({ text: '8. Are you a member of ACK Mombasa Memorial Cathedral? ', bold: true }),
-                                new TextRun(formData.isMember === true ? 'Yes' : formData.isMember === false ? 'No' : 'N/A'),
-                            ],
-                        }),
-                        ...(formData.isMember ? [
-                            new Paragraph({
-                                children: [
-                                    new TextRun({ text: '   Membership Number: ', bold: true }),
-                                    new TextRun(formData.membershipNumber || 'N/A'),
-                                ],
-                            }),
-                        ] : formData.isMember === false ? [
-                            new Paragraph({
-                                children: [
-                                    new TextRun({ text: '   Church You Attend: ', bold: true }),
-                                    new TextRun(formData.otherChurch || 'N/A'),
-                                ],
-                            }),
-                        ] : []),
-                        new Paragraph({ text: '' }),
+                        // ── 01 Personal Information ───────────────────────────
+                        sectionHeading('01  Personal Information'),
+                        field('Full Name', formData.fullName),
+                        field('Gender', formData.gender || '—'),
+                        field('Age', formData.age || 'Not provided'),
+                        field('Marital Status', formData.maritalStatus || '—'),
+                        field('Phone Number', formData.phoneNumber),
+                        field('Email Address', formData.email),
+                        field('Residential Address', formData.residentialAddress || '—'),
+                        field('ACK Cathedral Member?', memberStatus),
+                        ...(formData.isMember && formData.membershipNumber ? [field('Membership Number', formData.membershipNumber)] : []),
+                        ...(formData.isMember === false && formData.otherChurch ? [field('Church Attended', formData.otherChurch)] : []),
 
-                        // Media Team Skills & Interests
-                        new Paragraph({
-                            text: 'MEDIA TEAM SKILLS & INTERESTS',
-                            heading: HeadingLevel.HEADING_3,
-                        }),
-                        new Paragraph({
-                            children: [
-                                new TextRun({ text: '9. Media team roles interested in: ', bold: true }),
-                                new TextRun(formData.mediaRoles.length > 0 ? formData.mediaRoles.join(', ') : 'N/A'),
-                            ],
-                        }),
-                        ...(formData.otherRole ? [
-                            new Paragraph({
-                                children: [
-                                    new TextRun({ text: '   Other role: ', bold: true }),
-                                    new TextRun(formData.otherRole),
-                                ],
-                            }),
-                        ] : []),
-                        new Paragraph({
-                            children: [
-                                new TextRun({ text: '10. Prior experience in media work? ', bold: true }),
-                                new TextRun(formData.hasExperience === true ? 'Yes' : formData.hasExperience === false ? 'No' : 'N/A'),
-                            ],
-                        }),
-                        ...(formData.hasExperience ? [
-                            new Paragraph({
-                                children: [
-                                    new TextRun({ text: '    Experience: ', bold: true }),
-                                    new TextRun(formData.experienceDescription || 'N/A'),
-                                ],
-                            }),
-                        ] : []),
-                        new Paragraph({
-                            children: [
-                                new TextRun({ text: '11. Do you have your own equipment? ', bold: true }),
-                                new TextRun(formData.hasEquipment === true ? 'Yes' : formData.hasEquipment === false ? 'No' : 'N/A'),
-                            ],
-                        }),
-                        ...(formData.hasEquipment ? [
-                            new Paragraph({
-                                children: [
-                                    new TextRun({ text: '    Equipment: ', bold: true }),
-                                    new TextRun(formData.equipmentDescription || 'N/A'),
-                                ],
-                            }),
-                        ] : []),
-                        new Paragraph({ text: '' }),
+                        // ── 02 Media Skills ───────────────────────────────────
+                        sectionHeading('02  Media Team Skills & Interests'),
+                        field('Roles Interested In', formData.mediaRoles.length > 0 ? formData.mediaRoles.join(', ') : '—'),
+                        ...(formData.otherRole ? [field('Other Role', formData.otherRole)] : []),
+                        field('Prior Media Experience?', hasExp),
+                        ...(formData.hasExperience && formData.experienceDescription ? [field('Experience Details', formData.experienceDescription)] : []),
+                        field('Own Equipment?', hasEquip),
+                        ...(formData.hasEquipment && formData.equipmentDescription ? [field('Equipment Details', formData.equipmentDescription)] : []),
 
-                        // Availability & Commitment
-                        new Paragraph({
-                            text: 'AVAILABILITY & COMMITMENT',
-                            heading: HeadingLevel.HEADING_3,
-                        }),
-                        new Paragraph({
-                            children: [
-                                new TextRun({ text: '12. How often can you volunteer? ', bold: true }),
-                                new TextRun(formData.volunteerFrequency || 'N/A'),
-                            ],
-                        }),
-                        new Paragraph({
-                            children: [
-                                new TextRun({ text: '13. Preferred Days/Times: ', bold: true }),
-                                new TextRun(formData.preferredTimes.length > 0 ? formData.preferredTimes.join(', ') : 'N/A'),
-                            ],
-                        }),
-                        new Paragraph({
-                            children: [
-                                new TextRun({ text: '14. Willing to attend training sessions? ', bold: true }),
-                                new TextRun(formData.willingToTrain === true ? 'Yes' : formData.willingToTrain === false ? 'No' : 'N/A'),
-                            ],
-                        }),
-                        new Paragraph({ text: '' }),
+                        // ── 03 Availability ───────────────────────────────────
+                        sectionHeading('03  Availability & Commitment'),
+                        field('Volunteer Frequency', formData.volunteerFrequency || '—'),
+                        field('Preferred Times', formData.preferredTimes.length > 0 ? formData.preferredTimes.join(', ') : '—'),
+                        field('Willing to Attend Training?', willing),
 
-                        // Spiritual & Volunteer Commitment
-                        new Paragraph({
-                            text: 'SPIRITUAL & VOLUNTEER COMMITMENT',
-                            heading: HeadingLevel.HEADING_3,
-                        }),
-                        new Paragraph({
-                            children: [
-                                new TextRun({ text: '15. Why do you want to join the ACK Mombasa Media Team? ', bold: true }),
-                            ],
-                        }),
-                        new Paragraph({
-                            text: formData.motivation || 'N/A',
-                        }),
-                        new Paragraph({
-                            children: [
-                                new TextRun({ text: '16. Commitment to serve with integrity, teamwork, and dedication: ', bold: true }),
-                                new TextRun(formData.commitmentDeclaration ? 'Yes, I commit' : 'Not confirmed'),
-                            ],
-                        }),
-                        new Paragraph({ text: '' }),
+                        // ── 04 Spiritual Commitment ───────────────────────────
+                        sectionHeading('04  Spiritual & Volunteer Commitment'),
+                        field('Motivation to Join', formData.motivation || '—'),
+                        field('Commitment Declaration', formData.commitmentDeclaration ? 'Yes — I commit to serve with integrity, teamwork, and dedication' : 'Not confirmed'),
 
-                        // Emergency Contact
+                        // ── 05 Emergency Contact ──────────────────────────────
+                        sectionHeading('05  Emergency Contact'),
+                        field('Contact Name', formData.emergencyContactName || '—'),
+                        field('Relationship', formData.emergencyContactRelationship || '—'),
+                        field('Contact Phone', formData.emergencyContactPhone || '—'),
+
+                        // ── Footer ────────────────────────────────────────────
+                        gap(),
                         new Paragraph({
-                            text: 'EMERGENCY CONTACT',
-                            heading: HeadingLevel.HEADING_3,
-                        }),
-                        new Paragraph({
-                            children: [
-                                new TextRun({ text: '17. Emergency Contact Name: ', bold: true }),
-                                new TextRun(formData.emergencyContactName || 'N/A'),
-                            ],
-                        }),
-                        new Paragraph({
-                            children: [
-                                new TextRun({ text: '18. Relationship: ', bold: true }),
-                                new TextRun(formData.emergencyContactRelationship || 'N/A'),
-                            ],
-                        }),
-                        new Paragraph({
-                            children: [
-                                new TextRun({ text: '19. Emergency Contact Phone: ', bold: true }),
-                                new TextRun(formData.emergencyContactPhone || 'N/A'),
-                            ],
+                            children: [new TextRun({
+                                text: '"Each of you should use whatever gift you have received to serve others, as faithful stewards of God\'s grace." — 1 Peter 4:10',
+                                italics: true, size: 17, color: '92400E', font: 'Calibri',
+                            })],
+                            alignment: AlignmentType.CENTER,
+                            spacing: { before: 280, after: 0 },
+                            border: { top: { style: BorderStyle.SINGLE, size: 6, color: GOLD } },
                         }),
                     ],
                 }],
