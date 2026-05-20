@@ -18,7 +18,7 @@ const servicesTimes = [
 ];
 
 const departments = [
-  { name: 'Dean\'s Office', email: 'dean@ackmombasa.org', phone: '+254 722 000 001' },
+  { name: "Sub Dean's Office", email: 'subdean@ackmombasa.org', phone: '0724 906 951' },
   { name: 'General Enquiries', email: 'info@ackmombasa.org', phone: '+254 700 123 456' },
   { name: 'Youth Ministry', email: 'youth@ackmombasa.org', phone: '+254 722 000 004' },
   { name: "Children's Ministry", email: 'children@ackmombasa.org', phone: '+254 722 000 005' },
@@ -40,9 +40,10 @@ export default function ContactPage() {
       <Navbar />
 
       {/* Hero */}
-      <section className="pt-20 bg-gradient-to-br from-gray-900 to-blue-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="max-w-2xl">
+      <section className="pt-20 relative bg-cover bg-center text-white" style={{ backgroundImage: "url('/Background.jpeg')" }}>
+        <div className="absolute inset-0 bg-gray-900/70" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+          <div className="max-w-2xl mx-auto">
             <div className="inline-block bg-white/10 border border-white/20 px-4 py-2 rounded-full text-sm font-semibold mb-6">
               GET IN TOUCH
             </div>
@@ -286,6 +287,70 @@ export default function ContactPage() {
                 </ol>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Facility Booking */}
+      <section className="py-16 bg-gray-50 border-t border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-10">
+            <div className="inline-block bg-blue-100 text-blue-900 px-4 py-2 rounded-full text-sm font-semibold mb-4">
+              HIRE OUR SPACES
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">Facility Bookings</h2>
+            <p className="text-gray-600 max-w-xl mx-auto">
+              ACK Mombasa Memorial Cathedral has beautiful spaces available for hire — ideal for weddings, conferences, concerts, and community events.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-6 mb-10">
+            {[
+              {
+                name: 'Main Cathedral', icon: '⛪', capacity: 'Up to 1,200 guests',
+                desc: 'The full cathedral nave — perfect for weddings, memorial services, and large gatherings.',
+                color: 'blue',
+              },
+              {
+                name: 'Cathedral Hall', icon: '🏛️', capacity: 'Up to 300 guests',
+                desc: 'A versatile hall suitable for conferences, receptions, workshops, and community meetings.',
+                color: 'green',
+              },
+              {
+                name: 'Chapel', icon: '🕊️', capacity: 'Up to 80 guests',
+                desc: 'An intimate chapel space ideal for small ceremonies, prayer groups, and quiet retreats.',
+                color: 'purple',
+              },
+            ].map(space => (
+              <div key={space.name} className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-shadow border border-gray-100">
+                <div className="text-4xl mb-4">{space.icon}</div>
+                <h3 className="text-lg font-bold text-gray-900 mb-1">{space.name}</h3>
+                <div className={`text-xs font-semibold mb-3 ${
+                  space.color === 'blue' ? 'text-blue-600' :
+                  space.color === 'green' ? 'text-green-600' : 'text-purple-600'
+                }`}>{space.capacity}</div>
+                <p className="text-sm text-gray-600 leading-relaxed">{space.desc}</p>
+              </div>
+            ))}
+          </div>
+          <div className="bg-blue-900 text-white rounded-2xl p-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div>
+              <h3 className="text-xl font-bold mb-1">Enquire About a Booking</h3>
+              <p className="text-blue-200 text-sm">Contact our bookings office — we&apos;d love to host your event.</p>
+              <div className="flex flex-wrap gap-4 mt-4 text-sm">
+                <a href="tel:+254722000006" className="flex items-center gap-2 text-blue-200 hover:text-white transition-colors">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.948V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+                  +254 722 000 006
+                </a>
+                <a href="mailto:events@ackmombasa.org" className="flex items-center gap-2 text-blue-200 hover:text-white transition-colors">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                  events@ackmombasa.org
+                </a>
+              </div>
+            </div>
+            <a href="mailto:events@ackmombasa.org"
+              className="flex-shrink-0 bg-white text-blue-900 font-bold px-6 py-3 rounded-xl hover:bg-blue-50 transition-colors text-sm">
+              Request Booking
+            </a>
           </div>
         </div>
       </section>

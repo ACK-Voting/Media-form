@@ -13,25 +13,15 @@ export default function GalleryPage() {
 
   const filtered = activeCategory === 'All' ? galleryItems : galleryItems.filter(i => i.category === activeCategory);
 
-  const aspectClass: Record<GalleryItem['aspectRatio'], string> = {
-    landscape: 'row-span-1',
-    portrait: 'row-span-2',
-    square: 'row-span-1',
-  };
-
-  const heightClass: Record<GalleryItem['aspectRatio'], string> = {
-    landscape: 'h-48',
-    portrait: 'h-96',
-    square: 'h-48',
-  };
 
   return (
     <div className="min-h-screen bg-white">
       <Navbar />
 
       {/* Hero */}
-      <section className="pt-20 bg-gradient-to-br from-gray-900 to-slate-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+      <section className="pt-20 relative bg-cover bg-center text-white" style={{ backgroundImage: "url('/Background.jpeg')" }}>
+        <div className="absolute inset-0 bg-gray-900/70" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
           <div className="inline-block bg-white/10 border border-white/20 px-4 py-2 rounded-full text-sm font-semibold mb-6">
             PHOTO &amp; VIDEO GALLERY
           </div>
@@ -59,26 +49,34 @@ export default function GalleryPage() {
       {/* Gallery Grid */}
       <section className="py-12 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {filtered.map(item => (
               <div key={item.id}
-                className={`relative group cursor-pointer rounded-2xl overflow-hidden break-inside-avoid ${heightClass[item.aspectRatio]} bg-gradient-to-br ${item.bgColor}`}
+                className={`relative group cursor-pointer rounded-2xl overflow-hidden h-56 bg-gradient-to-br ${item.bgColor}`}
                 onClick={() => setLightbox(item)}>
-                {/* Content placeholder */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-                  {item.type === 'video' && (
-                    <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center mb-3 shadow-lg">
-                      <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M8 5v14l11-7z" />
+
+                {/* Real photo */}
+                {item.photo && (
+                  <img src={item.photo} alt={item.caption} className="absolute inset-0 w-full h-full object-cover object-top" />
+                )}
+
+                {/* Placeholder icons (shown only when no real photo) */}
+                {!item.photo && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+                    {item.type === 'video' && (
+                      <div className="w-12 h-12 bg-red-600 rounded-full flex items-center justify-center mb-3 shadow-lg">
+                        <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+                    )}
+                    {item.type === 'photo' && (
+                      <svg className="w-10 h-10 text-white/30 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
-                    </div>
-                  )}
-                  {item.type === 'photo' && (
-                    <svg className="w-10 h-10 text-white/30 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Overlay on hover */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all duration-300 flex items-end p-4">
@@ -119,22 +117,28 @@ export default function GalleryPage() {
         <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
           <div className="max-w-2xl w-full" onClick={e => e.stopPropagation()}>
             {/* Image/Video Area */}
-            <div className={`w-full ${lightbox.aspectRatio === 'portrait' ? 'h-96' : 'h-64'} bg-gradient-to-br ${lightbox.bgColor} rounded-2xl flex items-center justify-center mb-4 relative`}>
-              {lightbox.type === 'video' ? (
-                <div className="text-center">
-                  <div className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-2xl">
-                    <svg className="w-10 h-10 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
+            <div className={`w-full ${lightbox.aspectRatio === 'portrait' ? 'h-[32rem]' : 'h-72'} bg-gradient-to-br ${lightbox.bgColor} rounded-2xl overflow-hidden mb-4 relative`}>
+              {lightbox.photo ? (
+                <img src={lightbox.photo} alt={lightbox.caption} className="w-full h-full object-contain bg-black" />
+              ) : lightbox.type === 'video' ? (
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center mx-auto mb-3 shadow-2xl">
+                      <svg className="w-10 h-10 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
+                    <p className="text-white/60 text-sm">Video — click to play on YouTube</p>
                   </div>
-                  <p className="text-white/60 text-sm">Video — click to play on YouTube</p>
                 </div>
               ) : (
-                <div className="text-center">
-                  <svg className="w-16 h-16 text-white/20 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <p className="text-white/50 text-sm">Photo placeholder — real photos will appear here</p>
+                <div className="w-full h-full flex items-center justify-center">
+                  <div className="text-center">
+                    <svg className="w-16 h-16 text-white/20 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <p className="text-white/50 text-sm">Photo placeholder — real photos will appear here</p>
+                  </div>
                 </div>
               )}
             </div>

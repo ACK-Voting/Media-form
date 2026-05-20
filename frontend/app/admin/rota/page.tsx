@@ -1,8 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { rotaAPI } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -225,6 +227,15 @@ function generateRotaText(rota: Rota): string {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function RotaPage() {
+    const { admin, isLoading } = useAuth();
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!isLoading && admin?.role !== 'super_admin') {
+            router.replace('/admin');
+        }
+    }, [admin, isLoading, router]);
+
     const [selectedDate, setSelectedDate] = useState<string>(nextSunday());
     const [rota, setRota] = useState<Rota | null>(null);
     const [availableMembers, setAvailableMembers] = useState<AvailableMember[]>([]);

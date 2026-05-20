@@ -3,6 +3,50 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+function PrayerRequestForm() {
+    const [done, setDone] = useState(false);
+    const [form, setForm] = useState({ name: '', email: '', request: '', private: false });
+    const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); setDone(true); };
+    if (done) return (
+        <div className="bg-green-50 border border-green-200 rounded-2xl p-8 text-center">
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+            </div>
+            <h4 className="font-bold text-gray-900 mb-1">Prayer Request Received</h4>
+            <p className="text-sm text-gray-600">Our prayer team will lift you up. God bless you.</p>
+        </div>
+    );
+    return (
+        <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Your Name</label>
+                    <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Jane Mwangi" />
+                </div>
+                <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Email (optional)</label>
+                    <input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                        className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="jane@example.com" />
+                </div>
+            </div>
+            <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Your Prayer Request *</label>
+                <textarea required rows={5} value={form.request} onChange={e => setForm(f => ({ ...f, request: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                    placeholder="Share what you would like our prayer team to pray about..." />
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={form.private} onChange={e => setForm(f => ({ ...f, private: e.target.checked }))} className="w-4 h-4 accent-indigo-700 rounded" />
+                <span className="text-sm text-gray-600">Keep this request private (shared with prayer team only, not publicly)</span>
+            </label>
+            <button type="submit" className="w-full bg-indigo-900 text-white py-3 rounded-xl font-bold text-sm hover:bg-indigo-800 transition-colors">
+                Submit Prayer Request
+            </button>
+        </form>
+    );
+}
+
 export default function ACKCathedralMockup() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('upcoming');
@@ -116,7 +160,7 @@ export default function ACKCathedralMockup() {
                                 </button>
                                 <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                                     <a href="/mockup/history" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Cathedral History</a>
-                                    <a href="/mockup/about" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Leadership</a>
+                                    <a href="/mockup/about" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Cathedral Clergy & Wardens</a>
                                     <a href="/mockup/about#mission" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Mission &amp; Vision</a>
                                     <a href="/mockup/gallery" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Photo Gallery</a>
                                 </div>
@@ -130,12 +174,15 @@ export default function ACKCathedralMockup() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                     </svg>
                                 </button>
-                                <div className="absolute top-full left-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                                <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
                                     <a href="/mockup/ministries" className="block px-4 py-3 hover:bg-gray-50 font-semibold text-blue-900 transition-colors border-b border-gray-100">All Ministries →</a>
-                                    <a href="/mockup/ministries#children" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Children&apos;s Ministry</a>
-                                    <a href="/mockup/ministries#youth" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Youth Ministry</a>
-                                    <a href="/mockup/ministries#women" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Women&apos;s Fellowship</a>
-                                    <a href="/mockup/ministries#men" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Men&apos;s Fellowship</a>
+                                    <a href="/mockup/ministries/children" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Children&apos;s Ministry</a>
+                                    <a href="/mockup/ministries/kayo" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Youth Ministry (KAYO)</a>
+                                    <a href="/mockup/ministries/awf" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Anglican Women&apos;s Fellowship (AWF)</a>
+                                    <a href="/mockup/ministries/mothers-union" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Mother&apos;s Union</a>
+                                    <a href="/mockup/ministries/amf" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Anglican Men&apos;s Fellowship (AMF)</a>
+                                    <a href="/mockup/ministries/kama" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">KAMA</a>
+                                    <a href="/mockup/ministries/choir" className="block px-4 py-3 hover:bg-gray-50 text-gray-700 hover:text-blue-900 transition-colors">Choir &amp; Music</a>
                                 </div>
                             </div>
                             <a href="/mockup/contact" className={`font-medium transition-colors duration-300 ${navTransparent ? 'text-white/90 hover:text-white' : 'text-gray-700 hover:text-blue-900'}`}>Contact</a>
@@ -206,9 +253,10 @@ export default function ACKCathedralMockup() {
                             <p className="text-amber-300 text-sm font-semibold tracking-widest uppercase">Welcome to Our Cathedral</p>
                         </div>
 
-                        <h1 className="text-5xl sm:text-6xl lg:text-8xl font-bold leading-[1.05] tracking-tight mb-6 drop-shadow-2xl">
-                            A House of Prayer<br />
-                            <span className="text-amber-400">for All Nations</span>
+                        <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold leading-[1.1] tracking-tight mb-6 drop-shadow-2xl">
+                            Christ-Centered Families,<br />
+                            Renewed Churches,<br />
+                            <span className="text-amber-400">Transformed Neighbourhoods</span>
                         </h1>
 
                         <p className="text-xl sm:text-2xl text-white/80 font-light tracking-wide mb-10 drop-shadow-lg">
@@ -221,6 +269,14 @@ export default function ACKCathedralMockup() {
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
                                 Join Us This Sunday
+                            </a>
+                            <a href="https://youtube.com/@ackmombasacathedral" target="_blank" rel="noopener noreferrer"
+                                className="bg-red-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-red-700 hover:scale-105 transition-all inline-flex items-center gap-2">
+                                <span className="relative flex h-2.5 w-2.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
+                                </span>
+                                Watch Live on YouTube
                             </a>
                             <a href="#history" className="bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white px-8 py-4 rounded-lg font-semibold hover:bg-white/20 hover:scale-105 transition-all inline-flex items-center gap-2">
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -291,7 +347,7 @@ export default function ACKCathedralMockup() {
                             <div className="text-4xl font-bold text-blue-900 mb-2">7:00 AM</div>
                             <h3 className="text-xl font-bold text-gray-900 mb-2">English Service</h3>
                             <p className="text-gray-600 mb-4">Traditional Anglican liturgy in English</p>
-                            <div className="space-y-1">
+                            <div className="space-y-1 mb-5">
                                 <div className="flex items-center gap-2 text-sm text-blue-600 font-medium">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -305,6 +361,17 @@ export default function ACKCathedralMockup() {
                                     1 hour
                                 </div>
                             </div>
+                            <div className="flex flex-col gap-2 pt-4 border-t border-blue-200">
+                                <a href="https://youtube.com/@ackmombasacathedral" target="_blank" rel="noopener noreferrer"
+                                    className="flex items-center justify-center gap-2 bg-red-600 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                                    Watch Live
+                                </a>
+                                <a href="#" className="flex items-center justify-center gap-2 bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-2 rounded-lg hover:bg-blue-200 transition-colors">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    Service Sheet
+                                </a>
+                            </div>
                         </div>
 
                         {/* 9 AM Swahili Service */}
@@ -317,7 +384,7 @@ export default function ACKCathedralMockup() {
                             <div className="text-4xl font-bold text-green-900 mb-2">9:00 AM</div>
                             <h3 className="text-xl font-bold text-gray-900 mb-2">Swahili Service</h3>
                             <p className="text-gray-600 mb-4">Ibada kwa Kiswahili</p>
-                            <div className="space-y-1">
+                            <div className="space-y-1 mb-5">
                                 <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -330,6 +397,17 @@ export default function ACKCathedralMockup() {
                                     </svg>
                                     1.5 hours
                                 </div>
+                            </div>
+                            <div className="flex flex-col gap-2 pt-4 border-t border-green-200">
+                                <a href="https://youtube.com/@ackmombasacathedral" target="_blank" rel="noopener noreferrer"
+                                    className="flex items-center justify-center gap-2 bg-red-600 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                                    Tazama Moja kwa Moja
+                                </a>
+                                <a href="#" className="flex items-center justify-center gap-2 bg-green-100 text-green-800 text-xs font-semibold px-3 py-2 rounded-lg hover:bg-green-200 transition-colors">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    Karatasi ya Ibada
+                                </a>
                             </div>
                         </div>
 
@@ -346,7 +424,7 @@ export default function ACKCathedralMockup() {
                             <div className="text-4xl font-bold text-purple-900 mb-2">11:00 AM</div>
                             <h3 className="text-xl font-bold text-gray-900 mb-2">Main Service</h3>
                             <p className="text-gray-600 mb-4">English with live streaming & translation</p>
-                            <div className="space-y-1">
+                            <div className="space-y-1 mb-5">
                                 <div className="flex items-center gap-2 text-sm text-purple-600 font-medium">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -360,6 +438,17 @@ export default function ACKCathedralMockup() {
                                     2 hours
                                 </div>
                             </div>
+                            <div className="flex flex-col gap-2 pt-4 border-t border-purple-200">
+                                <a href="https://youtube.com/@ackmombasacathedral" target="_blank" rel="noopener noreferrer"
+                                    className="flex items-center justify-center gap-2 bg-red-600 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                                    Watch Live
+                                </a>
+                                <a href="#" className="flex items-center justify-center gap-2 bg-purple-100 text-purple-800 text-xs font-semibold px-3 py-2 rounded-lg hover:bg-purple-200 transition-colors">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    Service Sheet
+                                </a>
+                            </div>
                         </div>
 
                         {/* 6 PM Evensong Service */}
@@ -372,7 +461,7 @@ export default function ACKCathedralMockup() {
                             <div className="text-4xl font-bold text-amber-900 mb-2">6:00 PM</div>
                             <h3 className="text-xl font-bold text-gray-900 mb-2">Evensong Service</h3>
                             <p className="text-gray-600 mb-4">Choral Evening Prayer</p>
-                            <div className="space-y-1">
+                            <div className="space-y-1 mb-5">
                                 <div className="flex items-center gap-2 text-sm text-amber-600 font-medium">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -385,6 +474,17 @@ export default function ACKCathedralMockup() {
                                     </svg>
                                     1 hour
                                 </div>
+                            </div>
+                            <div className="flex flex-col gap-2 pt-4 border-t border-amber-200">
+                                <a href="https://youtube.com/@ackmombasacathedral" target="_blank" rel="noopener noreferrer"
+                                    className="flex items-center justify-center gap-2 bg-red-600 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                                    Watch Live
+                                </a>
+                                <a href="#" className="flex items-center justify-center gap-2 bg-amber-100 text-amber-800 text-xs font-semibold px-3 py-2 rounded-lg hover:bg-amber-200 transition-colors">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    Service Sheet
+                                </a>
                             </div>
                         </div>
                     </div>
@@ -425,6 +525,44 @@ export default function ACKCathedralMockup() {
                                     <p className="text-sm text-gray-600">Welcome desk open 30 minutes before services</p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* Daily Prayer Schedule */}
+            <section className="py-14 bg-gradient-to-r from-indigo-900 to-blue-900 text-white">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-8">
+                        <div className="md:max-w-sm">
+                            <div className="inline-block bg-white/10 border border-white/20 px-4 py-2 rounded-full text-sm font-semibold mb-4">
+                                DAILY PRAYER
+                            </div>
+                            <h2 className="text-2xl sm:text-3xl font-bold mb-3">Join Us in Prayer</h2>
+                            <p className="text-blue-200 text-sm leading-relaxed">
+                                Morning prayers are held throughout the week. All are welcome — in person or online via our prayer link.
+                            </p>
+                            <a href="/mockup/prayer" className="inline-flex items-center gap-2 mt-5 bg-white text-indigo-900 font-semibold text-sm px-5 py-2.5 rounded-xl hover:bg-blue-50 transition-colors">
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" /></svg>
+                                Submit a Prayer Request
+                            </a>
+                        </div>
+                        <div className="grid sm:grid-cols-3 gap-4 flex-1">
+                            {[
+                                { day: 'Monday', time: '6:00 AM – 7:00 AM', type: 'Morning Prayer', location: 'Main Sanctuary' },
+                                { day: 'Wednesday', time: '6:00 AM – 7:00 AM', type: 'Morning Prayer', location: 'Main Sanctuary' },
+                                { day: 'Friday', time: '6:00 AM – 7:00 AM', type: 'Morning Prayer & Intercession', location: 'Chapel' },
+                            ].map(session => (
+                                <div key={session.day} className="bg-white/10 border border-white/20 rounded-2xl p-5 hover:bg-white/20 transition-colors">
+                                    <div className="text-xs font-bold text-blue-300 uppercase tracking-wider mb-1">{session.day}</div>
+                                    <div className="text-lg font-bold text-white mb-1">{session.time}</div>
+                                    <div className="text-sm text-blue-200 mb-2">{session.type}</div>
+                                    <div className="flex items-center gap-1 text-xs text-blue-300">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                        {session.location}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -576,14 +714,21 @@ export default function ACKCathedralMockup() {
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-100">
                         <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">More Ministries</h3>
                         <div className="grid md:grid-cols-3 gap-4">
-                            {['Choir & Music', 'Prayer Ministry', 'Ushers & Hospitality', 'Media Team', 'Counseling', 'Missions & Outreach'].map((ministry, index) => (
-                                <a key={index} href={`#${ministry.toLowerCase().replace(/\s+/g, '-')}`} className="flex items-center gap-3 bg-white rounded-lg p-4 hover:shadow-md transition-all group">
+                            {[
+                              { label: 'Choir & Music', href: '/mockup/ministries/choir' },
+                              { label: 'Prayer Ministry', href: '/mockup/ministries/prayer' },
+                              { label: 'Ushers & Hospitality', href: '/mockup/ministries/ushers' },
+                              { label: 'Media Team', href: '/mockup/ministries/media' },
+                              { label: 'Counseling', href: '/mockup/ministries/counseling' },
+                              { label: 'Missions & Outreach', href: '/mockup/ministries/missions' },
+                            ].map((ministry, index) => (
+                                <a key={index} href={ministry.href} className="flex items-center gap-3 bg-white rounded-lg p-4 hover:shadow-md transition-all group">
                                     <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-600 transition-colors">
                                         <svg className="w-5 h-5 text-blue-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                         </svg>
                                     </div>
-                                    <span className="font-semibold text-gray-900 group-hover:text-blue-900 transition-colors">{ministry}</span>
+                                    <span className="font-semibold text-gray-900 group-hover:text-blue-900 transition-colors">{ministry.label}</span>
                                 </a>
                             ))}
                         </div>
@@ -668,6 +813,40 @@ export default function ACKCathedralMockup() {
                             </svg>
                             View All Sermons on YouTube
                         </a>
+                    </div>
+                </div>
+            </section>
+
+            {/* Notice Board */}
+            <section className="py-10 bg-amber-50 border-y border-amber-200">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-8 h-8 bg-amber-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>
+                        </div>
+                        <h3 className="text-lg font-bold text-gray-900">Notices &amp; Announcements</h3>
+                    </div>
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {[
+                            { label: 'Baby Dedication', date: 'Sun, May 4', desc: 'Register at the Sub Dean\'s Office by Apr 27', color: 'pink' },
+                            { label: 'Pastoral Visitation', date: 'Apr 30', desc: 'Register your home for a pastoral visit this quarter', color: 'blue' },
+                            { label: 'Holiday Bible Club', date: 'Apr 15–18', desc: 'Children\'s holiday programme — ages 5–12 welcome', color: 'green' },
+                            { label: 'Choir Auditions', date: 'Sat, Apr 26', desc: 'New voices welcome — contact the Choir Director', color: 'purple' },
+                        ].map(notice => (
+                            <div key={notice.label} className={`bg-white border-l-4 ${
+                                notice.color === 'pink' ? 'border-pink-500' :
+                                notice.color === 'blue' ? 'border-blue-500' :
+                                notice.color === 'green' ? 'border-green-500' : 'border-purple-500'
+                            } rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow`}>
+                                <div className={`text-xs font-bold uppercase tracking-wider mb-1 ${
+                                    notice.color === 'pink' ? 'text-pink-600' :
+                                    notice.color === 'blue' ? 'text-blue-600' :
+                                    notice.color === 'green' ? 'text-green-600' : 'text-purple-600'
+                                }`}>{notice.date}</div>
+                                <div className="font-bold text-gray-900 text-sm mb-1">{notice.label}</div>
+                                <p className="text-xs text-gray-500 leading-relaxed">{notice.desc}</p>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </section>
@@ -803,6 +982,58 @@ export default function ACKCathedralMockup() {
         </div>
       </section> */}
 
+            {/* Prayer Request & Counseling */}
+            <section className="py-16 bg-white border-t border-gray-100">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="grid lg:grid-cols-2 gap-12 items-start">
+                        {/* Prayer Request Form */}
+                        <div>
+                            <div className="inline-block bg-indigo-100 text-indigo-900 px-4 py-2 rounded-full text-sm font-semibold mb-4">
+                                PRAYER REQUESTS
+                            </div>
+                            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">Submit a Prayer Request</h2>
+                            <p className="text-gray-600 mb-6 text-sm leading-relaxed">
+                                Share your prayer needs with us. Our prayer team intercedes faithfully every week — your request is safe and confidential.
+                            </p>
+                            <PrayerRequestForm />
+                        </div>
+                        {/* Counseling */}
+                        <div className="bg-gradient-to-br from-blue-900 to-indigo-900 rounded-2xl p-8 text-white">
+                            <div className="inline-block bg-white/10 border border-white/20 px-4 py-2 rounded-full text-sm font-semibold mb-6">
+                                PASTORAL COUNSELING
+                            </div>
+                            <h2 className="text-2xl font-bold mb-4">We Are Here for You</h2>
+                            <p className="text-blue-200 text-sm leading-relaxed mb-8">
+                                Our trained counselors and clergy offer confidential emotional and spiritual support. Whether you&apos;re facing a personal challenge, grief, marriage difficulties, or simply need someone to talk to — reach out.
+                            </p>
+                            <div className="space-y-4 mb-8">
+                                {[
+                                    { label: 'Counseling Line', value: '+254 726 000 462', icon: 'phone' },
+                                    { label: 'Prayer Line', value: '0110-095-533', icon: 'phone' },
+                                    { label: 'Email', value: 'care@ackmombasa.org', icon: 'email' },
+                                    { label: 'Walk-In Hours', value: 'Mon – Fri, 9 AM – 4 PM', icon: 'clock' },
+                                ].map(item => (
+                                    <div key={item.label} className="flex items-center gap-3">
+                                        <div className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                                            {item.icon === 'phone' && <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.948V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>}
+                                            {item.icon === 'email' && <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
+                                            {item.icon === 'clock' && <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+                                        </div>
+                                        <div>
+                                            <div className="text-xs text-blue-300 font-semibold">{item.label}</div>
+                                            <div className="text-sm font-bold text-white">{item.value}</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <a href="/mockup/contact" className="inline-flex items-center gap-2 bg-white text-blue-900 font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-blue-50 transition-colors">
+                                Contact Our Pastoral Team →
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* Footer */}
             <footer className="bg-gray-900 text-white pt-16 pb-8">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -841,11 +1072,11 @@ export default function ACKCathedralMockup() {
                         <div>
                             <h3 className="font-bold text-lg mb-4">Ministries</h3>
                             <ul className="space-y-2 text-gray-400 text-sm">
-                                <li><a href="/mockup/ministries#children" className="hover:text-white transition-colors">Children&apos;s Ministry</a></li>
-                                <li><a href="/mockup/ministries#youth" className="hover:text-white transition-colors">Youth Ministry</a></li>
-                                <li><a href="/mockup/ministries#women" className="hover:text-white transition-colors">Women&apos;s Fellowship</a></li>
-                                <li><a href="/mockup/ministries#men" className="hover:text-white transition-colors">Men&apos;s Fellowship</a></li>
-                                <li><a href="/mockup/ministries#choir" className="hover:text-white transition-colors">Music &amp; Worship</a></li>
+                                <li><a href="/mockup/ministries/children" className="hover:text-white transition-colors">Children&apos;s Ministry</a></li>
+                                <li><a href="/mockup/ministries/kayo" className="hover:text-white transition-colors">Youth Ministry (KAYO)</a></li>
+                                <li><a href="/mockup/ministries/awf" className="hover:text-white transition-colors">Women&apos;s Fellowship (AWF)</a></li>
+                                <li><a href="/mockup/ministries/amf" className="hover:text-white transition-colors">Men&apos;s Fellowship (AMF)</a></li>
+                                <li><a href="/mockup/ministries/choir" className="hover:text-white transition-colors">Choir &amp; Music</a></li>
                                 <li><a href="/mockup/contact" className="hover:text-white transition-colors">Contact Us</a></li>
                             </ul>
                         </div>
@@ -864,7 +1095,28 @@ export default function ACKCathedralMockup() {
                                     <svg className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                                     </svg>
-                                    <span>+254 700 123 456</span>
+                                    <div>
+                                        <div>+254 700 123 456</div>
+                                        <div className="text-gray-500 text-xs mt-0.5">Main Office</div>
+                                    </div>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <svg className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                    </svg>
+                                    <div>
+                                        <div>0110-095-533</div>
+                                        <div className="text-amber-400 text-xs mt-0.5 font-semibold">Prayer Line</div>
+                                    </div>
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <svg className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                    </svg>
+                                    <div>
+                                        <div>+254 726 000 462</div>
+                                        <div className="text-blue-400 text-xs mt-0.5 font-semibold">Counseling Line</div>
+                                    </div>
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <svg className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

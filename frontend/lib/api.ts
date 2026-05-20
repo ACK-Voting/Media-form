@@ -435,4 +435,22 @@ export const availabilityAPI = {
     },
 };
 
+// Admin Users API (super_admin only)
+export const adminUsersAPI = {
+    list: async (): Promise<any> => {
+        const response = await api.get('/auth/admins');
+        return response.data;
+    },
+
+    create: async (username: string, email: string, password: string): Promise<any> => {
+        const response = await api.post('/auth/register', { username, email, password });
+        return response.data;
+    },
+
+    remove: async (id: string): Promise<any> => {
+        const response = await api.delete(`/auth/admins/${id}`);
+        return response.data;
+    },
+};
+
 export default api;

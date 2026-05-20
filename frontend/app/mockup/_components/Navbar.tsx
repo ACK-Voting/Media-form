@@ -13,19 +13,24 @@ const navLinks = [
 
 const aboutLinks = [
   { label: 'Cathedral History', href: '/mockup/history' },
-  { label: 'Leadership', href: '/mockup/about' },
+  { label: 'Cathedral Clergy & Wardens', href: '/mockup/about' },
+  { label: 'Cathedral Staff', href: '/mockup/staff' },
   { label: 'Mission & Vision', href: '/mockup/about#mission' },
   { label: 'Photo Gallery', href: '/mockup/gallery' },
+  { label: 'News & Announcements', href: '/mockup/announcements' },
+  { label: 'Resources & Downloads', href: '/mockup/resources' },
 ];
 
 const ministriesLinks = [
-  { label: "Children's Ministry", href: '/mockup/ministries#children' },
-  { label: 'Youth Ministry (AYYA)', href: '/mockup/ministries#youth' },
-  { label: "Women's Fellowship (MWA)", href: '/mockup/ministries#women' },
-  { label: "Men's Fellowship (KAMA)", href: '/mockup/ministries#men' },
-  { label: 'Choir & Music', href: '/mockup/ministries#choir' },
-  { label: 'Prayer Ministry', href: '/mockup/ministries#prayer' },
-  { label: 'Missions & Outreach', href: '/mockup/ministries#missions' },
+  { label: "Children's Ministry", href: '/mockup/ministries/children' },
+  { label: 'Youth Ministry (KAYO)', href: '/mockup/ministries/kayo' },
+  { label: "Anglican Women's Fellowship (AWF)", href: '/mockup/ministries/awf' },
+  { label: "Mother's Union", href: '/mockup/ministries/mothers-union' },
+  { label: "Anglican Men's Fellowship (AMF)", href: '/mockup/ministries/amf' },
+  { label: 'KAMA', href: '/mockup/ministries/kama' },
+  { label: 'Choir & Music', href: '/mockup/ministries/choir' },
+  { label: 'Prayer Ministry', href: '/mockup/ministries/prayer' },
+  { label: 'Missions & Outreach', href: '/mockup/ministries/missions' },
 ];
 
 export default function Navbar() {
@@ -74,7 +79,7 @@ export default function Navbar() {
 
             {/* About Dropdown */}
             <div className="relative group">
-              <button className={`text-sm font-medium flex items-center gap-1 transition-colors text-gray-700 hover:text-blue-900 ${pathname.startsWith('/mockup/about') || pathname === '/mockup/history' || pathname === '/mockup/gallery' ? 'text-blue-900 font-semibold' : ''}`}>
+              <button className={`text-sm font-medium flex items-center gap-1 transition-colors text-gray-700 hover:text-blue-900 ${pathname.startsWith('/mockup/about') || pathname === '/mockup/history' || pathname === '/mockup/gallery' || pathname === '/mockup/staff' ? 'text-blue-900 font-semibold' : ''}`}>
                 About
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -108,6 +113,10 @@ export default function Navbar() {
                 ))}
               </div>
             </div>
+
+            <Link href="/mockup/get-involved" className={`text-sm font-medium transition-colors ${isActive('/mockup/get-involved') ? 'text-blue-900 font-semibold' : 'text-gray-700 hover:text-blue-900'}`}>
+              Get Involved
+            </Link>
 
             <Link href="/mockup/contact" className={`text-sm font-medium transition-colors ${isActive('/mockup/contact') ? 'text-blue-900 font-semibold' : 'text-gray-700 hover:text-blue-900'}`}>
               Contact
@@ -179,6 +188,11 @@ export default function Navbar() {
                 </div>
               )}
             </div>
+
+            <Link href="/mockup/get-involved" onClick={() => setMobileOpen(false)}
+              className="block px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+              Get Involved
+            </Link>
 
             <Link href="/mockup/contact" onClick={() => setMobileOpen(false)}
               className="block px-4 py-2.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">

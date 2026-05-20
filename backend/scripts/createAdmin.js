@@ -37,11 +37,12 @@ async function createAdmin() {
       process.exit(1);
     }
 
-    // Create admin
+    // Create super_admin — this script is for the primary admin only
     const admin = new Admin({
       username,
       email,
-      password
+      password,
+      role: 'super_admin'
     });
 
     await admin.save();

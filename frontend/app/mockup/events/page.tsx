@@ -79,13 +79,14 @@ export default function EventsPage() {
       <Navbar />
 
       {/* Hero */}
-      <section className="pt-20 bg-gradient-to-br from-blue-50 to-indigo-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-          <div className="inline-block bg-green-100 text-green-800 px-4 py-2 rounded-full text-sm font-semibold mb-4">
+      <section className="pt-20 relative bg-cover bg-center text-white" style={{ backgroundImage: "url('/Background.jpeg')" }}>
+        <div className="absolute inset-0 bg-gray-900/70" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
+          <div className="inline-block bg-white/10 border border-white/20 px-4 py-2 rounded-full text-sm font-semibold mb-4">
             WHAT&apos;S HAPPENING
           </div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">Events & Activities</h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <h1 className="text-4xl sm:text-5xl font-bold mb-4">Events & Activities</h1>
+          <p className="text-lg text-blue-200 max-w-2xl mx-auto">
             Stay connected with our vibrant church community. There&apos;s always something happening at ACK Mombasa.
           </p>
         </div>

@@ -67,16 +67,17 @@ export default function AboutPage() {
       <Navbar />
 
       {/* Hero */}
-      <section className="pt-20 bg-gradient-to-br from-blue-900 to-indigo-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="max-w-3xl">
+      <section className="pt-20 relative bg-cover bg-center text-white" style={{ backgroundImage: "url('/Background.jpeg')" }}>
+        <div className="absolute inset-0 bg-gray-900/70" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+          <div className="max-w-3xl mx-auto">
             <div className="inline-block bg-white/10 border border-white/20 px-4 py-2 rounded-full text-sm font-semibold mb-6">
               ABOUT THE CATHEDRAL
             </div>
             <h1 className="text-4xl sm:text-5xl font-bold mb-6 leading-tight">
               Who We Are &amp;<br />What We Believe
             </h1>
-            <p className="text-lg text-blue-200 leading-relaxed max-w-2xl">
+            <p className="text-lg text-blue-200 leading-relaxed max-w-2xl mx-auto">
               ACK Mombasa Memorial Cathedral is the mother church of the Diocese of Mombasa, serving the coastal region of Kenya since 1903.
               We are an Anglican church in the tradition of the Church of England, committed to Word, sacrament, and service.
             </p>
@@ -98,24 +99,25 @@ export default function AboutPage() {
                 <div className="border-l-4 border-blue-900 pl-6">
                   <h3 className="text-xl font-bold text-gray-900 mb-3">Our Mission</h3>
                   <p className="text-gray-600 leading-relaxed">
-                    To glorify God by making, maturing, and multiplying disciples of Jesus Christ — loving God, loving people,
-                    and transforming our community and the world through the power of the Gospel.
+                    To know God and share God&apos;s love through living relationships with God in Christ and fully realize
+                    our God-given potential and purpose.
                   </p>
                 </div>
 
                 <div className="border-l-4 border-amber-500 pl-6">
                   <h3 className="text-xl font-bold text-gray-900 mb-3">Our Vision</h3>
                   <p className="text-gray-600 leading-relaxed">
-                    To be a vibrant, Spirit-filled cathedral that serves as a beacon of hope, healing, and transformation
-                    on the Kenya coast — a house of prayer for all nations where every person encounters the living God.
+                    To be a Church overflowing with God&apos;s love.{' '}
+                    <span className="italic text-gray-500">— 1 Thessalonians 3:12</span>
                   </p>
                 </div>
 
                 <div className="border-l-4 border-green-500 pl-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">Our Motto</h3>
-                  <p className="text-gray-600 leading-relaxed text-xl italic font-medium">
-                    &quot;A House of Prayer for All Nations&quot; — Isaiah 56:7
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">Theme of the Year</h3>
+                  <p className="text-gray-600 leading-relaxed text-lg italic font-medium">
+                    &quot;Christ-Centered Families, Renewed Churches, Transformed Neighbourhoods&quot;
                   </p>
+                  <p className="text-sm text-gray-500 mt-1">Colossians 1:17–18</p>
                 </div>
               </div>
             </div>
@@ -196,28 +198,34 @@ export default function AboutPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <div className="inline-block bg-blue-100 text-blue-900 px-4 py-2 rounded-full text-sm font-semibold mb-4">
-              OUR LEADERSHIP
+              CATHEDRAL CLERGY &amp; WARDENS
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Meet the Team</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Cathedral Clergy & Wardens</h2>
             <p className="text-gray-600 max-w-xl mx-auto">
-              Our clergy and lay leaders are called to serve the congregation and the community with humility and faithfulness.
+              Our clergy and wardens are called to serve the congregation and the community with humility and faithfulness.
             </p>
           </div>
 
           {/* Clergy */}
-          <h3 className="text-xl font-bold text-gray-900 mb-6">Clergy</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-6">Cathedral Clergy</h3>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {clergy.map(leader => (
               <div key={leader.id}
                 className="group bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all cursor-pointer border border-gray-100"
                 onClick={() => setActiveLeader(activeLeader === leader.id ? null : leader.id)}>
-                {/* Photo Placeholder */}
-                <div className="h-48 bg-gradient-to-br from-blue-700 to-indigo-700 flex items-center justify-center">
-                  <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
-                    <svg className="w-12 h-12 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
+                {/* Photo */}
+                <div className="h-56 bg-gradient-to-br from-blue-700 to-indigo-700 overflow-hidden">
+                  {leader.photo ? (
+                    <img src={leader.photo} alt={leader.name} className="w-full h-full object-cover object-top" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center">
+                        <svg className="w-12 h-12 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="p-5">
                   <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">{leader.role}</p>
@@ -242,7 +250,7 @@ export default function AboutPage() {
           </div>
 
           {/* Lay Leaders */}
-          <h3 className="text-xl font-bold text-gray-900 mb-6">Church Wardens &amp; Lay Leadership</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-6">Wardens</h3>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {layLeaders.map(leader => (
               <div key={leader.id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all">

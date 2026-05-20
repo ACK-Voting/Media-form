@@ -77,8 +77,9 @@ export default function PrayerPage() {
       <Navbar />
 
       {/* Hero */}
-      <section className="pt-20 bg-gradient-to-br from-blue-900 to-indigo-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+      <section className="pt-20 relative bg-cover bg-center text-white" style={{ backgroundImage: "url('/Background.jpeg')" }}>
+        <div className="absolute inset-0 bg-gray-900/70" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
           <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 px-4 py-2 rounded-full text-sm font-semibold mb-6">
             <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
             PRAYER MINISTRY

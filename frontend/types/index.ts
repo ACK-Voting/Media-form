@@ -34,6 +34,7 @@ export interface Admin {
     _id: string;
     username: string;
     email: string;
+    role: 'super_admin' | 'admin';
 }
 
 export interface User {

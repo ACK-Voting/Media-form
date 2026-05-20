@@ -1,16 +1,16 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
-import { ministries, Ministry } from '../_data/mockData';
+import { ministries } from '../_data/mockData';
 
 const categoryFilter = ['All', 'Core', 'Fellowship', 'Worship', 'Service'] as const;
 type Filter = typeof categoryFilter[number];
 
 export default function MinistriesPage() {
   const [activeFilter, setActiveFilter] = useState<Filter>('All');
-  const [selectedMinistry, setSelectedMinistry] = useState<Ministry | null>(null);
 
   const filtered = activeFilter === 'All' ? ministries : ministries.filter(m => m.category === activeFilter);
 
@@ -19,8 +19,9 @@ export default function MinistriesPage() {
       <Navbar />
 
       {/* Hero */}
-      <section className="pt-20 bg-gradient-to-br from-purple-900 to-blue-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
+      <section className="pt-20 relative bg-cover bg-center text-white" style={{ backgroundImage: "url('/Background.jpeg')" }}>
+        <div className="absolute inset-0 bg-gray-900/70" />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
           <div className="inline-block bg-white/10 border border-white/20 px-4 py-2 rounded-full text-sm font-semibold mb-6">
             GET INVOLVED
           </div>
@@ -65,10 +66,10 @@ export default function MinistriesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filtered.map(ministry => (
-              <div key={ministry.id}
-                id={ministry.name.toLowerCase().split('(')[0].trim().replace(/[^a-z]+/g, '-')}
-                className={`group bg-gradient-to-br ${ministry.bgColor} rounded-2xl p-7 border border-white hover:shadow-2xl transition-all duration-300 cursor-pointer`}
-                onClick={() => setSelectedMinistry(ministry)}>
+              <Link key={ministry.id}
+                href={`/mockup/ministries/${ministry.slug}`}
+                id={ministry.slug}
+                className={`group bg-gradient-to-br ${ministry.bgColor} rounded-2xl p-7 border border-white hover:shadow-2xl transition-all duration-300`}>
 
                 {/* Icon + Category */}
                 <div className="flex justify-between items-start mb-4">
@@ -105,68 +106,17 @@ export default function MinistriesPage() {
                   ))}
                 </div>
 
-                <button className="mt-5 text-sm font-semibold text-blue-900 hover:text-blue-700 inline-flex items-center gap-1 group-hover:gap-2 transition-all">
+                <span className="mt-5 text-sm font-semibold text-blue-900 hover:text-blue-700 inline-flex items-center gap-1 group-hover:gap-2 transition-all">
                   Learn More & Join
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
-                </button>
-              </div>
+                </span>
+              </Link>
             ))}
           </div>
         </div>
       </section>
-
-      {/* Ministry Detail Modal */}
-      {selectedMinistry && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setSelectedMinistry(null)}>
-          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl my-4" onClick={e => e.stopPropagation()}>
-            <div className={`bg-gradient-to-br ${selectedMinistry.color} rounded-t-2xl p-8 text-white`}>
-              <div className="flex justify-between items-start">
-                <div>
-                  <p className="text-white/70 text-sm font-semibold uppercase tracking-wider mb-1">{selectedMinistry.category} Ministry</p>
-                  <h2 className="text-2xl font-bold">{selectedMinistry.name}</h2>
-                </div>
-                <button onClick={() => setSelectedMinistry(null)} className="text-white/70 hover:text-white transition-colors">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-            <div className="p-8">
-              <p className="text-gray-700 leading-relaxed mb-6">{selectedMinistry.description}</p>
-
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                {[
-                  { label: 'Leader', value: `${selectedMinistry.leader}\n${selectedMinistry.leaderTitle}` },
-                  { label: 'Members', value: selectedMinistry.members },
-                  { label: 'Schedule', value: selectedMinistry.schedule },
-                  { label: 'Location', value: selectedMinistry.location },
-                ].map(item => (
-                  <div key={item.label} className="bg-gray-50 rounded-xl p-4">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">{item.label}</p>
-                    <p className="text-sm text-gray-800 font-medium whitespace-pre-line">{item.value}</p>
-                  </div>
-                ))}
-              </div>
-
-              <div className="space-y-3">
-                <a href={`mailto:${selectedMinistry.contact}`}
-                  className={`flex items-center justify-center gap-2 w-full bg-gradient-to-r ${selectedMinistry.color} text-white py-3 rounded-xl font-semibold hover:shadow-lg transition-all`}>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  Contact This Ministry
-                </a>
-                <button onClick={() => setSelectedMinistry(null)} className="w-full bg-gray-100 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-colors">
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* How to Get Involved */}
       <section className="py-20 bg-white">
