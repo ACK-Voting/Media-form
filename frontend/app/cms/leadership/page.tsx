@@ -65,6 +65,7 @@ export default function LeadershipPage() {
       const res = await fetch('/api/upload?folder=leadership', { method: 'POST', body: data });
       const json = await res.json();
       if (json.url) setField('photo', json.url);
+      else if (json.error) alert(json.error);
     } finally {
       setUploading(false);
     }

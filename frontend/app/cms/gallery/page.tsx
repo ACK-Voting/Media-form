@@ -45,6 +45,7 @@ export default function GalleryPage() {
     const res = await fetch('/api/upload?folder=gallery', { method: 'POST', body: data });
     const json = await res.json();
     if (json.url) setField('photo', json.url);
+    else if (json.error) alert(json.error);
     setUploading(false);
     e.target.value = '';
   }

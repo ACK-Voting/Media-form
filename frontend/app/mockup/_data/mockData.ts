@@ -730,6 +730,7 @@ export const leadership: Leader[] = [
     bio: 'Rev. Duncan Nondi serves as Acting Sub Dean and Canon Precentor of ACK Mombasa Memorial Cathedral, providing leadership in worship and the day-to-day ministry of the Cathedral.',
     phone: '0724 906 951',
     ordained: 'Clergy',
+    photo: '/uploads/leadership/1781600909528-Rev._Nondi.jpeg',
   },
   {
     id: '3',
@@ -739,6 +740,7 @@ export const leadership: Leader[] = [
     bio: 'Rev. Beatrice Kanyanga serves as Cathedral Missioner, overseeing outreach, evangelism, and mission initiatives of ACK Mombasa Memorial Cathedral.',
     phone: '0720 884 757',
     ordained: 'Clergy',
+    photo: '/uploads/leadership/1781600931372-Rev._Beatrice.jpg',
   },
   {
     id: '4',
@@ -748,6 +750,7 @@ export const leadership: Leader[] = [
     bio: 'Rev. Joseph Salim Chiapo serves as Chief Operating Officer and Chapter Clerk of the Cathedral, overseeing administrative operations and the work of the Cathedral Chapter.',
     phone: '0727 481 413',
     ordained: 'Clergy',
+    photo: '/uploads/leadership/1781600952810-Rev._Salim.jpg',
   },
   {
     id: '5',
@@ -757,6 +760,7 @@ export const leadership: Leader[] = [
     bio: 'Rev. Heri Ryanga leads the youth ministry at ACK Mombasa Memorial Cathedral, nurturing the faith and leadership of young people in the congregation.',
     phone: '0735 878 115',
     ordained: 'Clergy',
+    photo: '/uploads/leadership/1781600961523-Rev._Heri.jpg',
   },
   {
     id: '6',
@@ -775,6 +779,7 @@ export const leadership: Leader[] = [
     bio: 'Rev. Wangai Gichoka serves as Attached Clergy at ACK Mombasa Memorial Cathedral, supporting the ministry and pastoral care of the congregation.',
     phone: '0720 056 605',
     ordained: 'Clergy',
+    photo: '/uploads/leadership/1781600981978-Rev._Wangai.jpg',
   },
   {
     id: '8',
@@ -783,6 +788,7 @@ export const leadership: Leader[] = [
     title: 'Canon',
     bio: "Canon Jane Muraya serves as Sub Dean's Warden, working closely with the Cathedral clergy in the oversight and governance of the congregation.",
     phone: '0722 707 811',
+    photo: '/uploads/leadership/1781600991732-Mama_Moraya.jpg',
   },
   {
     id: '9',
@@ -791,6 +797,7 @@ export const leadership: Leader[] = [
     title: 'Mr.',
     bio: "Benjamin Allan serves as People's Warden, representing the voice of the congregation in the governance and administration of ACK Mombasa Memorial Cathedral.",
     phone: '0716 576 737',
+    photo: '/uploads/leadership/1781600998277-Benjamin_Allan.jpg',
   },
 ];
 

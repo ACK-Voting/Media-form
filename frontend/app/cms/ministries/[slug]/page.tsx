@@ -83,6 +83,7 @@ export default function MinistryHubPage() {
     const res = await fetch('/api/upload?folder=gallery', { method: 'POST', body: data });
     const json = await res.json();
     if (json.url) setGalleryForm((f) => ({ ...f, photo: json.url }));
+    else if (json.error) alert(json.error);
     setGalleryUploading(false);
     e.target.value = '';
   }

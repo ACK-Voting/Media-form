@@ -24,6 +24,18 @@ export const useLeadershipStore = create<LeadershipStore>()(
       remove: (id) =>
         set((state) => ({ leaders: state.leaders.filter((l) => l.id !== id) })),
     }),
-    { name: 'cms-leadership' }
+    {
+      name: 'cms-leadership',
+      version: 1,
+      migrate: (persisted) => {
+        // v0 stores predate seeded photos: fill missing photos from the seed
+        const state = persisted as { leaders?: Leader[] };
+        const leaders = (state?.leaders ?? seed).map((l) => {
+          const s = seed.find((x) => x.id === l.id);
+          return s?.photo && !l.photo ? { ...l, photo: s.photo } : l;
+        });
+        return { ...state, leaders };
+      },
+    }
   )
 );

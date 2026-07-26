@@ -48,8 +48,16 @@ export async function POST(request: NextRequest) {
   const filename = `${Date.now()}-${safeName}`;
   const dir = path.join(process.cwd(), `public/uploads/${folder}`);
 
-  await mkdir(dir, { recursive: true });
-  await writeFile(path.join(dir, filename), buffer);
+  try {
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, filename), buffer);
+  } catch {
+    // Serverless hosts (Netlify/Vercel) have a read-only, ephemeral filesystem
+    return NextResponse.json(
+      { error: 'File uploads are not available on the live site yet — files can only be uploaded when running locally. Cloud storage is coming with the backend integration.' },
+      { status: 501 }
+    );
+  }
 
   return NextResponse.json({
     url: `/uploads/${folder}/${filename}`,
