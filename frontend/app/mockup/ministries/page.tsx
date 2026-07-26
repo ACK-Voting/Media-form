@@ -4,12 +4,13 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
-import { ministries } from '../_data/mockData';
+import { useMinistriesStore } from '@/stores/cms/ministriesStore';
 
 const categoryFilter = ['All', 'Core', 'Fellowship', 'Worship', 'Service'] as const;
 type Filter = typeof categoryFilter[number];
 
 export default function MinistriesPage() {
+  const ministries = useMinistriesStore((s) => s.ministries);
   const [activeFilter, setActiveFilter] = useState<Filter>('All');
 
   const filtered = activeFilter === 'All' ? ministries : ministries.filter(m => m.category === activeFilter);

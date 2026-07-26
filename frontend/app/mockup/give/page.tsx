@@ -1,26 +1,28 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
-import { givingInfo } from '../_data/mockData';
+import { useGivingStore } from '@/stores/cms/givingStore';
 
 const amounts = [500, 1000, 2000, 5000, 10000];
 
-// Map giving category id → M-PESA account number label
+// Daraja AccountReference max 12 chars, alphanumeric only
 const categoryAccountMap: Record<string, string> = {
   tithe: 'Tithe',
   offering: 'Offering',
-  building: 'Building Fund',
+  building: 'BuildingFund',
   missions: 'Missions',
   benevolence: 'Benevolence',
-  youth: 'Youth Fund',
+  youth: 'YouthFund',
 };
 
 type StkState = 'idle' | 'sending' | 'waiting' | 'success' | 'failed';
 
+const STK_TIMEOUT_SECONDS = 90;
+
 function formatPhone(raw: string): string {
-  // Normalise to 2547XXXXXXXX for display
   const digits = raw.replace(/\D/g, '');
   if (digits.startsWith('0') && digits.length === 10) return '254' + digits.slice(1);
   if (digits.startsWith('254') && digits.length === 12) return digits;
@@ -37,61 +39,178 @@ function isValidPhone(raw: string): boolean {
   );
 }
 
-export default function GivePage() {
-  const [method, setMethod] = useState<'mpesa' | 'card' | 'bank'>('mpesa');
+function GivePage() {
+  const givingInfo = useGivingStore((s) => s.givingInfo);
+  const [method, setMethod] = useState<'mpesa' | 'card'>('mpesa');
   const [amount, setAmount] = useState<number | ''>('');
   const [customAmount, setCustomAmount] = useState('');
   const [category, setCategory] = useState('tithe');
   const [recurring, setRecurring] = useState(false);
-  const [copied, setCopied] = useState<string | null>(null);
 
-  // STK push states
+  // M-Pesa state
   const [phone, setPhone] = useState('');
   const [stkState, setStkState] = useState<StkState>('idle');
-  const [waitSeconds, setWaitSeconds] = useState(0);
   const [phoneError, setPhoneError] = useState('');
-  const [transactionRef] = useState(() => 'ACK' + Math.random().toString(36).slice(2, 10).toUpperCase());
+  const [checkoutRequestId, setCheckoutRequestId] = useState<string | null>(null);
+  const [mpesaReceipt, setMpesaReceipt] = useState<string | null>(null);
+  const [waitSeconds, setWaitSeconds] = useState(0);
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(label);
-    setTimeout(() => setCopied(null), 2000);
-  };
+  // Card / Pesapal state
+  const [cardFirstName, setCardFirstName] = useState('');
+  const [cardLastName, setCardLastName] = useState('');
+  const [cardEmail, setCardEmail] = useState('');
+  const [cardLoading, setCardLoading] = useState(false);
+  const [cardError, setCardError] = useState('');
+  const [iframeUrl, setIframeUrl] = useState<string | null>(null);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
+
+  // Pesapal return state
+  const searchParams = useSearchParams();
+  const [pesapalReturn, setPesapalReturn] = useState<'success' | 'failed' | 'pending' | null>(null);
+  const [pesapalConfirmation, setPesapalConfirmation] = useState<string | null>(null);
 
   const finalAmount = amount !== '' ? amount : customAmount ? parseInt(customAmount) : 0;
 
-  // Countdown timer while waiting
+  // Countdown while waiting for M-Pesa PIN
   useEffect(() => {
-    if (stkState !== 'waiting') return;
+    if (stkState !== 'waiting') { setWaitSeconds(0); return; }
     const start = Date.now();
     const tick = setInterval(() => {
       const elapsed = Math.floor((Date.now() - start) / 1000);
       setWaitSeconds(elapsed);
-      if (elapsed >= 8) {
+      if (elapsed >= STK_TIMEOUT_SECONDS) {
         clearInterval(tick);
-        setStkState('success');
+        setStkState('failed');
       }
-    }, 500);
+    }, 1000);
     return () => clearInterval(tick);
   }, [stkState]);
 
-  const handleStkPush = () => {
+  // Poll for M-Pesa confirmation
+  useEffect(() => {
+    if (stkState !== 'waiting' || !checkoutRequestId) return;
+    const poll = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/mpesa/stk-status?id=${encodeURIComponent(checkoutRequestId)}`);
+        const data = await res.json();
+        if (data.resultCode === '0') {
+          setMpesaReceipt(data.mpesaReceiptNumber ?? null);
+          setStkState('success');
+        } else if (data.resultCode !== undefined && data.resultCode !== null) {
+          setStkState('failed');
+        }
+      } catch { /* keep waiting */ }
+    }, 3000);
+    return () => clearInterval(poll);
+  }, [stkState, checkoutRequestId]);
+
+  const handleStkPush = async () => {
     if (!isValidPhone(phone)) {
       setPhoneError('Please enter a valid Safaricom number e.g. 0712 345 678');
       return;
     }
-    if (finalAmount < 10) {
-      setPhoneError('');
-      return;
-    }
+    if (finalAmount < 10) return;
     setPhoneError('');
     setStkState('sending');
-    // Simulate network delay before "push sent"
-    setTimeout(() => setStkState('waiting'), 1800);
+    try {
+      const res = await fetch('/api/mpesa/stk-push', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: formatPhone(phone),
+          amount: finalAmount,
+          accountRef: categoryAccountMap[category] ?? 'Offering',
+          description: 'ACK Donation',
+        }),
+      });
+      const ct = res.headers.get('content-type') ?? '';
+      const data = ct.includes('application/json') ? await res.json() : {};
+      if (!res.ok) throw new Error(data.error ?? `Server error (${res.status})`);
+      setCheckoutRequestId(data.checkoutRequestId ?? null);
+      setStkState('waiting');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Something went wrong';
+      setPhoneError(msg);
+      setStkState('idle');
+    }
+  };
+
+  const checkPesapalStatus = useCallback(async (trackingId: string) => {
+    try {
+      const res = await fetch(`/api/pesapal/status?trackingId=${encodeURIComponent(trackingId)}`);
+      const data = await res.json();
+      const s = (data.status ?? '').toLowerCase();
+      setIframeUrl(null);
+      if (s === 'completed') {
+        setPesapalConfirmation(data.confirmationCode ?? null);
+        setPesapalReturn('success');
+      } else if (s === 'failed' || s === 'invalid') {
+        setPesapalReturn('failed');
+      } else {
+        setPesapalReturn('pending');
+      }
+    } catch {
+      setIframeUrl(null);
+      setPesapalReturn('pending');
+    }
+  }, []);
+
+  // Listen for postMessage from the Pesapal iframe return page
+  useEffect(() => {
+    function onMessage(e: MessageEvent) {
+      if (e.data?.type === 'pesapal-return' && e.data.trackingId) {
+        checkPesapalStatus(e.data.trackingId);
+      }
+    }
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [checkPesapalStatus]);
+
+  // Handle legacy redirect-back (in case iframe postMessage fails)
+  useEffect(() => {
+    const trackingId = searchParams.get('OrderTrackingId');
+    if (trackingId) {
+      setMethod('card');
+      checkPesapalStatus(trackingId);
+    }
+  }, [searchParams, checkPesapalStatus]);
+
+  const handleCardPay = async () => {
+    if (finalAmount < 10) return;
+    setCardLoading(true);
+    setCardError('');
+    try {
+      const res = await fetch('/api/pesapal/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: finalAmount,
+          category: givingInfo.givingCategories.find((c) => c.id === category)?.label ?? 'Offering',
+          recurring,
+          firstName: cardFirstName,
+          lastName: cardLastName,
+          email: cardEmail,
+        }),
+      });
+      const data = await res.json();
+      if (data.redirectUrl) {
+        setIframeUrl(data.redirectUrl);
+        setIframeLoaded(false);
+      } else {
+        throw new Error(data.error ?? 'No checkout URL returned');
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Card payment unavailable';
+      setCardError(msg);
+    } finally {
+      setCardLoading(false);
+    }
   };
 
   const resetStk = () => {
     setStkState('idle');
+    setCheckoutRequestId(null);
+    setMpesaReceipt(null);
     setWaitSeconds(0);
   };
 
@@ -118,7 +237,7 @@ export default function GivePage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-5 gap-10">
 
-            {/* Giving Form — left 3 columns */}
+            {/* Giving Form */}
             <div className="lg:col-span-3">
               <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-8">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">Make a Gift</h2>
@@ -198,7 +317,6 @@ export default function GivePage() {
                     {([
                       { id: 'mpesa', label: 'M-PESA', icon: '📱' },
                       { id: 'card', label: 'Card', icon: '💳' },
-                      { id: 'bank', label: 'Bank Transfer', icon: '🏦' },
                     ] as const).map(m => {
                       const disabled = recurring && m.id !== 'card';
                       return (
@@ -221,7 +339,6 @@ export default function GivePage() {
                 {method === 'mpesa' && (
                   <div className="mb-6">
 
-                    {/* IDLE — phone input */}
                     {stkState === 'idle' && (
                       <div className="bg-green-50 border border-green-200 rounded-xl p-6 space-y-4">
                         <div className="flex items-center gap-2">
@@ -247,7 +364,6 @@ export default function GivePage() {
                           {phoneError && <p className="text-red-500 text-xs mt-1">{phoneError}</p>}
                         </div>
 
-                        {/* Summary */}
                         {finalAmount > 0 && (
                           <div className="bg-white border border-green-200 rounded-xl p-4 text-sm space-y-2">
                             <div className="flex justify-between text-gray-600">
@@ -285,7 +401,6 @@ export default function GivePage() {
                       </div>
                     )}
 
-                    {/* SENDING */}
                     {stkState === 'sending' && (
                       <div className="bg-green-50 border border-green-200 rounded-xl p-8 flex flex-col items-center text-center gap-4">
                         <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
@@ -301,10 +416,8 @@ export default function GivePage() {
                       </div>
                     )}
 
-                    {/* WAITING — STK sent, waiting for PIN */}
                     {stkState === 'waiting' && (
                       <div className="bg-green-50 border-2 border-green-400 rounded-xl p-6 flex flex-col items-center text-center gap-5">
-                        {/* Phone animation */}
                         <div className="relative">
                           <div className="w-20 h-32 bg-gray-900 rounded-2xl border-4 border-gray-700 flex flex-col items-center justify-center shadow-xl">
                             <div className="w-12 h-16 bg-green-500/20 rounded-lg flex items-center justify-center">
@@ -315,7 +428,6 @@ export default function GivePage() {
                               </div>
                             </div>
                           </div>
-                          {/* Pulse rings */}
                           <span className="absolute -top-2 -right-2 flex h-5 w-5">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                             <span className="relative inline-flex rounded-full h-5 w-5 bg-green-500 items-center justify-center">
@@ -334,14 +446,13 @@ export default function GivePage() {
                           <p className="text-sm text-green-700 mt-1">Enter your M-PESA PIN to complete the payment.</p>
                         </div>
 
-                        {/* Animated progress bar */}
                         <div className="w-full bg-green-200 rounded-full h-2">
                           <div
-                            className="bg-green-600 h-2 rounded-full transition-all duration-500"
-                            style={{ width: `${Math.min((waitSeconds / 8) * 100, 100)}%` }}
+                            className="bg-green-600 h-2 rounded-full transition-all duration-1000"
+                            style={{ width: `${Math.min((waitSeconds / STK_TIMEOUT_SECONDS) * 100, 100)}%` }}
                           />
                         </div>
-                        <p className="text-xs text-green-600">Waiting for confirmation… ({8 - waitSeconds}s)</p>
+                        <p className="text-xs text-green-600">Waiting for confirmation… ({STK_TIMEOUT_SECONDS - waitSeconds}s)</p>
 
                         <button onClick={resetStk} className="text-xs text-green-700 underline hover:text-green-900">
                           Cancel &amp; try again
@@ -349,10 +460,8 @@ export default function GivePage() {
                       </div>
                     )}
 
-                    {/* SUCCESS */}
                     {stkState === 'success' && (
                       <div className="bg-white border-2 border-green-500 rounded-xl overflow-hidden">
-                        {/* Receipt header */}
                         <div className="bg-green-600 text-white p-5 text-center">
                           <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mx-auto mb-3">
                             <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -363,10 +472,9 @@ export default function GivePage() {
                           <p className="text-green-100 text-sm mt-1">Thank you for your generosity</p>
                         </div>
 
-                        {/* Receipt body */}
                         <div className="p-5 space-y-3 text-sm">
                           {[
-                            { label: 'Transaction Ref', value: transactionRef },
+                            { label: 'M-PESA Receipt', value: mpesaReceipt ?? '—' },
                             { label: 'Phone', value: phone },
                             { label: 'Category', value: givingInfo.givingCategories.find(c => c.id === category)?.label ?? '' },
                             { label: 'Amount', value: `KES ${finalAmount.toLocaleString()}` },
@@ -390,7 +498,6 @@ export default function GivePage() {
                       </div>
                     )}
 
-                    {/* FAILED */}
                     {stkState === 'failed' && (
                       <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center space-y-4">
                         <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto">
@@ -411,84 +518,187 @@ export default function GivePage() {
                   </div>
                 )}
 
-                {/* Card Payment */}
+                {/* ── CARD (Pesapal) ── */}
                 {method === 'card' && (
                   <div className="space-y-4 mb-6">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                        <input type="text" placeholder="John" className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                        <input type="text" placeholder="Doe" className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Card Number</label>
-                      <input type="text" placeholder="4242 4242 4242 4242" maxLength={19} className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Expiry</label>
-                        <input type="text" placeholder="MM / YY" className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">CVV</label>
-                        <input type="text" placeholder="123" maxLength={4} className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                      </div>
-                    </div>
-                    <p className="text-xs text-gray-400 flex items-center gap-1.5">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                      </svg>
-                      Payments secured by 256-bit SSL encryption (card payments coming soon)
-                    </p>
-                    <button
-                      onClick={() => alert('Card payment coming soon!')}
-                      className="w-full bg-gradient-to-r from-amber-600 to-amber-500 text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg hover:scale-[1.01] transition-all">
-                      {finalAmount > 0 ? `Pay KES ${finalAmount.toLocaleString()}` : 'Pay Now'}
-                    </button>
-                  </div>
-                )}
 
-                {/* Bank Transfer */}
-                {method === 'bank' && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-6">
-                    <h3 className="font-bold text-blue-900 mb-4 flex items-center gap-2">
-                      <span>🏦</span> Bank Transfer Details
-                    </h3>
-                    <div className="space-y-3">
-                      {[
-                        { label: 'Bank', value: givingInfo.bank.name },
-                        { label: 'Branch', value: givingInfo.bank.branch },
-                        { label: 'Account Name', value: givingInfo.bank.accountName },
-                        { label: 'Account No.', value: givingInfo.bank.accountNumber },
-                        { label: 'SWIFT Code', value: givingInfo.bank.swiftCode },
-                      ].map(row => (
-                        <div key={row.label} className="flex justify-between items-center border-b border-blue-100 pb-2">
-                          <span className="text-sm text-blue-600 font-medium">{row.label}</span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-blue-900 font-bold">{row.value}</span>
-                            <button onClick={() => copyToClipboard(row.value, row.label)} className="text-blue-400 hover:text-blue-600 transition-colors">
-                              {copied === row.label
-                                ? <svg className="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                              }
-                            </button>
+                    {/* Return: success */}
+                    {pesapalReturn === 'success' && (
+                      <div className="bg-white border-2 border-green-500 rounded-xl overflow-hidden">
+                        <div className="bg-green-600 text-white p-5 text-center">
+                          <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center mx-auto mb-3">
+                            <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                          <p className="font-bold text-xl">Payment Successful!</p>
+                          <p className="text-green-100 text-sm mt-1">Thank you for your generosity</p>
+                        </div>
+                        <div className="p-5 space-y-3 text-sm">
+                          {pesapalConfirmation && (
+                            <div className="flex justify-between border-b border-gray-100 pb-2">
+                              <span className="text-gray-500">Confirmation Code</span>
+                              <span className="font-semibold text-gray-900">{pesapalConfirmation}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between border-b border-gray-100 pb-2">
+                            <span className="text-gray-500">Date</span>
+                            <span className="font-semibold text-gray-900">{new Date().toLocaleDateString('en-KE', { dateStyle: 'long' })}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">Status</span>
+                            <span className="font-semibold text-green-600">Confirmed</span>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                    <p className="text-xs text-blue-600 mt-3">Please use your name and giving category as the reference (e.g. &quot;John Doe — Tithe&quot;).</p>
+                        <div className="px-5 pb-5">
+                          <button onClick={() => setPesapalReturn(null)} className="w-full border-2 border-green-500 text-green-700 py-2.5 rounded-xl text-sm font-semibold hover:bg-green-50 transition-colors">
+                            Give Again
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Return: failed */}
+                    {pesapalReturn === 'failed' && (
+                      <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center space-y-4">
+                        <div className="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto">
+                          <svg className="w-7 h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="font-bold text-red-900">Payment failed</p>
+                          <p className="text-sm text-red-700 mt-1">Your card was not charged. Please try again.</p>
+                        </div>
+                        <button onClick={() => setPesapalReturn(null)} className="w-full bg-red-600 text-white py-3 rounded-xl font-semibold hover:bg-red-700 transition-colors">
+                          Try Again
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Return: pending */}
+                    {pesapalReturn === 'pending' && (
+                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center space-y-3">
+                        <p className="font-bold text-amber-900">Payment pending</p>
+                        <p className="text-sm text-amber-700">We&apos;re waiting for confirmation from your bank. You&apos;ll receive a receipt once complete.</p>
+                        <button onClick={() => setPesapalReturn(null)} className="text-sm text-amber-700 underline">Pay again</button>
+                      </div>
+                    )}
+
+                    {/* Pesapal iframe */}
+                    {iframeUrl && (
+                      <div className="rounded-xl overflow-hidden border border-gray-200 shadow-sm">
+                        {!iframeLoaded && (
+                          <div className="flex flex-col items-center justify-center h-64 bg-gray-50 gap-3">
+                            <svg className="w-8 h-8 text-amber-500 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                            <p className="text-sm text-gray-500">Loading secure checkout…</p>
+                          </div>
+                        )}
+                        <iframe
+                          src={iframeUrl}
+                          onLoad={() => setIframeLoaded(true)}
+                          className={`w-full border-0 transition-all ${iframeLoaded ? 'block' : 'hidden'}`}
+                          style={{ height: '560px' }}
+                          title="Secure Card Payment"
+                          allow="payment"
+                        />
+                        <div className="bg-gray-50 border-t border-gray-100 px-4 py-2 flex items-center justify-between">
+                          <p className="text-xs text-gray-400 flex items-center gap-1.5">
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                            Secured by Pesapal · 256-bit SSL
+                          </p>
+                          <button onClick={() => { setIframeUrl(null); setIframeLoaded(false); }} className="text-xs text-gray-400 hover:text-gray-600 transition-colors">
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Card form */}
+                    {!pesapalReturn && !iframeUrl && (
+                      <>
+                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-5 space-y-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-2xl">💳</span>
+                            <div>
+                              <h3 className="font-bold text-amber-900">Pay by Card</h3>
+                              <p className="text-xs text-amber-700">Enter your details — checkout loads right here on this page</p>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-700 mb-1">First Name</label>
+                              <input type="text" value={cardFirstName} onChange={e => setCardFirstName(e.target.value)} placeholder="John"
+                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500" />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-700 mb-1">Last Name</label>
+                              <input type="text" value={cardLastName} onChange={e => setCardLastName(e.target.value)} placeholder="Doe"
+                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500" />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-700 mb-1">Email Address</label>
+                            <input type="email" value={cardEmail} onChange={e => setCardEmail(e.target.value)} placeholder="you@example.com"
+                              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500" />
+                          </div>
+
+                          {finalAmount > 0 && (
+                            <div className="bg-white border border-amber-200 rounded-xl p-4 space-y-2 text-sm">
+                              <div className="flex justify-between text-gray-600">
+                                <span>Category</span>
+                                <span className="font-semibold text-gray-900">{givingInfo.givingCategories.find(c => c.id === category)?.label ?? 'Offering'}</span>
+                              </div>
+                              {recurring && (
+                                <div className="flex justify-between text-gray-600">
+                                  <span>Frequency</span>
+                                  <span className="font-semibold text-blue-700">Monthly recurring</span>
+                                </div>
+                              )}
+                              <div className="flex justify-between border-t border-amber-100 pt-2">
+                                <span className="font-bold text-gray-900">Total</span>
+                                <span className="font-bold text-amber-700 text-base">KES {finalAmount.toLocaleString()}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {cardError && (
+                          <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">{cardError}</p>
+                        )}
+
+                        <button
+                          onClick={handleCardPay}
+                          disabled={finalAmount < 10 || cardLoading}
+                          className="w-full bg-gradient-to-r from-amber-600 to-amber-500 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed text-white py-4 rounded-xl font-bold text-lg hover:shadow-lg hover:scale-[1.01] disabled:hover:scale-100 transition-all flex items-center justify-center gap-2">
+                          {cardLoading ? (
+                            <>
+                              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                              </svg>
+                              Loading checkout…
+                            </>
+                          ) : (
+                            finalAmount > 0 ? `Pay KES ${finalAmount.toLocaleString()}` : 'Select an amount to continue'
+                          )}
+                        </button>
+                      </>
+                    )}
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Sidebar — right 2 columns */}
+            {/* Sidebar */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Why Give */}
               <div className="bg-blue-900 text-white rounded-2xl p-6">
                 <h3 className="text-lg font-bold mb-4">Why We Give</h3>
                 <p className="text-blue-200 text-sm leading-relaxed mb-4">
@@ -514,7 +724,6 @@ export default function GivePage() {
                 </div>
               </div>
 
-              {/* Financial Accountability */}
               <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-2">Financial Accountability</h3>
                 <p className="text-sm text-gray-600 mb-4">
@@ -525,7 +734,6 @@ export default function GivePage() {
                 </button>
               </div>
 
-              {/* Testimony */}
               <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
                 <svg className="w-8 h-8 text-amber-400 mb-3" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
@@ -543,5 +751,13 @@ export default function GivePage() {
 
       <Footer />
     </div>
+  );
+}
+
+export default function GivePageWrapper() {
+  return (
+    <Suspense>
+      <GivePage />
+    </Suspense>
   );
 }

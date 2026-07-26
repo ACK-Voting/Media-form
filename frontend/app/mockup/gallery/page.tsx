@@ -3,15 +3,17 @@
 import { useState } from 'react';
 import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
-import { galleryItems, GalleryItem } from '../_data/mockData';
+import type { GalleryItem } from '../_data/mockData';
+import { useGalleryStore } from '@/stores/cms/galleryStore';
 
 const categories: (GalleryItem['category'] | 'All')[] = ['All', 'Worship', 'Events', 'Youth', 'Community', 'History'];
 
 export default function GalleryPage() {
+  const { items } = useGalleryStore();
   const [activeCategory, setActiveCategory] = useState<GalleryItem['category'] | 'All'>('All');
   const [lightbox, setLightbox] = useState<GalleryItem | null>(null);
 
-  const filtered = activeCategory === 'All' ? galleryItems : galleryItems.filter(i => i.category === activeCategory);
+  const filtered = activeCategory === 'All' ? items : items.filter(i => i.category === activeCategory);
 
 
   return (

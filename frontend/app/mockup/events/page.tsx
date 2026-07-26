@@ -3,7 +3,8 @@
 import { useState, useMemo } from 'react';
 import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
-import { events, ChurchEvent } from '../_data/mockData';
+import { useEventsStore } from '@/stores/cms/eventsStore';
+import type { ChurchEvent } from '../_data/mockData';
 
 const categoryColors: Record<ChurchEvent['category'], string> = {
   Worship: 'blue',
@@ -41,6 +42,7 @@ const cardGradient: Record<string, string> = {
 const allCategories: ChurchEvent['category'][] = ['Worship', 'Fellowship', 'Outreach', 'Training', 'Music', 'Youth', 'Children', 'Special'];
 
 export default function EventsPage() {
+  const events = useEventsStore((s) => s.events);
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
   const [category, setCategory] = useState<ChurchEvent['category'] | 'All'>('All');
   const [registrationModal, setRegistrationModal] = useState<ChurchEvent | null>(null);
@@ -61,7 +63,7 @@ export default function EventsPage() {
       const db = new Date(b.date).getTime();
       return tab === 'upcoming' ? da - db : db - da;
     });
-  }, [tab, category]);
+  }, [tab, category, events]);
 
   const formatDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString('en-KE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });

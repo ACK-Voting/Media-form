@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
+import { Select } from '@/components/ui/Select';
+import { usePrayerStore } from '@/stores/cms/prayerStore';
 
 const prayerFocus = [
   {
@@ -49,17 +51,12 @@ const prayerFocus = [
   },
 ];
 
-const prayerRequests = [
-  { name: 'Anonymous', request: 'Please pray for complete healing from a chronic illness.', date: '2 days ago', category: 'Healing' },
-  { name: 'John M.', request: 'Pray for my family — we are going through a difficult financial season. We trust God for a breakthrough.', date: '3 days ago', category: 'Provision' },
-  { name: 'Grace W.', request: 'Pray for my daughter who is sitting national exams this month. Wisdom and peace for her.', date: '5 days ago', category: 'Wisdom' },
-  { name: 'Anonymous', request: 'Please intercede for peace and reconciliation in our family after a painful dispute.', date: '1 week ago', category: 'Relationships' },
-  { name: 'Peter O.', request: 'I\'m seeking a new job after being laid off. Please pray for open doors.', date: '1 week ago', category: 'Employment' },
-];
-
 const todayIndex = new Date().getDay(); // 0=Sunday, 1=Monday, etc.
 
 export default function PrayerPage() {
+  const { requests, addFromForm } = usePrayerStore();
+  const publicRequests = requests.filter((r) => !r.isAnonymous).slice(0, 5);
+
   const [submitted, setSubmitted] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -137,7 +134,16 @@ export default function PrayerPage() {
                   </button>
                 </div>
               ) : (
-                <form onSubmit={e => { e.preventDefault(); setSubmitted(true); }} className="space-y-5 bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  addFromForm({
+                    name: formData.name || 'Anonymous',
+                    email: formData.email,
+                    request: formData.request,
+                    isAnonymous: formData.isPrivate,
+                  });
+                  setSubmitted(true);
+                }} className="space-y-5 bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
                   <div className="grid sm:grid-cols-2 gap-5">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -157,12 +163,12 @@ export default function PrayerPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Prayer Category</label>
-                    <select value={formData.category} onChange={e => setFormData(s => ({ ...s, category: e.target.value }))}
+                    <Select value={formData.category} onChange={e => setFormData(s => ({ ...s, category: e.target.value }))}
                       className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-all">
                       {['General', 'Healing', 'Provision', 'Relationships', 'Employment', 'Wisdom', 'Salvation', 'Protection', 'Thanksgiving', 'Other'].map(c => (
                         <option key={c} value={c}>{c}</option>
                       ))}
-                    </select>
+                    </Select>
                   </div>
 
                   <div>
@@ -238,26 +244,29 @@ export default function PrayerPage() {
                 <div className="bg-white border border-gray-200 rounded-2xl p-6">
                   <h3 className="font-bold text-gray-900 mb-1">Community Prayer Wall</h3>
                   <p className="text-xs text-gray-400 mb-4">Public requests from our congregation — names used with permission.</p>
-                  <div className="space-y-4">
-                    {prayerRequests.map((pr, i) => (
-                      <div key={i} className="border-b border-gray-100 pb-4 last:border-0">
-                        <div className="flex justify-between items-start mb-1">
-                          <p className="text-sm font-semibold text-gray-900">{pr.name}</p>
-                          <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium flex-shrink-0 ml-2">{pr.category}</span>
+                  {publicRequests.length > 0 ? (
+                    <div className="space-y-4">
+                      {publicRequests.map((pr) => (
+                        <div key={pr.id} className="border-b border-gray-100 pb-4 last:border-0">
+                          <p className="text-sm font-semibold text-gray-900 mb-1">{pr.name}</p>
+                          <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">{pr.request}</p>
+                          <div className="flex items-center justify-between mt-2">
+                            <p className="text-xs text-gray-400">
+                              {new Date(pr.date).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </p>
+                            <button className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 transition-colors">
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                              </svg>
+                              Praying
+                            </button>
+                          </div>
                         </div>
-                        <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">{pr.request}</p>
-                        <div className="flex items-center justify-between mt-2">
-                          <p className="text-xs text-gray-400">{pr.date}</p>
-                          <button className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 transition-colors">
-                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                            </svg>
-                            Praying
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-400 text-center py-4">No public requests yet. Be the first to share!</p>
+                  )}
                 </div>
               )}
 

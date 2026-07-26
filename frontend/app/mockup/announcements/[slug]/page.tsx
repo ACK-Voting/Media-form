@@ -4,7 +4,8 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '../../_components/Navbar';
 import Footer from '../../_components/Footer';
-import { blogPosts, BlogPost } from '../../_data/mockData';
+import { useAnnouncementsStore } from '@/stores/cms/announcementsStore';
+import type { BlogPost } from '../../_data/mockData';
 
 const categoryColors: Record<BlogPost['category'], string> = {
   Announcement: 'bg-blue-100 text-blue-700',
@@ -25,8 +26,9 @@ function formatDate(d: string) {
 }
 
 export default function PostDetailPage() {
+  const posts = useAnnouncementsStore((s) => s.posts);
   const { slug } = useParams<{ slug: string }>();
-  const post = blogPosts.find((p) => p.slug === slug);
+  const post = posts.find((p) => p.slug === slug);
 
   if (!post) {
     return (
@@ -44,7 +46,7 @@ export default function PostDetailPage() {
     );
   }
 
-  const related = blogPosts.filter((p) => p.id !== post.id && p.published && (p.category === post.category || p.tags.some((t) => post.tags.includes(t)))).slice(0, 3);
+  const related = posts.filter((p) => p.id !== post.id && p.published && (p.category === post.category || p.tags.some((t) => post.tags.includes(t)))).slice(0, 3);
 
   return (
     <div className="min-h-screen bg-white">

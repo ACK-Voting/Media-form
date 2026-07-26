@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
+import { useGetInvolvedStore } from '@/stores/cms/getInvolvedStore';
+import { Select } from '@/components/ui/Select';
 
 const ministryOptions = [
   "Children's Ministry", "Youth Ministry (KAYO)", "Anglican Women's Fellowship (AWF)",
@@ -12,8 +14,16 @@ const ministryOptions = [
 ];
 
 export default function GetInvolvedPage() {
+  const { opportunities, addSubmission, addApplication } = useGetInvolvedStore();
+  const [applyModal, setApplyModal] = useState<{ id: string; role: string; dept: string } | null>(null);
+  const [applyForm, setApplyForm] = useState({ firstName: '', lastName: '', email: '', phone: '', coverLetter: '' });
+  const [applySubmitted, setApplySubmitted] = useState(false);
+  const [applySubmitting, setApplySubmitting] = useState(false);
+
   const [tab, setTab] = useState<'membership' | 'volunteer'>('membership');
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
   const [form, setForm] = useState({
     firstName: '', lastName: '', email: '', phone: '',
     address: '', baptized: '', confirmed: '', previousChurch: '',
@@ -27,9 +37,28 @@ export default function GetInvolvedPage() {
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setSubmitting(true);
+    setError('');
+    try {
+      const res = await fetch('http://localhost:3000/api/get-involved', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, type: tab }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        addSubmission({ ...form, type: tab });
+        setSubmitted(true);
+      } else {
+        setError(data.message || 'Something went wrong. Please try again.');
+      }
+    } catch {
+      setError('Could not connect to the server. Please try again later.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -135,21 +164,21 @@ export default function GetInvolvedPage() {
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1">Baptized?</label>
-                      <select value={form.baptized} onChange={e => setForm(f => ({ ...f, baptized: e.target.value }))}
+                      <Select value={form.baptized} onChange={e => setForm(f => ({ ...f, baptized: e.target.value }))}
                         className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">Select...</option>
                         <option value="yes">Yes</option>
                         <option value="no">No</option>
-                      </select>
+                      </Select>
                     </div>
                     <div>
                       <label className="block text-sm font-semibold text-gray-700 mb-1">Confirmed?</label>
-                      <select value={form.confirmed} onChange={e => setForm(f => ({ ...f, confirmed: e.target.value }))}
+                      <Select value={form.confirmed} onChange={e => setForm(f => ({ ...f, confirmed: e.target.value }))}
                         className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">Select...</option>
                         <option value="yes">Yes</option>
                         <option value="no">No</option>
-                      </select>
+                      </Select>
                     </div>
                   </div>
                   <div>
@@ -183,9 +212,21 @@ export default function GetInvolvedPage() {
                   placeholder="Tell us about yourself or any questions you have..." />
               </div>
 
-              <button type="submit"
-                className="w-full bg-blue-900 text-white py-3 rounded-xl font-bold text-sm hover:bg-blue-800 transition-colors">
-                {tab === 'membership' ? 'Submit Membership Application' : 'Sign Up to Serve'}
+              {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+                  {error}
+                </div>
+              )}
+
+              <button type="submit" disabled={submitting}
+                className="w-full bg-blue-900 text-white py-3 rounded-xl font-bold text-sm hover:bg-blue-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                {submitting && (
+                  <svg className="animate-spin w-4 h-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                )}
+                {submitting ? 'Submitting…' : tab === 'membership' ? 'Submit Membership Application' : 'Sign Up to Serve'}
               </button>
             </form>
           )}
@@ -203,11 +244,7 @@ export default function GetInvolvedPage() {
             <p className="text-gray-600 max-w-xl mx-auto">We occasionally have openings for paid staff and long-term volunteers. Check back regularly or register your interest below.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
-            {[
-              { role: 'Administrative Assistant', type: 'Full-Time', dept: 'Cathedral Office', desc: 'Support the cathedral office with correspondence, scheduling, and records management.' },
-              { role: 'Sunday School Teacher', type: 'Volunteer', dept: "Children's Ministry", desc: 'Passionate about kids? Lead Sunday school sessions for ages 4–12 during the 9 AM and 11 AM services.' },
-              { role: 'Media & Communications', type: 'Part-Time', dept: 'Media Team', desc: 'Help manage our social media, website updates, and live-stream production on Sundays.' },
-            ].map(job => (
+            {opportunities.filter(o => o.active).map(job => (
               <div key={job.role} className="border border-gray-200 rounded-2xl p-6 hover:shadow-md transition-shadow">
                 <div className="flex justify-between items-start mb-3">
                   <span className={`text-xs font-bold px-2 py-1 rounded-full ${job.type === 'Full-Time' ? 'bg-green-100 text-green-700' : job.type === 'Part-Time' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'}`}>
@@ -217,12 +254,98 @@ export default function GetInvolvedPage() {
                 </div>
                 <h3 className="font-bold text-gray-900 mb-2">{job.role}</h3>
                 <p className="text-sm text-gray-600 mb-4 leading-relaxed">{job.desc}</p>
-                <a href="mailto:info@ackmombasa.org" className="text-sm font-semibold text-blue-900 hover:underline">Apply by Email →</a>
+                <button
+                  onClick={() => { setApplyModal({ id: job.id, role: job.role, dept: job.dept }); setApplyForm({ firstName: '', lastName: '', email: '', phone: '', coverLetter: '' }); setApplySubmitted(false); }}
+                  className="text-sm font-semibold text-blue-900 border border-blue-900 px-4 py-1.5 rounded-lg hover:bg-blue-900 hover:text-white transition-colors">
+                  Apply Now →
+                </button>
               </div>
             ))}
           </div>
         </div>
       </section>
+
+      {/* Application modal */}
+      {applyModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-100 flex items-start justify-between">
+              <div>
+                <h2 className="font-bold text-gray-900 text-lg">{applyModal.role}</h2>
+                <p className="text-sm text-gray-500 mt-0.5">{applyModal.dept}</p>
+              </div>
+              <button onClick={() => setApplyModal(null)} className="text-gray-400 hover:text-gray-600 ml-4 flex-shrink-0">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {applySubmitted ? (
+              <div className="p-8 text-center">
+                <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-7 h-7 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-gray-900 text-lg mb-2">Application Submitted!</h3>
+                <p className="text-gray-500 text-sm mb-6">Thank you for applying for <strong>{applyModal.role}</strong>. We will be in touch within 5–7 business days.</p>
+                <button onClick={() => setApplyModal(null)} className="bg-blue-900 text-white px-6 py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-800">
+                  Close
+                </button>
+              </div>
+            ) : (
+              <form className="p-6 space-y-4" onSubmit={async (e) => {
+                e.preventDefault();
+                setApplySubmitting(true);
+                addApplication({ opportunityId: applyModal.id, opportunityRole: applyModal.role, ...applyForm });
+                await new Promise(r => setTimeout(r, 400));
+                setApplySubmitting(false);
+                setApplySubmitted(true);
+              }}>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">First Name *</label>
+                    <input required value={applyForm.firstName} onChange={e => setApplyForm(f => ({ ...f, firstName: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Last Name *</label>
+                    <input required value={applyForm.lastName} onChange={e => setApplyForm(f => ({ ...f, lastName: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Email Address *</label>
+                  <input required type="email" value={applyForm.email} onChange={e => setApplyForm(f => ({ ...f, email: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Phone Number *</label>
+                  <input required value={applyForm.phone} onChange={e => setApplyForm(f => ({ ...f, phone: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="e.g. 0712 345 678" />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Why are you interested in this role?</label>
+                  <textarea rows={4} value={applyForm.coverLetter} onChange={e => setApplyForm(f => ({ ...f, coverLetter: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    placeholder="Tell us about your relevant experience and why this role interests you..." />
+                </div>
+                <button type="submit" disabled={applySubmitting}
+                  className="w-full bg-blue-900 text-white py-3 rounded-xl font-bold text-sm hover:bg-blue-800 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+                  {applySubmitting && (
+                    <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  )}
+                  {applySubmitting ? 'Submitting…' : 'Submit Application'}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

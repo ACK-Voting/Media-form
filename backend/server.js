@@ -34,13 +34,40 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// MongoDB Connection
+// MongoDB Connection + CMS user seed
 mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
 })
-    .then(() => console.log('✅ Connected to MongoDB'))
+    .then(async () => {
+        console.log('✅ Connected to MongoDB');
+        await seedCMSUsers();
+    })
     .catch(err => console.error('❌ MongoDB connection error:', err));
+
+async function seedCMSUsers() {
+    try {
+        const bcrypt = require('bcryptjs');
+        const CMSUser = require('./models/CMSUser');
+        const count = await CMSUser.countDocuments();
+        if (count > 0) return;
+        const seed = [
+            { name: 'Hillary Okello',     email: 'hillariouskelly@gmail.com',  username: 'admin',          password: 'admin123', role: 'super_admin',    ministryAccess: [] },
+            { name: 'Cathedral Secretary',email: 'secretary@ackmombasa.org',   username: 'secretary',       password: 'admin123', role: 'church_admin',   ministryAccess: [] },
+            { name: 'Rev. Heri Ryanga',   email: 'kayo@ackmombasa.org',        username: 'kayo.admin',      password: 'admin123', role: 'ministry_admin', ministryAccess: ['kayo'] },
+            { name: 'Prof. Wycliffe Oloo',email: 'music@ackmombasa.org',       username: 'choir.admin',     password: 'admin123', role: 'ministry_admin', ministryAccess: ['choir'] },
+            { name: 'AWF Chairlady',      email: 'awf@ackmombasa.org',         username: 'awf.admin',       password: 'admin123', role: 'ministry_admin', ministryAccess: ['awf'] },
+            { name: 'Joyce Achieng',      email: 'children@ackmombasa.org',    username: 'children.admin',  password: 'admin123', role: 'ministry_admin', ministryAccess: ['children'] },
+        ];
+        for (const u of seed) {
+            u.password = await bcrypt.hash(u.password, 10);
+        }
+        await CMSUser.insertMany(seed);
+        console.log('✅ CMS seed users created');
+    } catch (err) {
+        console.error('⚠️  CMS seed error:', err.message);
+    }
+}
 
 // Routes
 const submissionRoutes = require('./routes/submissions');
@@ -54,8 +81,13 @@ const meetingMinutesRoutes = require('./routes/meetingMinutes');
 const activityRoutes = require('./routes/activity');
 const analyticsRoutes = require('./routes/analytics');
 const reportsRoutes = require('./routes/reports');
+const getInvolvedRoutes = require('./routes/getInvolved');
+const inviteRoutes = require('./routes/invite');
+const cmsUsersRoutes = require('./routes/cmsUsers');
 const availabilityRoutes = require('./routes/availability');
 const rotaRoutes = require('./routes/rota');
+const mpesaRoutes = require('./routes/mpesa');
+const pesapalRoutes = require('./routes/pesapal');
 
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/auth', authRoutes);
@@ -68,8 +100,13 @@ app.use('/api/meeting-minutes', meetingMinutesRoutes);
 app.use('/api/activity', activityRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/get-involved', getInvolvedRoutes);
+app.use('/api/invite', inviteRoutes);
+app.use('/api/cms-users', cmsUsersRoutes);
 app.use('/api/availability', availabilityRoutes);
 app.use('/api/rota', rotaRoutes);
+app.use('/api/mpesa', mpesaRoutes);
+app.use('/api/pesapal', pesapalRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

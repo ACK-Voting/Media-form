@@ -21,7 +21,7 @@ interface StaffStore {
 export const useStaffStore = create<StaffStore>()(
   persist(
     (set) => ({
-      staff: seedStaff,
+      staff: [],
       departments: seedDepartments,
       addStaff: (s) =>
         set((state) => ({
@@ -44,6 +44,19 @@ export const useStaffStore = create<StaffStore>()(
       removeDepartment: (id) =>
         set((state) => ({ departments: state.departments.filter((d) => d.id !== id) })),
     }),
-    { name: 'cms-staff' }
+    {
+      name: 'cms-staff',
+      version: 1,
+      migrate: (persisted: unknown) => {
+        const state = persisted as { staff: StaffMember[]; departments: Department[] };
+        const seedIds = new Set(['s1', 's2', 's3', 's4', 's5', 's6']);
+        return {
+          ...state,
+          staff: (state.staff ?? []).filter(
+            (s) => !seedIds.has(s.id) && s.photo !== '/bishop.jpeg'
+          ),
+        };
+      },
+    }
   )
 );

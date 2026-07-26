@@ -4,7 +4,9 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '../../../../_components/Navbar';
 import Footer from '../../../../_components/Footer';
-import { ministryPosts, ministries, MinistryPost } from '../../../../_data/mockData';
+import { useMinistriesStore } from '@/stores/cms/ministriesStore';
+import { useMinistryPostsStore } from '@/stores/cms/ministryPostsStore';
+import type { MinistryPost } from '../../../../_data/mockData';
 
 const categoryColors: Record<MinistryPost['category'], string> = {
   Update: 'bg-blue-100 text-blue-700',
@@ -18,9 +20,12 @@ function formatDate(d: string) {
 }
 
 export default function MinistryPostDetailPage() {
+  const ministries = useMinistriesStore((s) => s.ministries);
+  const posts = useMinistryPostsStore((s) => s.posts);
+
   const { slug, postSlug } = useParams<{ slug: string; postSlug: string }>();
 
-  const post = ministryPosts.find((p) => p.slug === postSlug && p.ministrySlug === slug);
+  const post = posts.find((p) => p.slug === postSlug && p.ministrySlug === slug);
   const ministry = ministries.find((m) => m.slug === slug);
 
   if (!post || !ministry) {
@@ -38,7 +43,7 @@ export default function MinistryPostDetailPage() {
     );
   }
 
-  const related = ministryPosts
+  const related = posts
     .filter((p) => p.ministrySlug === slug && p.id !== post.id && p.published)
     .slice(0, 3);
 

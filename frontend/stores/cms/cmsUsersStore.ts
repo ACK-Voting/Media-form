@@ -7,6 +7,8 @@ interface CMSUsersStore {
   add: (u: Omit<CMSUser, 'id' | 'createdAt'>) => void;
   update: (id: string, patch: Partial<CMSUser>) => void;
   deactivate: (id: string) => void;
+  activate: (id: string) => void;
+  remove: (id: string) => void;
   findByCredentials: (username: string, password: string) => CMSUser | null;
 }
 
@@ -29,6 +31,12 @@ export const useCMSUsersStore = create<CMSUsersStore>()(
         set((state) => ({
           users: state.users.map((u) => (u.id === id ? { ...u, active: false } : u)),
         })),
+      activate: (id) =>
+        set((state) => ({
+          users: state.users.map((u) => (u.id === id ? { ...u, active: true } : u)),
+        })),
+      remove: (id) =>
+        set((state) => ({ users: state.users.filter((u) => u.id !== id) })),
       findByCredentials: (username, password) =>
         get().users.find((u) => u.username === username && u.password === password && u.active) ?? null,
     }),

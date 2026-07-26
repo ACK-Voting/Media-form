@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useMinistriesStore } from '@/stores/cms/ministriesStore';
 import { useMinistryPostsStore } from '@/stores/cms/ministryPostsStore';
@@ -8,6 +8,7 @@ import { useGalleryStore } from '@/stores/cms/galleryStore';
 import { useEventsStore } from '@/stores/cms/eventsStore';
 import { useCMSPermissions } from '@/hooks/useCMSPermissions';
 import { MinistryPost, GalleryItem, ChurchEvent } from '@/app/mockup/_data/mockData';
+import { Select } from '@/components/ui/Select';
 
 type Tab = 'info' | 'posts' | 'gallery' | 'events';
 
@@ -66,10 +67,25 @@ export default function MinistryHubPage() {
   const [selectedEvent, setSelectedEvent] = useState<ChurchEvent | null>(null);
   const [eventForm, setEventForm] = useState<Omit<ChurchEvent, 'id'>>({ title: '', date: '', time: '', location: '', category: 'Fellowship', description: '', registrationRequired: false, ministrySlug: slug });
   const [confirmDelete, setConfirmDelete] = useState<{ type: string; id: string } | null>(null);
+  const [galleryUploading, setGalleryUploading] = useState(false);
+  const galleryFileRef = useRef<HTMLInputElement>(null);
 
   const ministryPosts = useMemo(() => posts.filter((p) => p.ministrySlug === slug), [posts, slug]);
   const ministryGallery = useMemo(() => gallery.filter((g) => g.ministrySlug === slug), [gallery, slug]);
   const ministryEvents = useMemo(() => events.filter((e) => e.ministrySlug === slug), [events, slug]);
+
+  async function handleGalleryPhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setGalleryUploading(true);
+    const data = new FormData();
+    data.append('file', file);
+    const res = await fetch('/api/upload?folder=gallery', { method: 'POST', body: data });
+    const json = await res.json();
+    if (json.url) setGalleryForm((f) => ({ ...f, photo: json.url }));
+    setGalleryUploading(false);
+    e.target.value = '';
+  }
 
   if (!ministry || !canMinistry(slug)) {
     return (
@@ -308,9 +324,9 @@ export default function MinistryHubPage() {
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Date</label><input type="date" className={inputCls} value={postForm.date} onChange={(e) => setPostForm((f) => ({ ...f, date: e.target.value }))} /></div>
             </div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-              <select className={inputCls} value={postForm.category} onChange={(e) => setPostForm((f) => ({ ...f, category: e.target.value as MinistryPost['category'] }))}>
+              <Select className={inputCls} value={postForm.category} onChange={(e) => setPostForm((f) => ({ ...f, category: e.target.value as MinistryPost['category'] }))}>
                 {POST_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-              </select>
+              </Select>
             </div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Content (HTML supported)</label>
               <textarea className={`${inputCls} h-48 resize-y font-mono text-xs`} value={postForm.content} onChange={(e) => setPostForm((f) => ({ ...f, content: e.target.value }))} />
@@ -334,28 +350,55 @@ export default function MinistryHubPage() {
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Caption *</label><input className={inputCls} value={galleryForm.caption} onChange={(e) => setGalleryForm((f) => ({ ...f, caption: e.target.value }))} /></div>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                <select className={inputCls} value={galleryForm.category} onChange={(e) => setGalleryForm((f) => ({ ...f, category: e.target.value as GalleryItem['category'] }))}>
+                <Select className={inputCls} value={galleryForm.category} onChange={(e) => setGalleryForm((f) => ({ ...f, category: e.target.value as GalleryItem['category'] }))}>
                   {GALLERY_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-                </select>
+                </Select>
               </div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                <select className={inputCls} value={galleryForm.type} onChange={(e) => setGalleryForm((f) => ({ ...f, type: e.target.value as 'photo' | 'video' }))}>
+                <Select className={inputCls} value={galleryForm.type} onChange={(e) => setGalleryForm((f) => ({ ...f, type: e.target.value as 'photo' | 'video' }))}>
                   <option value="photo">Photo</option>
                   <option value="video">Video</option>
-                </select>
+                </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Date</label><input type="date" className={inputCls} value={galleryForm.date} onChange={(e) => setGalleryForm((f) => ({ ...f, date: e.target.value }))} /></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Aspect Ratio</label>
-                <select className={inputCls} value={galleryForm.aspectRatio} onChange={(e) => setGalleryForm((f) => ({ ...f, aspectRatio: e.target.value as GalleryItem['aspectRatio'] }))}>
+                <Select className={inputCls} value={galleryForm.aspectRatio} onChange={(e) => setGalleryForm((f) => ({ ...f, aspectRatio: e.target.value as GalleryItem['aspectRatio'] }))}>
                   <option value="landscape">Landscape</option>
                   <option value="portrait">Portrait</option>
                   <option value="square">Square</option>
-                </select>
+                </Select>
               </div>
             </div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Photo URL (optional)</label><input className={inputCls} value={galleryForm.photo ?? ''} onChange={(e) => setGalleryForm((f) => ({ ...f, photo: e.target.value }))} placeholder="/path/to/image.jpg" /></div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Photo</label>
+              <input ref={galleryFileRef} type="file" accept="image/*" className="hidden" onChange={handleGalleryPhotoUpload} />
+              {galleryForm.photo ? (
+                <div className="flex items-center gap-3">
+                  <img src={galleryForm.photo} alt="preview" className="w-20 h-14 object-cover rounded-lg border border-gray-200" />
+                  <div className="flex flex-col gap-1.5">
+                    <button type="button" onClick={() => galleryFileRef.current?.click()}
+                      className="px-3 py-1.5 text-xs font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors">
+                      Change photo
+                    </button>
+                    <button type="button" onClick={() => setGalleryForm((f) => ({ ...f, photo: undefined }))}
+                      className="px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button type="button" onClick={() => galleryFileRef.current?.click()} disabled={galleryUploading}
+                  className="flex items-center gap-2 px-4 py-2.5 border border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 hover:bg-blue-50 transition-colors disabled:opacity-50 w-full justify-center">
+                  {galleryUploading ? (
+                    <><svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Uploading…</>
+                  ) : (
+                    <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>Upload photo</>
+                  )}
+                </button>
+              )}
+            </div>
             <div className="flex gap-3 pt-2">
               <button onClick={() => setGalleryModal(false)} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
               <button onClick={() => { addGallery(galleryForm); setGalleryModal(false); }} className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700">Add Item</button>
@@ -376,9 +419,9 @@ export default function MinistryHubPage() {
             <div className="grid grid-cols-2 gap-3">
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Location</label><input className={inputCls} value={eventForm.location} onChange={(e) => setEventForm((f) => ({ ...f, location: e.target.value }))} /></div>
               <div><label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                <select className={inputCls} value={eventForm.category} onChange={(e) => setEventForm((f) => ({ ...f, category: e.target.value as ChurchEvent['category'] }))}>
+                <Select className={inputCls} value={eventForm.category} onChange={(e) => setEventForm((f) => ({ ...f, category: e.target.value as ChurchEvent['category'] }))}>
                   {EVENT_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-                </select>
+                </Select>
               </div>
             </div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Description</label><textarea className={`${inputCls} h-20 resize-none`} value={eventForm.description} onChange={(e) => setEventForm((f) => ({ ...f, description: e.target.value }))} /></div>

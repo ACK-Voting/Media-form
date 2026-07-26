@@ -5,7 +5,11 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '../../_components/Navbar';
 import Footer from '../../_components/Footer';
-import { ministries, galleryItems, events, ministryPosts, MinistryPost } from '../../_data/mockData';
+import { useMinistriesStore } from '@/stores/cms/ministriesStore';
+import { useEventsStore } from '@/stores/cms/eventsStore';
+import { useGalleryStore } from '@/stores/cms/galleryStore';
+import { useMinistryPostsStore } from '@/stores/cms/ministryPostsStore';
+import type { MinistryPost } from '../../_data/mockData';
 
 type Tab = 'about' | 'updates' | 'gallery' | 'events';
 
@@ -21,6 +25,11 @@ function formatDate(d: string) {
 }
 
 export default function MinistryDetailPage() {
+  const ministries = useMinistriesStore((s) => s.ministries);
+  const events = useEventsStore((s) => s.events);
+  const galleryItems = useGalleryStore((s) => s.items);
+  const allPosts = useMinistryPostsStore((s) => s.posts);
+
   const { slug } = useParams<{ slug: string }>();
   const [activeTab, setActiveTab] = useState<Tab>('about');
   const [lightboxItem, setLightboxItem] = useState<string | null>(null);
@@ -28,23 +37,23 @@ export default function MinistryDetailPage() {
   const ministry = ministries.find((m) => m.slug === slug);
 
   const ministryPostsList = useMemo(
-    () => ministryPosts.filter((p) => p.ministrySlug === slug && p.published),
-    [slug]
+    () => allPosts.filter((p) => p.ministrySlug === slug && p.published),
+    [allPosts, slug]
   );
 
   const ministryGallery = useMemo(
     () => galleryItems.filter((g) => g.ministrySlug === slug),
-    [slug]
+    [galleryItems, slug]
   );
 
   const ministryEvents = useMemo(
     () => events.filter((e) => e.ministrySlug === slug),
-    [slug]
+    [events, slug]
   );
 
   const otherMinistries = useMemo(
     () => ministries.filter((m) => m.slug !== slug).slice(0, 3),
-    [slug]
+    [ministries, slug]
   );
 
   const lightboxPhoto = lightboxItem ? galleryItems.find((g) => g.id === lightboxItem) : null;

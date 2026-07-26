@@ -11,7 +11,7 @@ export default function CathedralHistory() {
         {
             era: 'founding',
             year: '1903',
-            title: 'Foundation of ACK Cathedral Mombasa',
+            title: 'Foundation of ACK Mombasa Memorial Cathedral',
             description: 'Anglican missionaries established the cathedral as a beacon of faith on the Kenyan coast. The mission began with a small congregation meeting in a modest building near the Old Town.',
             image: '🏛️',
             significance: 'Major Milestone'
@@ -176,7 +176,7 @@ export default function CathedralHistory() {
                             Cathedral History Timeline
                         </h1>
                         <p className="text-xl text-blue-100 mb-8 leading-relaxed">
-                            Discover the rich heritage of ACK Cathedral Mombasa — 120+ years of faith, service, and community transformation on the Kenyan coast.
+                            Discover the rich heritage of ACK Mombasa Memorial Cathedral — 120+ years of faith, service, and community transformation on the Kenyan coast.
                         </p>
                         <div className="grid sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
                             <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
@@ -382,7 +382,7 @@ export default function CathedralHistory() {
                     <h2 className="text-3xl sm:text-4xl font-bold mb-6">Our Enduring Legacy</h2>
                     <p className="text-xl text-blue-100 mb-8 leading-relaxed">
                         From a small mission church in 1903 to a vibrant cathedral community serving over 2,500 members today,
-                        ACK Cathedral Mombasa continues to be a beacon of hope, faith, and service on the Kenyan coast.
+                        ACK Mombasa Memorial Cathedral continues to be a beacon of hope, faith, and service on the Kenyan coast.
                     </p>
                     <p className="text-lg text-blue-200 mb-8">
                         Our history is not just about the past — it's the foundation for our future. As we embrace digital

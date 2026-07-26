@@ -1,23 +1,43 @@
 'use client';
 
+import { useState } from 'react';
 import { usePrayerStore } from '@/stores/cms/prayerStore';
 
 export default function PrayerRequestsPage() {
-  const { requests, markPrayed, remove } = usePrayerStore();
+  const { requests, markPrayed } = usePrayerStore();
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const unprayed = requests.filter((r) => !r.prayedFor).length;
 
+  const allSelected = requests.length > 0 && requests.every((r) => selectedIds.has(r.id));
+  const someSelected = !allSelected && requests.some((r) => selectedIds.has(r.id));
+  function toggleAll() { setSelectedIds(allSelected ? new Set() : new Set(requests.map((r) => r.id))); }
+  function toggleOne(id: string) { setSelectedIds((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; }); }
+  function markPrayedSelected() { selectedIds.forEach((id) => { const r = requests.find((x) => x.id === id); if (r && !r.prayedFor) markPrayed(id); }); setSelectedIds(new Set()); }
+
   return (
     <div className="p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Prayer Requests</h1>
-        <p className="text-gray-500 text-sm mt-1">{requests.length} total · {unprayed} awaiting prayer</p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Prayer Requests</h1>
+          <p className="text-gray-500 text-sm mt-1">{requests.length} total · {unprayed} awaiting prayer</p>
+        </div>
+        {requests.length > 0 && (
+          <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 select-none">
+            <input type="checkbox" checked={allSelected} onChange={toggleAll}
+              ref={(el) => { if (el) el.indeterminate = someSelected; }}
+              className="w-4 h-4 rounded border-gray-300 accent-blue-600 cursor-pointer" />
+            Select all
+          </label>
+        )}
       </div>
 
       <div className="space-y-4">
         {requests.map((r) => (
-          <div key={r.id} className={`bg-white rounded-2xl border p-5 shadow-sm transition-all ${r.prayedFor ? 'border-gray-100 opacity-70' : 'border-blue-100'}`}>
-            <div className="flex items-start justify-between gap-4">
+          <div key={r.id} className={`relative bg-white rounded-2xl border p-5 shadow-sm transition-all ${selectedIds.has(r.id) ? 'border-blue-300 bg-blue-50/30' : r.prayedFor ? 'border-gray-100 opacity-70' : 'border-blue-100'}`}>
+            <input type="checkbox" checked={selectedIds.has(r.id)} onChange={() => toggleOne(r.id)}
+              className="absolute top-4 left-4 w-4 h-4 rounded border-gray-300 accent-blue-600 cursor-pointer" />
+            <div className="flex items-start justify-between gap-4 pl-7">
               <div className="flex items-start gap-3 flex-1">
                 <div className={`w-3 h-3 rounded-full mt-1.5 flex-shrink-0 ${r.prayedFor ? 'bg-green-400' : 'bg-red-400'}`} />
                 <div className="flex-1">
@@ -44,9 +64,6 @@ export default function PrayerRequestsPage() {
                 >
                   {r.prayedFor ? '✓ Prayed For' : 'Mark as Prayed'}
                 </button>
-                <button onClick={() => remove(r.id)} className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                </button>
               </div>
             </div>
           </div>
@@ -55,6 +72,17 @@ export default function PrayerRequestsPage() {
           <div className="text-center py-20 text-gray-400">No prayer requests yet.</div>
         )}
       </div>
+
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 bg-gray-900 text-white rounded-2xl px-5 py-3 shadow-2xl border border-white/10">
+          <span className="text-sm font-semibold tabular-nums">{selectedIds.size} selected</span>
+          <div className="h-4 w-px bg-white/20" />
+          <button onClick={markPrayedSelected} className="text-sm font-semibold text-green-400 hover:text-green-300 transition-colors">
+            Mark as Prayed
+          </button>
+          <button onClick={() => setSelectedIds(new Set())} className="text-sm text-white/50 hover:text-white transition-colors">Deselect all</button>
+        </div>
+      )}
     </div>
   );
 }

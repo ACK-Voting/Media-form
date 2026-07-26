@@ -43,6 +43,7 @@ export default function SermonsPage() {
   const [selected, setSelected] = useState<Sermon | null>(null);
   const [form, setForm] = useState<Omit<Sermon, 'id'>>(empty);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const filtered = sermons.filter((s) => {
     const q = search.toLowerCase();
@@ -58,6 +59,12 @@ export default function SermonsPage() {
     else if (modal === 'edit' && selected) update(selected.id, form);
     closeModal();
   }
+
+  const allSelected = filtered.length > 0 && filtered.every((s) => selectedIds.has(s.id));
+  const someSelected = !allSelected && filtered.some((s) => selectedIds.has(s.id));
+  function toggleAll() { setSelectedIds(allSelected ? new Set() : new Set(filtered.map((s) => s.id))); }
+  function toggleOne(id: string) { setSelectedIds((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; }); }
+  function deleteSelected() { selectedIds.forEach((id) => remove(id)); setSelectedIds(new Set()); }
 
   function setField<K extends keyof typeof form>(key: K, val: typeof form[K]) {
     setForm((f) => ({ ...f, [key]: val }));
@@ -87,6 +94,11 @@ export default function SermonsPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
+              <th className="px-4 py-3 w-10">
+                <input type="checkbox" checked={allSelected} onChange={toggleAll}
+                  ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                  className="w-4 h-4 rounded border-gray-300 accent-blue-600 cursor-pointer" />
+              </th>
               {['Title', 'Preacher', 'Date', 'Series', 'Duration', ''].map((h) => (
                 <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
               ))}
@@ -94,7 +106,11 @@ export default function SermonsPage() {
           </thead>
           <tbody className="divide-y divide-gray-50">
             {filtered.map((s) => (
-              <tr key={s.id} className="hover:bg-gray-50 transition-colors">
+              <tr key={s.id} className={`hover:bg-gray-50 transition-colors ${selectedIds.has(s.id) ? 'bg-blue-50/50' : ''}`}>
+                <td className="px-4 py-3">
+                  <input type="checkbox" checked={selectedIds.has(s.id)} onChange={() => toggleOne(s.id)}
+                    className="w-4 h-4 rounded border-gray-300 accent-blue-600 cursor-pointer" />
+                </td>
                 <td className="px-4 py-3">
                   <p className="font-medium text-gray-900 line-clamp-1">{s.title}</p>
                   {s.tags.length > 0 && <p className="text-xs text-gray-400">{s.tags.slice(0, 2).join(', ')}</p>}
@@ -147,6 +163,19 @@ export default function SermonsPage() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 bg-gray-900 text-white rounded-2xl px-5 py-3 shadow-2xl border border-white/10">
+          <span className="text-sm font-semibold tabular-nums">{selectedIds.size} selected</span>
+          <div className="h-4 w-px bg-white/20" />
+          <button onClick={deleteSelected} className="flex items-center gap-1.5 text-sm font-semibold text-red-400 hover:text-red-300 transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            Delete {selectedIds.size}
+          </button>
+          <button onClick={() => setSelectedIds(new Set())} className="text-sm text-white/50 hover:text-white transition-colors">Deselect all</button>
+        </div>
       )}
 
       {/* Delete confirm */}

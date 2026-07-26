@@ -7,6 +7,7 @@ interface GalleryStore {
   add: (item: Omit<GalleryItem, 'id'>) => void;
   update: (id: string, patch: Partial<GalleryItem>) => void;
   remove: (id: string) => void;
+  removeMany: (ids: string[]) => void;
 }
 
 export const useGalleryStore = create<GalleryStore>()(
@@ -23,6 +24,10 @@ export const useGalleryStore = create<GalleryStore>()(
         })),
       remove: (id) =>
         set((state) => ({ items: state.items.filter((i) => i.id !== id) })),
+      removeMany: (ids) => {
+        const set_ = new Set(ids);
+        set((state) => ({ items: state.items.filter((i) => !set_.has(i.id)) }));
+      },
     }),
     { name: 'cms-gallery' }
   )

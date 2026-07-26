@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useStaffStore } from '@/stores/cms/staffStore';
 import { StaffMember, Department } from '@/app/mockup/_data/mockData';
+import { Select } from '@/components/ui/Select';
 
 const inputCls =
   'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500';
@@ -35,6 +36,23 @@ export default function StaffCMSPage() {
   const [selectedStaff, setSelectedStaff] = useState<StaffMember | null>(null);
   const [staffForm, setStaffForm] = useState<Omit<StaffMember, 'id'>>(emptyStaff);
   const [confirmDeleteStaff, setConfirmDeleteStaff] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const data = new FormData();
+      data.append('file', file);
+      const res = await fetch('/api/upload?folder=leadership', { method: 'POST', body: data });
+      const json = await res.json();
+      if (json.url) setStaffField('photo', json.url);
+    } finally {
+      setUploading(false);
+    }
+  }
 
   function openAddStaff() {
     setStaffForm({ ...emptyStaff, departmentId: departments[0]?.id ?? '' });
@@ -113,11 +131,11 @@ export default function StaffCMSPage() {
 
       {/* ── Staff Tab ──────────────────────────────────────────────────────── */}
       {tab === 'staff' && (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {staff.map((s) => (
             <div key={s.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              <div className="h-40 bg-gradient-to-br from-blue-700 to-indigo-700 overflow-hidden">
-                <img src={s.photo} alt={s.name} className="w-full h-full object-cover object-top" />
+              <div className="h-64 bg-gradient-to-br from-blue-700 to-indigo-700 overflow-hidden">
+                <img src={s.photo} alt={s.name} className="w-full h-full object-cover [object-position:center_25%]" />
               </div>
               <div className="p-4">
                 <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-0.5">{s.role}</p>
@@ -185,19 +203,38 @@ export default function StaffCMSPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Department *</label>
-                <select className={inputCls} value={staffForm.departmentId} onChange={(e) => setStaffField('departmentId', e.target.value)}>
+                <Select className={inputCls} value={staffForm.departmentId} onChange={(e) => setStaffField('departmentId', e.target.value)}>
                   <option value="">— Select department —</option>
                   {departments.map((d) => (
                     <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
-                </select>
+                </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Photo URL *</label>
-                <input className={inputCls} value={staffForm.photo} onChange={(e) => setStaffField('photo', e.target.value)} placeholder="/staff-photo.jpeg" />
-                {staffForm.photo && (
-                  <img src={staffForm.photo} alt="preview" className="mt-2 h-20 w-20 rounded-lg object-cover border border-gray-200" />
-                )}
+                <label className="block text-sm font-medium text-gray-700 mb-2">Photo</label>
+                <div className="flex items-center gap-4">
+                  {staffForm.photo ? (
+                    <img src={staffForm.photo} alt="Preview" className="w-16 h-16 rounded-xl object-cover border border-gray-200 flex-shrink-0" />
+                  ) : (
+                    <div className="w-16 h-16 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0 border border-dashed border-gray-300">
+                      <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+                    <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading}
+                      className="w-full py-2 px-3 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+                      {uploading ? (
+                        <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>Uploading...</>
+                      ) : (
+                        <><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>Choose from Gallery</>
+                      )}
+                    </button>
+                    {staffForm.photo && (
+                      <button type="button" onClick={() => setStaffField('photo', '')} className="mt-1 w-full text-xs text-red-500 hover:text-red-700 transition-colors">Remove photo</button>
+                    )}
+                  </div>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
@@ -211,7 +248,7 @@ export default function StaffCMSPage() {
                 <button onClick={closeStaffModal} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
                 <button
                   onClick={handleSaveStaff}
-                  disabled={!staffForm.name.trim() || !staffForm.role.trim() || !staffForm.photo.trim() || !staffForm.departmentId}
+                  disabled={!staffForm.name.trim() || !staffForm.role.trim() || !staffForm.departmentId}
                   className="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {staffModal === 'add' ? 'Add Staff' : 'Save Changes'}

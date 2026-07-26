@@ -3,30 +3,11 @@
 import { useState } from 'react';
 import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
-
-const officeHours = [
-  { day: 'Monday – Friday', time: '8:00 AM – 5:00 PM' },
-  { day: 'Saturday', time: '9:00 AM – 1:00 PM' },
-  { day: 'Sunday', time: 'Open during services' },
-];
-
-const servicesTimes = [
-  { name: 'English Service', time: '7:00 AM', lang: 'English' },
-  { name: 'Swahili Service', time: '9:00 AM', lang: 'Kiswahili' },
-  { name: 'Main Service', time: '11:00 AM', lang: 'English + Swahili' },
-  { name: 'Evensong', time: '6:00 PM', lang: 'English' },
-];
-
-const departments = [
-  { name: "Sub Dean's Office", email: 'subdean@ackmombasa.org', phone: '0724 906 951' },
-  { name: 'General Enquiries', email: 'info@ackmombasa.org', phone: '+254 700 123 456' },
-  { name: 'Youth Ministry', email: 'youth@ackmombasa.org', phone: '+254 722 000 004' },
-  { name: "Children's Ministry", email: 'children@ackmombasa.org', phone: '+254 722 000 005' },
-  { name: 'Events & Bookings', email: 'events@ackmombasa.org', phone: '+254 722 000 006' },
-  { name: 'Media Team', email: 'media@ackmombasa.org', phone: '+254 722 000 007' },
-];
+import { Select } from '@/components/ui/Select';
+import { useContactInfoStore } from '@/stores/cms/contactInfoStore';
 
 export default function ContactPage() {
+  const { officeHours, serviceTimes: servicesTimes, departments, spaces, bookingPhone, bookingEmail } = useContactInfoStore();
   const [formState, setFormState] = useState({ name: '', email: '', phone: '', subject: '', message: '', department: 'General Enquiries' });
   const [submitted, setSubmitted] = useState(false);
 
@@ -155,10 +136,10 @@ export default function ContactPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                    <select value={formState.department} onChange={e => setFormState(s => ({ ...s, department: e.target.value }))}
+                    <Select value={formState.department} onChange={e => setFormState(s => ({ ...s, department: e.target.value }))}
                       className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-all">
                       {departments.map(d => <option key={d.name} value={d.name}>{d.name}</option>)}
-                    </select>
+                    </Select>
                   </div>
 
                   <div>
@@ -304,29 +285,15 @@ export default function ContactPage() {
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-6 mb-10">
-            {[
-              {
-                name: 'Main Cathedral', icon: '⛪', capacity: 'Up to 1,200 guests',
-                desc: 'The full cathedral nave — perfect for weddings, memorial services, and large gatherings.',
-                color: 'blue',
-              },
-              {
-                name: 'Cathedral Hall', icon: '🏛️', capacity: 'Up to 300 guests',
-                desc: 'A versatile hall suitable for conferences, receptions, workshops, and community meetings.',
-                color: 'green',
-              },
-              {
-                name: 'Chapel', icon: '🕊️', capacity: 'Up to 80 guests',
-                desc: 'An intimate chapel space ideal for small ceremonies, prayer groups, and quiet retreats.',
-                color: 'purple',
-              },
-            ].map(space => (
-              <div key={space.name} className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-shadow border border-gray-100">
+            {spaces.filter(s => s.active).map(space => (
+              <div key={space.id} className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-shadow border border-gray-100">
                 <div className="text-4xl mb-4">{space.icon}</div>
                 <h3 className="text-lg font-bold text-gray-900 mb-1">{space.name}</h3>
                 <div className={`text-xs font-semibold mb-3 ${
                   space.color === 'blue' ? 'text-blue-600' :
-                  space.color === 'green' ? 'text-green-600' : 'text-purple-600'
+                  space.color === 'green' ? 'text-green-600' :
+                  space.color === 'purple' ? 'text-purple-600' :
+                  space.color === 'amber' ? 'text-amber-600' : 'text-red-600'
                 }`}>{space.capacity}</div>
                 <p className="text-sm text-gray-600 leading-relaxed">{space.desc}</p>
               </div>
@@ -337,17 +304,17 @@ export default function ContactPage() {
               <h3 className="text-xl font-bold mb-1">Enquire About a Booking</h3>
               <p className="text-blue-200 text-sm">Contact our bookings office — we&apos;d love to host your event.</p>
               <div className="flex flex-wrap gap-4 mt-4 text-sm">
-                <a href="tel:+254722000006" className="flex items-center gap-2 text-blue-200 hover:text-white transition-colors">
+                <a href={`tel:${bookingPhone.replace(/\s/g, '')}`} className="flex items-center gap-2 text-blue-200 hover:text-white transition-colors">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.948V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
-                  +254 722 000 006
+                  {bookingPhone}
                 </a>
-                <a href="mailto:events@ackmombasa.org" className="flex items-center gap-2 text-blue-200 hover:text-white transition-colors">
+                <a href={`mailto:${bookingEmail}`} className="flex items-center gap-2 text-blue-200 hover:text-white transition-colors">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                  events@ackmombasa.org
+                  {bookingEmail}
                 </a>
               </div>
             </div>
-            <a href="mailto:events@ackmombasa.org"
+            <a href={`mailto:${bookingEmail}`}
               className="flex-shrink-0 bg-white text-blue-900 font-bold px-6 py-3 rounded-xl hover:bg-blue-50 transition-colors text-sm">
               Request Booking
             </a>

@@ -42,27 +42,34 @@ export function CMSAuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
-    // Dynamically import store to avoid SSR issues
-    const { useCMSUsersStore } = await import('@/stores/cms/cmsUsersStore');
-    const found = useCMSUsersStore.getState().findByCredentials(username, password);
+    try {
+      const res = await fetch('http://localhost:3000/api/cms-users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        return { success: false, error: data.message || 'Invalid username or password.' };
+      }
 
-    if (!found) {
-      return { success: false, error: 'Invalid username or password.' };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data.user));
+      localStorage.setItem('cms_token', data.token);
+      setState({ user: data.user, isLoading: false, isAuthenticated: true });
+
+      const found = data.user;
+      if (found.role === 'ministry_admin' && found.ministryAccess.length === 1) {
+        router.push(`/cms/ministries/${found.ministryAccess[0]}`);
+      } else if (found.role === 'ministry_admin') {
+        router.push('/cms/ministries');
+      } else {
+        router.push('/cms');
+      }
+
+      return { success: true };
+    } catch {
+      return { success: false, error: 'Unable to reach the server. Please try again.' };
     }
-
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(found));
-    setState({ user: found, isLoading: false, isAuthenticated: true });
-
-    // Redirect based on role
-    if (found.role === 'ministry_admin' && found.ministryAccess.length === 1) {
-      router.push(`/cms/ministries/${found.ministryAccess[0]}`);
-    } else if (found.role === 'ministry_admin') {
-      router.push('/cms/ministries');
-    } else {
-      router.push('/cms');
-    }
-
-    return { success: true };
   }, [router]);
 
   const logout = useCallback(() => {

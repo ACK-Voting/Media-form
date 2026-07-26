@@ -3,6 +3,8 @@
 import { useState } from 'react';
 import { useAnnouncementsStore } from '@/stores/cms/announcementsStore';
 import { BlogPost } from '@/app/mockup/_data/mockData';
+import { Select } from '@/components/ui/Select';
+import { RichTextEditor } from '@/components/ui/RichTextEditor';
 
 const CATEGORIES: BlogPost['category'][] = ['Announcement', 'News', 'Devotional', 'Update'];
 
@@ -45,10 +47,18 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export default function AnnouncementsPage() {
   const { posts, add, update, remove, togglePublish, toggleFeatured } = useAnnouncementsStore();
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [modal, setModal] = useState<'add' | 'edit' | null>(null);
   const [selected, setSelected] = useState<BlogPost | null>(null);
   const [form, setForm] = useState<Omit<BlogPost, 'id'>>(emptyPost);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
+  const allSelected = posts.length > 0 && posts.every((p) => selectedIds.has(p.id));
+  const someSelected = !allSelected && posts.some((p) => selectedIds.has(p.id));
+  function toggleAll() { setSelectedIds(allSelected ? new Set() : new Set(posts.map((p) => p.id))); }
+  function toggleOne(id: string) { setSelectedIds((prev) => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; }); }
+  function deleteSelected() { selectedIds.forEach((id) => remove(id)); setSelectedIds(new Set()); }
+  function publishSelected(state: boolean) { selectedIds.forEach((id) => { const p = posts.find((x) => x.id === id); if (p && p.published !== state) togglePublish(id); }); setSelectedIds(new Set()); }
 
   function openAdd() { setForm(emptyPost); setModal('add'); }
   function openEdit(p: BlogPost) { setSelected(p); setForm({ ...p }); setModal('edit'); }
@@ -82,6 +92,11 @@ export default function AnnouncementsPage() {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-100">
             <tr>
+              <th className="px-4 py-3 w-10">
+                <input type="checkbox" checked={allSelected} onChange={toggleAll}
+                  ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                  className="w-4 h-4 rounded border-gray-300 accent-blue-600 cursor-pointer" />
+              </th>
               {['Title', 'Category', 'Author', 'Date', 'Status', 'Featured', ''].map((h) => (
                 <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">{h}</th>
               ))}
@@ -89,7 +104,11 @@ export default function AnnouncementsPage() {
           </thead>
           <tbody className="divide-y divide-gray-50">
             {posts.map((p) => (
-              <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+              <tr key={p.id} className={`hover:bg-gray-50 transition-colors ${selectedIds.has(p.id) ? 'bg-blue-50/50' : ''}`}>
+                <td className="px-4 py-3">
+                  <input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleOne(p.id)}
+                    className="w-4 h-4 rounded border-gray-300 accent-blue-600 cursor-pointer" />
+                </td>
                 <td className="px-4 py-3">
                   <p className="font-medium text-gray-900 line-clamp-1">{p.title}</p>
                   <p className="text-xs text-gray-400 line-clamp-1">{p.excerpt}</p>
@@ -122,6 +141,21 @@ export default function AnnouncementsPage() {
         {posts.length === 0 && <div className="text-center py-12 text-gray-400">No posts yet.</div>}
       </div>
 
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 bg-gray-900 text-white rounded-2xl px-5 py-3 shadow-2xl border border-white/10">
+          <span className="text-sm font-semibold tabular-nums">{selectedIds.size} selected</span>
+          <div className="h-4 w-px bg-white/20" />
+          <button onClick={() => publishSelected(true)} className="text-sm font-semibold text-green-400 hover:text-green-300 transition-colors">Publish</button>
+          <button onClick={() => publishSelected(false)} className="text-sm font-semibold text-amber-400 hover:text-amber-300 transition-colors">Unpublish</button>
+          <div className="h-4 w-px bg-white/20" />
+          <button onClick={deleteSelected} className="flex items-center gap-1.5 text-sm font-semibold text-red-400 hover:text-red-300 transition-colors">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+            Delete {selectedIds.size}
+          </button>
+          <button onClick={() => setSelectedIds(new Set())} className="text-sm text-white/50 hover:text-white transition-colors">Deselect all</button>
+        </div>
+      )}
+
       {modal && (
         <Modal title={modal === 'add' ? 'New Post' : 'Edit Post'} onClose={closeModal}>
           <div className="space-y-4">
@@ -134,16 +168,16 @@ export default function AnnouncementsPage() {
             <div className="grid grid-cols-2 gap-3">
               <Field label="Date"><input type="date" className={inputCls} value={form.date} onChange={(e) => setField('date', e.target.value)} /></Field>
               <Field label="Category">
-                <select className={inputCls} value={form.category} onChange={(e) => setField('category', e.target.value as BlogPost['category'])}>
+                <Select className={inputCls} value={form.category} onChange={(e) => setField('category', e.target.value as BlogPost['category'])}>
                   {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-                </select>
+                </Select>
               </Field>
             </div>
             <Field label="Tags (comma-separated)">
               <input className={inputCls} value={form.tags.join(', ')} onChange={(e) => setField('tags', e.target.value.split(',').map((t) => t.trim()).filter(Boolean))} />
             </Field>
-            <Field label="Content (HTML supported)">
-              <textarea className={`${inputCls} h-48 resize-y font-mono text-xs`} value={form.content} onChange={(e) => setField('content', e.target.value)} placeholder="<p>Post content here...</p>" />
+            <Field label="Content">
+              <RichTextEditor value={form.content} onChange={(html) => setField('content', html)} />
             </Field>
             <div className="flex gap-4">
               <label className="flex items-center gap-2 cursor-pointer">

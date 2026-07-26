@@ -11,12 +11,14 @@ type Section =
   | 'resources'
   | 'prayer-requests'
   | 'contacts'
+  | 'get-involved'
+  | 'contact-info'
   | 'ministries'
   | 'users';
 
 const CHURCH_ADMIN_SECTIONS: Section[] = [
   'sermons', 'events', 'gallery', 'announcements',
-  'leadership', 'staff', 'giving', 'resources', 'prayer-requests', 'contacts', 'ministries',
+  'leadership', 'staff', 'giving', 'resources', 'prayer-requests', 'contacts', 'get-involved', 'contact-info', 'ministries',
 ];
 
 export function useCMSPermissions() {

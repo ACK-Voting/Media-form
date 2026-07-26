@@ -8,13 +8,11 @@ export default function Footer() {
           {/* Brand */}
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-500 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
+              <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
+                <img src="/logo_1.jpeg" alt="ACK Mombasa Memorial Cathedral" className="w-full h-full object-cover" />
               </div>
               <div>
-                <p className="font-bold text-white leading-tight">ACK Cathedral Mombasa</p>
+                <p className="font-bold text-white leading-tight">ACK Mombasa Memorial Cathedral</p>
                 <p className="text-gray-400 text-xs">Anglican Church of Kenya</p>
               </div>
             </div>
@@ -27,7 +25,7 @@ export default function Footer() {
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                 </svg>
               </a>
-              <a href="#" aria-label="YouTube" className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center hover:bg-red-600 transition-colors">
+              <a href="https://www.youtube.com/channel/UCpWkbuh0E1INa6GLMFKVBAw" target="_blank" rel="noopener noreferrer" aria-label="YouTube" className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center hover:bg-red-600 transition-colors">
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
                 </svg>
@@ -119,7 +117,7 @@ export default function Footer() {
         </div>
 
         <div className="pt-8 border-t border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-3 text-sm text-gray-500">
-          <p>&copy; {new Date().getFullYear()} ACK Cathedral Mombasa. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} ACK Mombasa Memorial Cathedral. All rights reserved.</p>
           <div className="flex gap-4">
             <Link href="/mockup/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</Link>
             <Link href="/mockup/contact" className="hover:text-gray-300 transition-colors">Contact</Link>
