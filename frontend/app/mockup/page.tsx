@@ -59,7 +59,7 @@ export default function ACKCathedralMockup() {
 
     // Slow the hero background video down for a calmer feel
     useEffect(() => {
-        if (heroVideoRef.current) heroVideoRef.current.playbackRate = 0.25;
+        if (heroVideoRef.current) heroVideoRef.current.playbackRate = 0.5;
     }, []);
 
     // Parallax effect
