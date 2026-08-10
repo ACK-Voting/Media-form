@@ -1,9 +1,12 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { ministryPosts as seed, MinistryPost } from '@/app/mockup/_data/mockData';
+import { ministryPosts as seed, MinistryPost } from '@/app/_data/mockData';
+import { listOps } from './contentApi';
 
 interface MinistryPostsStore {
   posts: MinistryPost[];
+  loaded: boolean;
+  error: string | null;
+  hydrate: (items: MinistryPost[]) => void;
   add: (p: Omit<MinistryPost, 'id'>) => void;
   update: (id: string, patch: Partial<MinistryPost>) => void;
   remove: (id: string) => void;
@@ -11,29 +14,27 @@ interface MinistryPostsStore {
   byMinistry: (slug: string) => MinistryPost[];
 }
 
-export const useMinistryPostsStore = create<MinistryPostsStore>()(
-  persist(
-    (set, get) => ({
-      posts: seed,
-      add: (p) =>
-        set((state) => ({
-          posts: [{ ...p, id: crypto.randomUUID() }, ...state.posts],
-        })),
-      update: (id, patch) =>
-        set((state) => ({
-          posts: state.posts.map((p) => (p.id === id ? { ...p, ...patch } : p)),
-        })),
-      remove: (id) =>
-        set((state) => ({ posts: state.posts.filter((p) => p.id !== id) })),
-      togglePublish: (id) =>
-        set((state) => ({
-          posts: state.posts.map((p) =>
-            p.id === id ? { ...p, published: !p.published } : p
-          ),
-        })),
-      byMinistry: (slug) =>
-        get().posts.filter((p) => p.ministrySlug === slug && p.published),
-    }),
-    { name: 'cms-ministry-posts' }
-  )
-);
+export const useMinistryPostsStore = create<MinistryPostsStore>()((set, get) => {
+  const ops = listOps<MinistryPost>('ministryPosts', {
+    get: () => get().posts,
+    setList: (posts) => set({ posts }),
+    setError: (error) => set({ error }),
+  });
+
+  return {
+    posts: seed,
+    loaded: false,
+    error: null,
+    hydrate: (items) => set({ posts: items, loaded: true }),
+    // ministrySlug travels at the top level so the server can enforce that a
+    // ministry admin only creates posts for their own ministry.
+    add: (p) => ops.add(p, { ministrySlug: p.ministrySlug }),
+    update: ops.update,
+    remove: ops.remove,
+    togglePublish: (id) => {
+      const post = get().posts.find((p) => p.id === id);
+      if (post) ops.update(id, { published: !post.published } as Partial<MinistryPost>);
+    },
+    byMinistry: (slug) => get().posts.filter((p) => p.ministrySlug === slug && p.published),
+  };
+});

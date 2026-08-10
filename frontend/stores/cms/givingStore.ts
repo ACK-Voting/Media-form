@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { givingInfo as seed } from '@/app/mockup/_data/mockData';
+import { givingInfo as seed } from '@/app/_data/mockData';
+import { singletonOps } from './contentApi';
 
 type GivingCategory = { id: string; label: string; description: string };
 
@@ -18,49 +18,49 @@ interface GivingInfo {
 
 interface GivingStore {
   givingInfo: GivingInfo;
+  version: number;
+  loaded: boolean;
+  error: string | null;
+  hydrate: (value: GivingInfo & { version?: number }) => void;
   updateMpesa: (patch: Partial<GivingInfo['mpesa']>) => void;
   updateBank: (patch: Partial<GivingInfo['bank']>) => void;
   addCategory: (cat: GivingCategory) => void;
   updateCategory: (id: string, patch: Partial<GivingCategory>) => void;
   removeCategory: (id: string) => void;
+  flush: () => Promise<void>;
 }
 
-export const useGivingStore = create<GivingStore>()(
-  persist(
-    (set) => ({
-      givingInfo: seed,
-      updateMpesa: (patch) =>
-        set((state) => ({
-          givingInfo: { ...state.givingInfo, mpesa: { ...state.givingInfo.mpesa, ...patch } },
-        })),
-      updateBank: (patch) =>
-        set((state) => ({
-          givingInfo: { ...state.givingInfo, bank: { ...state.givingInfo.bank, ...patch } },
-        })),
-      addCategory: (cat) =>
-        set((state) => ({
-          givingInfo: {
-            ...state.givingInfo,
-            givingCategories: [...state.givingInfo.givingCategories, cat],
-          },
-        })),
-      updateCategory: (id, patch) =>
-        set((state) => ({
-          givingInfo: {
-            ...state.givingInfo,
-            givingCategories: state.givingInfo.givingCategories.map((c) =>
-              c.id === id ? { ...c, ...patch } : c
-            ),
-          },
-        })),
-      removeCategory: (id) =>
-        set((state) => ({
-          givingInfo: {
-            ...state.givingInfo,
-            givingCategories: state.givingInfo.givingCategories.filter((c) => c.id !== id),
-          },
-        })),
-    }),
-    { name: 'cms-giving' }
-  )
-);
+export const useGivingStore = create<GivingStore>()((set, get) => {
+  const ops = singletonOps<GivingInfo>('giving', {
+    get: () => get().givingInfo,
+    getVersion: () => get().version,
+    setValue: (givingInfo, version) =>
+      set(version === undefined ? { givingInfo } : { givingInfo, version }),
+    setError: (error) => set({ error }),
+  });
+
+  return {
+    givingInfo: seed,
+    version: 0,
+    loaded: false,
+    error: null,
+    hydrate: ({ version, ...value }) =>
+      set({ givingInfo: value as GivingInfo, version: version ?? 0, loaded: true }),
+
+    updateMpesa: (patch) => ops.patch({ mpesa: { ...get().givingInfo.mpesa, ...patch } }),
+    updateBank: (patch) => ops.patch({ bank: { ...get().givingInfo.bank, ...patch } }),
+    addCategory: (cat) =>
+      ops.patch({ givingCategories: [...get().givingInfo.givingCategories, cat] }),
+    updateCategory: (id, patch) =>
+      ops.patch({
+        givingCategories: get().givingInfo.givingCategories.map((c) =>
+          c.id === id ? { ...c, ...patch } : c
+        ),
+      }),
+    removeCategory: (id) =>
+      ops.patch({
+        givingCategories: get().givingInfo.givingCategories.filter((c) => c.id !== id),
+      }),
+    flush: ops.flush,
+  };
+});

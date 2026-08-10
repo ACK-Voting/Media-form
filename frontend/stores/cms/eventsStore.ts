@@ -1,29 +1,31 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { events as seed, ChurchEvent } from '@/app/mockup/_data/mockData';
+import { events as seed, ChurchEvent } from '@/app/_data/mockData';
+import { listOps } from './contentApi';
 
 interface EventsStore {
   events: ChurchEvent[];
-  add: (e: Omit<ChurchEvent, 'id'>) => void;
+  loaded: boolean;
+  error: string | null;
+  hydrate: (items: ChurchEvent[]) => void;
+  add: (e: Omit<ChurchEvent, 'id'>, extra?: { ministrySlug?: string }) => void;
   update: (id: string, patch: Partial<ChurchEvent>) => void;
   remove: (id: string) => void;
 }
 
-export const useEventsStore = create<EventsStore>()(
-  persist(
-    (set) => ({
-      events: seed,
-      add: (e) =>
-        set((state) => ({
-          events: [{ ...e, id: crypto.randomUUID() }, ...state.events],
-        })),
-      update: (id, patch) =>
-        set((state) => ({
-          events: state.events.map((e) => (e.id === id ? { ...e, ...patch } : e)),
-        })),
-      remove: (id) =>
-        set((state) => ({ events: state.events.filter((e) => e.id !== id) })),
-    }),
-    { name: 'cms-events' }
-  )
-);
+export const useEventsStore = create<EventsStore>()((set, get) => {
+  const ops = listOps<ChurchEvent>('events', {
+    get: () => get().events,
+    setList: (events) => set({ events }),
+    setError: (error) => set({ error }),
+  });
+
+  return {
+    events: seed,
+    loaded: false,
+    error: null,
+    hydrate: (items) => set({ events: items, loaded: true }),
+    add: ops.add,
+    update: ops.update,
+    remove: ops.remove,
+  };
+});

@@ -2,8 +2,14 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const { Resend } = require('resend');
-const auth = require('../middleware/auth');
 const GetInvolvedSubmission = require('../models/GetInvolvedSubmission');
+const { requireCMSUser, requireSection } = require('../middleware/cmsAuth');
+
+// These submissions come from the church website and are read in /cms, so they
+// belong to the CMS identity realm. They previously used middleware/auth, which
+// verifies the media-team Admin JWT — meaning /cms/get-involved could never
+// read them however valid the CMS session was.
+const auth = [requireCMSUser, requireSection('get-involved')];
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM  = process.env.EMAIL_FROM || `ACK Mombasa Memorial Cathedral <${process.env.EMAIL_USER}>`;
@@ -14,7 +20,7 @@ const validation = [
     body('lastName').trim().notEmpty().withMessage('Last name is required'),
     body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
     body('phone').trim().notEmpty().withMessage('Phone number is required'),
-    body('type').isIn(['membership', 'volunteer']).withMessage('Invalid submission type'),
+    body('type').isIn(['membership', 'volunteer', 'application']).withMessage('Invalid submission type'),
 ];
 
 // POST /api/get-involved — public form submission
@@ -26,7 +32,11 @@ router.post('/', validation, async (req, res) => {
 
     const { firstName, lastName, email, phone, address, baptized, confirmed, previousChurch, ministries, message, type } = req.body;
     const fullName = `${firstName} ${lastName}`;
-    const typeName = type === 'membership' ? 'Membership Application' : 'Volunteer Sign-Up';
+    const typeName = type === 'membership'
+        ? 'Membership Application'
+        : type === 'application'
+            ? `Application — ${req.body.opportunityRole || 'Open Role'}`
+            : 'Volunteer Sign-Up';
     const ministriesList = Array.isArray(ministries) && ministries.length ? ministries.join(', ') : '—';
 
     try {
@@ -36,6 +46,9 @@ router.post('/', validation, async (req, res) => {
             baptized, confirmed, previousChurch,
             ministries: Array.isArray(ministries) ? ministries : [],
             message,
+            opportunityId: req.body.opportunityId,
+            opportunityRole: req.body.opportunityRole,
+            coverLetter: req.body.coverLetter,
         });
 
         // Confirmation to applicant
@@ -101,7 +114,7 @@ router.get('/', auth, async (req, res) => {
     try {
         const { type, status, limit = 100, skip = 0 } = req.query;
         const filter = {};
-        if (type && ['membership', 'volunteer'].includes(type)) filter.type = type;
+        if (type && ['membership', 'volunteer', 'application'].includes(type)) filter.type = type;
         if (status && ['pending', 'reviewed', 'accepted', 'declined'].includes(status)) filter.status = status;
 
         const [submissions, total] = await Promise.all([

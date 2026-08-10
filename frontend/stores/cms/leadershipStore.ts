@@ -1,41 +1,31 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { leadership as seed, Leader } from '@/app/mockup/_data/mockData';
+import { leadership as seed, Leader } from '@/app/_data/mockData';
+import { listOps } from './contentApi';
 
 interface LeadershipStore {
   leaders: Leader[];
+  loaded: boolean;
+  error: string | null;
+  hydrate: (items: Leader[]) => void;
   add: (l: Omit<Leader, 'id'>) => void;
   update: (id: string, patch: Partial<Leader>) => void;
   remove: (id: string) => void;
 }
 
-export const useLeadershipStore = create<LeadershipStore>()(
-  persist(
-    (set) => ({
-      leaders: seed,
-      add: (l) =>
-        set((state) => ({
-          leaders: [...state.leaders, { ...l, id: crypto.randomUUID() }],
-        })),
-      update: (id, patch) =>
-        set((state) => ({
-          leaders: state.leaders.map((l) => (l.id === id ? { ...l, ...patch } : l)),
-        })),
-      remove: (id) =>
-        set((state) => ({ leaders: state.leaders.filter((l) => l.id !== id) })),
-    }),
-    {
-      name: 'cms-leadership',
-      version: 1,
-      migrate: (persisted) => {
-        // v0 stores predate seeded photos: fill missing photos from the seed
-        const state = persisted as { leaders?: Leader[] };
-        const leaders = (state?.leaders ?? seed).map((l) => {
-          const s = seed.find((x) => x.id === l.id);
-          return s?.photo && !l.photo ? { ...l, photo: s.photo } : l;
-        });
-        return { ...state, leaders };
-      },
-    }
-  )
-);
+export const useLeadershipStore = create<LeadershipStore>()((set, get) => {
+  const ops = listOps<Leader>('leadership', {
+    get: () => get().leaders,
+    setList: (leaders) => set({ leaders }),
+    setError: (error) => set({ error }),
+  });
+
+  return {
+    leaders: seed,
+    loaded: false,
+    error: null,
+    hydrate: (items) => set({ leaders: items, loaded: true }),
+    add: ops.add,
+    update: ops.update,
+    remove: ops.remove,
+  };
+});

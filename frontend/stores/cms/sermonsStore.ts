@@ -1,29 +1,34 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import { sermons as seed, Sermon } from '@/app/mockup/_data/mockData';
+import { sermons as seed, Sermon } from '@/app/_data/mockData';
+import { listOps } from './contentApi';
 
 interface SermonsStore {
   sermons: Sermon[];
+  loaded: boolean;
+  error: string | null;
+  hydrate: (items: Sermon[]) => void;
   add: (s: Omit<Sermon, 'id'>) => void;
   update: (id: string, patch: Partial<Sermon>) => void;
   remove: (id: string) => void;
 }
 
-export const useSermonsStore = create<SermonsStore>()(
-  persist(
-    (set) => ({
-      sermons: seed,
-      add: (s) =>
-        set((state) => ({
-          sermons: [{ ...s, id: crypto.randomUUID() }, ...state.sermons],
-        })),
-      update: (id, patch) =>
-        set((state) => ({
-          sermons: state.sermons.map((s) => (s.id === id ? { ...s, ...patch } : s)),
-        })),
-      remove: (id) =>
-        set((state) => ({ sermons: state.sermons.filter((s) => s.id !== id) })),
-    }),
-    { name: 'cms-sermons' }
-  )
-);
+export const useSermonsStore = create<SermonsStore>()((set, get) => {
+  // The seed is kept as the initial value so pages paint immediately rather
+  // than flashing empty while the first request lands. ContentBootstrap
+  // replaces it with the server's copy on mount.
+  const ops = listOps<Sermon>('sermons', {
+    get: () => get().sermons,
+    setList: (sermons) => set({ sermons }),
+    setError: (error) => set({ error }),
+  });
+
+  return {
+    sermons: seed,
+    loaded: false,
+    error: null,
+    hydrate: (items) => set({ sermons: items, loaded: true }),
+    add: ops.add,
+    update: ops.update,
+    remove: ops.remove,
+  };
+});

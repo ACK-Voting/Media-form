@@ -2,6 +2,7 @@
 
 import { useState, useEffect, ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useMediaPathname } from '@/lib/mediaPath';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import Button from '@/components/ui/Button';
@@ -12,7 +13,9 @@ interface AdminLayoutProps {
 }
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
-  const pathname = usePathname();
+  // Middleware rewrites this app to /media/*, so the raw pathname carries a
+  // /media prefix the nav hrefs below do not have.
+  const pathname = useMediaPathname();
   const router = useRouter();
   const { admin, logout } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

@@ -37,6 +37,11 @@ const limiter = rateLimit({
     },
     standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
     legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    // Public content reads happen once per visitor per page and are edge-cached
+    // anyway; counting them would let ordinary traffic exhaust the budget an
+    // admin needs to do their work. Public writes are limited separately and
+    // much more tightly in routes/inbox.js.
+    skip: (req) => req.method === 'GET' && req.path.startsWith('/content'),
 });
 app.use('/api/', limiter);
 
@@ -72,6 +77,8 @@ const availabilityRoutes = require('./routes/availability');
 const rotaRoutes = require('./routes/rota');
 const mpesaRoutes = require('./routes/mpesa');
 const pesapalRoutes = require('./routes/pesapal');
+const contentRoutes = require('./routes/content');
+const inboxRoutes = require('./routes/inbox');
 
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/auth', authRoutes);
@@ -91,6 +98,9 @@ app.use('/api/availability', availabilityRoutes);
 app.use('/api/rota', rotaRoutes);
 app.use('/api/mpesa', mpesaRoutes);
 app.use('/api/pesapal', pesapalRoutes);
+// Website content, edited in /cms and read by every visitor.
+app.use('/api/content', contentRoutes);
+app.use('/api/inbox', inboxRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

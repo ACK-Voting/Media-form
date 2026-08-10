@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useAnnouncementsStore } from '@/stores/cms/announcementsStore';
-import { BlogPost } from '@/app/mockup/_data/mockData';
+import { BlogPost } from '@/app/_data/mockData';
 import { Select } from '@/components/ui/Select';
 import { RichTextEditor } from '@/components/ui/RichTextEditor';
 

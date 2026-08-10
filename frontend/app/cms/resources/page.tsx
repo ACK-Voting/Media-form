@@ -1,8 +1,10 @@
 'use client';
 
+import { uploadFile } from '@/lib/uploadToCloudinary';
+
 import { useState, useRef } from 'react';
 import { useResourcesStore } from '@/stores/cms/resourcesStore';
-import { Resource } from '@/app/mockup/_data/mockData';
+import { Resource } from '@/app/_data/mockData';
 import { Select } from '@/components/ui/Select';
 
 const CATEGORIES: Resource['category'][] = ['Bulletin', 'Prayer Guide', 'Document', 'News'];
@@ -75,16 +77,12 @@ export default function ResourcesPage() {
     setUploading(true);
     setUploadErr('');
     try {
-      const data = new FormData();
-      data.append('file', file);
-      const res = await fetch('/api/upload?folder=resources', { method: 'POST', body: data });
-      const json = await res.json();
-      if (json.error) throw new Error(json.error);
+      const uploaded = await uploadFile(file, 'resources');
       setForm(f => ({
         ...f,
-        url: json.url,
-        fileType: json.fileType,
-        fileSize: json.fileSize,
+        url: uploaded.url,
+        fileType: uploaded.fileType,
+        fileSize: uploaded.fileSize,
         // Auto-fill title from filename if not already set
         title: f.title || file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' '),
       }));

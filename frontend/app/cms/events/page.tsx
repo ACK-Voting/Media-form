@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useEventsStore } from '@/stores/cms/eventsStore';
-import { ChurchEvent } from '@/app/mockup/_data/mockData';
+import { ChurchEvent } from '@/app/_data/mockData';
 import { Select } from '@/components/ui/Select';
 
 const CATEGORIES: ChurchEvent['category'][] = ['Worship', 'Fellowship', 'Outreach', 'Training', 'Music', 'Youth', 'Children', 'Special'];

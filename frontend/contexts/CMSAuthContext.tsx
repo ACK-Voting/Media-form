@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { CMSUser, CMSUserRole } from '@/app/mockup/_data/mockData';
+import { CMSUser, CMSUserRole } from '@/app/_data/mockData';
 import { apiUrl, cmsAuthHeaders, clearCMSSession, CMS_TOKEN_KEY, CMS_USER_KEY } from '@/lib/apiBase';
 
 interface CMSAuthState {

@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useCMSAuth, CMSProtectedRoute } from '@/contexts/CMSAuthContext';
+import { useCMSAuth, CMSProtectedRoute, CMSAuthProvider } from '@/contexts/CMSAuthContext';
 import { useCMSPermissions } from '@/hooks/useCMSPermissions';
 import { useMinistriesStore } from '@/stores/cms/ministriesStore';
 
@@ -136,7 +136,7 @@ function CMSSidebar() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Link href="/mockup" className="flex-1 text-center py-1.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+          <Link href="/" className="flex-1 text-center py-1.5 text-xs text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
             View Site
           </Link>
           <button onClick={logout} className="flex-1 py-1.5 text-xs text-red-600 hover:text-red-700 border border-red-200 rounded-lg hover:bg-red-50 transition-colors">
@@ -148,7 +148,18 @@ function CMSSidebar() {
   );
 }
 
+// CMSAuthProvider is scoped to /cms rather than the root layout, so a visitor
+// reading the church website never instantiates it or touches localStorage.
+// It must wrap the login page too, which calls useCMSAuth().login.
 export default function CMSLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <CMSAuthProvider>
+      <CMSLayoutInner>{children}</CMSLayoutInner>
+    </CMSAuthProvider>
+  );
+}
+
+function CMSLayoutInner({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isLogin = pathname === '/cms/login';
 

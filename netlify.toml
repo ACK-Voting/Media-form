@@ -1,16 +1,18 @@
+# Netlify builds the Next.js app in frontend/.
+#
+# This file previously configured the old static site that lived at the repo
+# root (publish = ".", plus a catch-all redirect to /index.html). It only went
+# unread because the Netlify UI has the base directory set to "frontend" — had
+# that setting ever been cleared, the deploy would have silently published the
+# legacy HTML instead of the site.
+#
+# Setting `base` here makes the build self-describing, so it no longer depends
+# on a dashboard setting nobody can see from the repo.
+
 [build]
-  command = "npm install"
-  publish = "."
-  functions = "functions"
+  base = "frontend"
+  command = "npm run build"
+  publish = ".next"
 
-[dev]
-  framework = "#custom"
-  targetPort = 8888
-  port = 8888
-  publish = "."
-  command = "python -m http.server 8888"
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

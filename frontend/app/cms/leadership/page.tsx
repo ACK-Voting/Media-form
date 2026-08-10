@@ -1,8 +1,10 @@
 'use client';
 
+import { uploadFile } from '@/lib/uploadToCloudinary';
+
 import { useState, useRef } from 'react';
 import { useLeadershipStore } from '@/stores/cms/leadershipStore';
-import { Leader } from '@/app/mockup/_data/mockData';
+import { Leader } from '@/app/_data/mockData';
 
 const emptyLeader: Omit<Leader, 'id'> = {
   name: '', role: '', title: '', bio: '', phone: '', email: '', ordained: '', photo: '',
@@ -60,14 +62,13 @@ export default function LeadershipPage() {
     if (!file) return;
     setUploading(true);
     try {
-      const data = new FormData();
-      data.append('file', file);
-      const res = await fetch('/api/upload?folder=leadership', { method: 'POST', body: data });
-      const json = await res.json();
-      if (json.url) setField('photo', json.url);
-      else if (json.error) alert(json.error);
+      const { url } = await uploadFile(file, 'leadership');
+      setField('photo', url);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Upload failed.');
     } finally {
       setUploading(false);
+      e.target.value = '';
     }
   }
 

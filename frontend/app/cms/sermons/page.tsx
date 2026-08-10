@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useSermonsStore } from '@/stores/cms/sermonsStore';
-import { Sermon } from '@/app/mockup/_data/mockData';
+import { Sermon } from '@/app/_data/mockData';
 
 const empty: Omit<Sermon, 'id'> = {
   title: '', preacher: '', date: '', scripture: '', series: '',

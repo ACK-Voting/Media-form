@@ -9,4 +9,7 @@ export { useResourcesStore } from './resourcesStore';
 export { useGivingStore } from './givingStore';
 export { usePrayerStore } from './prayerStore';
 export { useContactsStore } from './contactsStore';
-export { useCMSUsersStore } from './cmsUsersStore';
+export { useStaffStore } from './staffStore';
+export { useContactInfoStore } from './contactInfoStore';
+export { useGetInvolvedStore } from './getInvolvedStore';
+// cmsUsersStore is gone: /cms/users has always talked to the real backend.

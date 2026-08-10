@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGetInvolvedStore, Submission, Opportunity, Application } from '@/stores/cms/getInvolvedStore';
 import { Select } from '@/components/ui/Select';
 
@@ -215,7 +215,11 @@ export default function GetInvolvedCMSPage() {
     updateStatus, removeSubmission,
     addOpportunity, updateOpportunity, removeOpportunity,
     updateApplicationStatus, removeApplication,
+    load,
   } = useGetInvolvedStore();
+
+  // Submissions and applications come from MongoDB, not this browser.
+  useEffect(() => { load(); }, [load]);
 
   const [tab, setTab] = useState<'submissions' | 'applications' | 'opportunities'>('submissions');
 

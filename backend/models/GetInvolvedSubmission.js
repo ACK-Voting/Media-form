@@ -7,7 +7,12 @@ const getInvolvedSubmissionSchema = new mongoose.Schema(
     email:     { type: String, required: true, trim: true, lowercase: true },
     phone:     { type: String, required: true, trim: true },
     address:   { type: String, trim: true },
-    type:      { type: String, enum: ['membership', 'volunteer'], required: true },
+    // 'application' is someone applying to a specific listed opportunity;
+    // it shares this collection so staff have one inbox rather than two.
+    type:      { type: String, enum: ['membership', 'volunteer', 'application'], required: true },
+    opportunityId:   { type: String, trim: true },
+    opportunityRole: { type: String, trim: true },
+    coverLetter:     { type: String, trim: true, maxlength: 5000 },
     baptized:       { type: String, trim: true },
     confirmed:      { type: String, trim: true },
     previousChurch: { type: String, trim: true },

@@ -1,8 +1,10 @@
 'use client';
 
+import { uploadFile } from '@/lib/uploadToCloudinary';
+
 import { useState, useRef } from 'react';
 import { useStaffStore } from '@/stores/cms/staffStore';
-import { StaffMember, Department } from '@/app/mockup/_data/mockData';
+import { StaffMember, Department } from '@/app/_data/mockData';
 import { Select } from '@/components/ui/Select';
 
 const inputCls =
@@ -44,14 +46,13 @@ export default function StaffCMSPage() {
     if (!file) return;
     setUploading(true);
     try {
-      const data = new FormData();
-      data.append('file', file);
-      const res = await fetch('/api/upload?folder=leadership', { method: 'POST', body: data });
-      const json = await res.json();
-      if (json.url) setStaffField('photo', json.url);
-      else if (json.error) alert(json.error);
+      const { url } = await uploadFile(file, 'staff');
+      setStaffField('photo', url);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Upload failed.');
     } finally {
       setUploading(false);
+      e.target.value = '';
     }
   }
 

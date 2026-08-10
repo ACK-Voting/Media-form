@@ -1,15 +1,15 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-import {
-  staffMembers as seedStaff,
-  departments as seedDepartments,
-  StaffMember,
-  Department,
-} from '@/app/mockup/_data/mockData';
+import { departments as seedDepartments, StaffMember, Department } from '@/app/_data/mockData';
+import { listOps, singletonOps } from './contentApi';
 
 interface StaffStore {
   staff: StaffMember[];
   departments: Department[];
+  departmentsVersion: number;
+  loaded: boolean;
+  error: string | null;
+  hydrateStaff: (items: StaffMember[]) => void;
+  hydrateDepartments: (value: { departments: Department[]; version?: number }) => void;
   addStaff: (s: Omit<StaffMember, 'id'>) => void;
   updateStaff: (id: string, patch: Partial<StaffMember>) => void;
   removeStaff: (id: string) => void;
@@ -18,45 +18,49 @@ interface StaffStore {
   removeDepartment: (id: string) => void;
 }
 
-export const useStaffStore = create<StaffStore>()(
-  persist(
-    (set) => ({
-      staff: [],
-      departments: seedDepartments,
-      addStaff: (s) =>
-        set((state) => ({
-          staff: [...state.staff, { ...s, id: crypto.randomUUID() }],
-        })),
-      updateStaff: (id, patch) =>
-        set((state) => ({
-          staff: state.staff.map((s) => (s.id === id ? { ...s, ...patch } : s)),
-        })),
-      removeStaff: (id) =>
-        set((state) => ({ staff: state.staff.filter((s) => s.id !== id) })),
-      addDepartment: (name) =>
-        set((state) => ({
-          departments: [...state.departments, { id: crypto.randomUUID(), name }],
-        })),
-      updateDepartment: (id, name) =>
-        set((state) => ({
-          departments: state.departments.map((d) => (d.id === id ? { ...d, name } : d)),
-        })),
-      removeDepartment: (id) =>
-        set((state) => ({ departments: state.departments.filter((d) => d.id !== id) })),
-    }),
-    {
-      name: 'cms-staff',
-      version: 1,
-      migrate: (persisted: unknown) => {
-        const state = persisted as { staff: StaffMember[]; departments: Department[] };
-        const seedIds = new Set(['s1', 's2', 's3', 's4', 's5', 's6']);
-        return {
-          ...state,
-          staff: (state.staff ?? []).filter(
-            (s) => !seedIds.has(s.id) && s.photo !== '/bishop.jpeg'
-          ),
-        };
-      },
-    }
-  )
-);
+const uid = () => globalThis.crypto?.randomUUID?.() ?? `id-${Date.now()}`;
+
+// Staff starts empty on purpose: the six entries in mockData are placeholders
+// that all share /bishop.jpeg, and showing them publicly would misrepresent who
+// works at the cathedral. Real staff are added through /cms/staff.
+export const useStaffStore = create<StaffStore>()((set, get) => {
+  const staffOps = listOps<StaffMember>('staff', {
+    get: () => get().staff,
+    setList: (staff) => set({ staff }),
+    setError: (error) => set({ error }),
+  });
+
+  // Departments are a short list edited as a unit, so they live in a singleton
+  // section rather than one document each.
+  const deptOps = singletonOps<{ departments: Department[] }>('staffDepartments', {
+    get: () => ({ departments: get().departments }),
+    getVersion: () => get().departmentsVersion,
+    setValue: ({ departments }, version) =>
+      set(version === undefined ? { departments } : { departments, departmentsVersion: version }),
+    setError: (error) => set({ error }),
+  });
+
+  return {
+    staff: [],
+    departments: seedDepartments,
+    departmentsVersion: 0,
+    loaded: false,
+    error: null,
+    hydrateStaff: (items) => set({ staff: items, loaded: true }),
+    hydrateDepartments: ({ departments, version }) =>
+      set({ departments, departmentsVersion: version ?? 0 }),
+
+    addStaff: staffOps.add,
+    updateStaff: staffOps.update,
+    removeStaff: staffOps.remove,
+
+    addDepartment: (name) =>
+      deptOps.patch({ departments: [...get().departments, { id: uid(), name }] }),
+    updateDepartment: (id, name) =>
+      deptOps.patch({
+        departments: get().departments.map((d) => (d.id === id ? { ...d, name } : d)),
+      }),
+    removeDepartment: (id) =>
+      deptOps.patch({ departments: get().departments.filter((d) => d.id !== id) }),
+  };
+});

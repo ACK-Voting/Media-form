@@ -1,11 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePrayerStore } from '@/stores/cms/prayerStore';
 
 export default function PrayerRequestsPage() {
-  const { requests, markPrayed } = usePrayerStore();
+  const { requests, markPrayed, load, loaded, error } = usePrayerStore();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Requests live on the server now, so fetch them rather than reading whatever
+  // this particular browser happens to have stored.
+  useEffect(() => { load(); }, [load]);
 
   const unprayed = requests.filter((r) => !r.prayedFor).length;
 
@@ -31,6 +35,16 @@ export default function PrayerRequestsPage() {
           </label>
         )}
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">{error}</div>
+      )}
+      {!loaded && !error && (
+        <div className="py-16 text-center text-gray-400 text-sm">Loading prayer requests…</div>
+      )}
+      {loaded && requests.length === 0 && (
+        <div className="py-16 text-center text-gray-400 text-sm">No prayer requests yet.</div>
+      )}
 
       <div className="space-y-4">
         {requests.map((r) => (

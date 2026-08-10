@@ -1,9 +1,12 @@
 'use client';
 
+import { useEffect } from 'react';
 import { useContactsStore } from '@/stores/cms/contactsStore';
 
 export default function ContactsPage() {
-  const { contacts, markRead } = useContactsStore();
+  const { contacts, markRead, load, loaded, error } = useContactsStore();
+
+  useEffect(() => { load(); }, [load]);
 
   const unread = contacts.filter((c) => !c.read).length;
 
@@ -13,6 +16,16 @@ export default function ContactsPage() {
         <h1 className="text-2xl font-bold text-gray-900">Contact Form Submissions</h1>
         <p className="text-gray-500 text-sm mt-1">{contacts.length} total · {unread} unread</p>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">{error}</div>
+      )}
+      {!loaded && !error && (
+        <div className="py-16 text-center text-gray-400 text-sm">Loading messages…</div>
+      )}
+      {loaded && contacts.length === 0 && (
+        <div className="py-16 text-center text-gray-400 text-sm">No messages yet.</div>
+      )}
 
       <div className="space-y-4">
         {contacts.map((c) => (

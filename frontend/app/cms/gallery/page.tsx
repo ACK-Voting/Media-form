@@ -1,8 +1,10 @@
 'use client';
 
+import { uploadFile } from '@/lib/uploadToCloudinary';
+
 import { useState, useRef } from 'react';
 import { useGalleryStore } from '@/stores/cms/galleryStore';
-import { GalleryItem } from '@/app/mockup/_data/mockData';
+import { GalleryItem } from '@/app/_data/mockData';
 import { Select } from '@/components/ui/Select';
 
 const CATEGORIES: GalleryItem['category'][] = ['Worship', 'Events', 'Youth', 'Community', 'History'];
@@ -40,14 +42,15 @@ export default function GalleryPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
-    const data = new FormData();
-    data.append('file', file);
-    const res = await fetch('/api/upload?folder=gallery', { method: 'POST', body: data });
-    const json = await res.json();
-    if (json.url) setField('photo', json.url);
-    else if (json.error) alert(json.error);
-    setUploading(false);
-    e.target.value = '';
+    try {
+      const { url } = await uploadFile(file, 'gallery');
+      setField('photo', url);
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Upload failed.');
+    } finally {
+      setUploading(false);
+      e.target.value = '';
+    }
   }
 
   function handleAdd() {

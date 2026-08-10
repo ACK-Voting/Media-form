@@ -1,67 +1,71 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { writeFile, mkdir } from 'fs/promises';
-import path from 'path';
+import crypto from 'crypto';
+import { apiUrl } from '@/lib/apiBase';
 
-const IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
-const DOC_TYPES: Record<string, string> = {
-  'application/pdf': 'PDF',
-  'application/msword': 'DOC',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
-  'application/vnd.ms-excel': 'XLS',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'XLSX',
-  'application/vnd.ms-powerpoint': 'PPT',
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'PPTX',
-};
+/**
+ * Issues a short-lived signature so the browser can upload straight to
+ * Cloudinary.
+ *
+ * The file never passes through this function on purpose: Netlify caps a
+ * function's request body at roughly 4.5 MB, and the cathedral's existing
+ * clergy portraits run to 8.3 MB — proxying would fail on exactly the files
+ * that matter most. The previous implementation wrote to the local filesystem,
+ * which is read-only and ephemeral on Netlify, so uploads never worked in
+ * production at all.
+ *
+ * Signed rather than an unsigned preset: an unsigned preset is an open write
+ * endpoint against the account's quota, discoverable in the page source of a
+ * public church website.
+ */
 
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+const CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
+const API_KEY = process.env.CLOUDINARY_API_KEY;
+const API_SECRET = process.env.CLOUDINARY_API_SECRET;
 
 export async function POST(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
-  const rawFolder = searchParams.get('folder') ?? 'gallery';
-  const folder = rawFolder.replace(/[^a-zA-Z0-9_-]/g, '');
-
-  const formData = await request.formData();
-  const file = formData.get('file') as File | null;
-
-  if (!file) {
-    return NextResponse.json({ error: 'No file provided' }, { status: 400 });
+  // Authenticate before anything else, so an anonymous caller learns nothing
+  // about how the deployment is configured.
+  //
+  // Only signed-in CMS staff may upload. The backend is asked to validate the
+  // token rather than verifying it here, so JWT_SECRET stays in one service.
+  const authorization = request.headers.get('authorization');
+  if (!authorization?.startsWith('Bearer ')) {
+    return NextResponse.json({ error: 'Please sign in again.' }, { status: 401 });
   }
-
-  const isImage = IMAGE_TYPES.includes(file.type);
-  const isDoc = file.type in DOC_TYPES;
-
-  if (!isImage && !isDoc) {
-    return NextResponse.json(
-      { error: 'Unsupported file type. Allowed: JPEG, PNG, WebP, PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX' },
-      { status: 400 }
-    );
-  }
-
-  const bytes = await file.arrayBuffer();
-  const buffer = Buffer.from(bytes);
-
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const filename = `${Date.now()}-${safeName}`;
-  const dir = path.join(process.cwd(), `public/uploads/${folder}`);
 
   try {
-    await mkdir(dir, { recursive: true });
-    await writeFile(path.join(dir, filename), buffer);
+    const check = await fetch(apiUrl('/cms-users/me'), {
+      headers: { Authorization: authorization },
+      cache: 'no-store',
+    });
+    if (!check.ok) {
+      return NextResponse.json({ error: 'Please sign in again.' }, { status: 401 });
+    }
   } catch {
-    // Serverless hosts (Netlify/Vercel) have a read-only, ephemeral filesystem
+    return NextResponse.json({ error: 'Could not verify your session.' }, { status: 502 });
+  }
+
+  if (!CLOUD_NAME || !API_KEY || !API_SECRET) {
     return NextResponse.json(
-      { error: 'File uploads are not available on the live site yet — files can only be uploaded when running locally. Cloud storage is coming with the backend integration.' },
+      { error: 'Image uploads are not configured. Set the CLOUDINARY_* environment variables.' },
       { status: 501 }
     );
   }
 
+  const rawFolder = new URL(request.url).searchParams.get('folder') ?? 'gallery';
+  const folder = `ack/${rawFolder.replace(/[^a-zA-Z0-9_-]/g, '') || 'gallery'}`;
+  const timestamp = Math.floor(Date.now() / 1000);
+
+  // Cloudinary signs the alphabetically sorted parameters, excluding file,
+  // api_key and resource_type.
+  const toSign = `folder=${folder}&timestamp=${timestamp}`;
+  const signature = crypto.createHash('sha1').update(toSign + API_SECRET).digest('hex');
+
   return NextResponse.json({
-    url: `/uploads/${folder}/${filename}`,
-    fileType: isDoc ? DOC_TYPES[file.type] : 'Image',
-    fileSize: formatSize(file.size),
+    cloudName: CLOUD_NAME,
+    apiKey: API_KEY,
+    timestamp,
+    folder,
+    signature,
   });
 }
