@@ -1,19 +1,6 @@
 // ─── Centralized Mockup Data ───────────────────────────────────────────────
 // Replace these imports with API/Supabase calls when the backend is ready.
 
-export type Sermon = {
-  id: string;
-  title: string;
-  preacher: string;
-  date: string;
-  scripture: string;
-  series: string;
-  duration: string;
-  views: string;
-  youtubeId: string;
-  description: string;
-  tags: string[];
-};
 
 export type ChurchEvent = {
   id: string;
@@ -46,6 +33,10 @@ export type Ministry = {
   bgColor: string;
   category: 'Core' | 'Fellowship' | 'Service' | 'Worship';
   tags: string[];
+  /** Show this ministry in the four-card grid on the home page. */
+  featured?: boolean;
+  /** Heroicons outline `d` path, drawn in the home page card. */
+  icon?: string;
 };
 
 export type Leader = {
@@ -226,167 +217,8 @@ export type CMSUser = {
 
 // ─── SERMONS ────────────────────────────────────────────────────────────────
 
-export const sermons: Sermon[] = [
-  {
-    id: '1',
-    title: 'Walking in Faith: Trusting God in Uncertain Times',
-    preacher: 'The Very Rev. Dr. James Mwangi',
-    date: '2024-04-07',
-    scripture: 'Hebrews 11:1-6',
-    series: 'Faith That Moves Mountains',
-    duration: '45:20',
-    views: '3.2K',
-    youtubeId: 'dQw4w9WgXcQ',
-    description: 'An exploration of what it means to trust God completely when circumstances seem impossible, drawing from the lives of biblical heroes of faith.',
-    tags: ['Faith', 'Trust', 'Prayer'],
-  },
-  {
-    id: '2',
-    title: 'The Power of Prayer in the Local Church',
-    preacher: 'Rev. Sarah Kamau',
-    date: '2024-03-31',
-    scripture: 'Acts 4:23-31',
-    series: 'Acts: The Church Alive',
-    duration: '38:15',
-    views: '2.8K',
-    youtubeId: 'dQw4w9WgXcQ',
-    description: 'How the early church turned to prayer in times of persecution, and how we can apply the same principles in our lives today.',
-    tags: ['Prayer', 'Church', 'Holy Spirit'],
-  },
-  {
-    id: '3',
-    title: "God's Unfailing Love: A Study of Lamentations",
-    preacher: 'The Very Rev. Dr. James Mwangi',
-    date: '2024-03-24',
-    scripture: 'Lamentations 3:22-26',
-    series: 'Hope for the Hurting',
-    duration: '42:30',
-    views: '4.1K',
-    youtubeId: 'dQw4w9WgXcQ',
-    description: 'Even in the darkest valleys, God\'s mercies are new every morning. This message brings comfort and hope to those going through difficult seasons.',
-    tags: ['Hope', 'Suffering', 'Grace'],
-  },
-  {
-    id: '4',
-    title: 'Stewardship: Managing What God Has Given Us',
-    preacher: 'Archdeacon Peter Oduya',
-    date: '2024-03-17',
-    scripture: 'Matthew 25:14-30',
-    series: 'Kingdom Living',
-    duration: '50:05',
-    views: '1.9K',
-    youtubeId: 'dQw4w9WgXcQ',
-    description: 'An in-depth look at the Parable of the Talents and how God calls each of us to faithfully manage the gifts, time, and resources He has entrusted to us.',
-    tags: ['Stewardship', 'Giving', 'Kingdom'],
-  },
-  {
-    id: '5',
-    title: 'The Sermon on the Mount: Blessed Are the Peacemakers',
-    preacher: 'Rev. Grace Otieno',
-    date: '2024-03-10',
-    scripture: 'Matthew 5:9',
-    series: 'Beatitudes: Upside-Down Kingdom',
-    duration: '36:45',
-    views: '2.3K',
-    youtubeId: 'dQw4w9WgXcQ',
-    description: 'What does it mean to be a peacemaker in a world torn by conflict? Jesus\' teaching challenges us to be active agents of reconciliation.',
-    tags: ['Peace', 'Beatitudes', 'Reconciliation'],
-  },
-  {
-    id: '6',
-    title: 'Kufuata Yesu: Kuishi kwa Lengo (Swahili Service)',
-    preacher: 'Rev. Emmanuel Charo',
-    date: '2024-03-03',
-    scripture: 'Yohana 15:5',
-    series: 'Maisha ya Injili',
-    duration: '44:00',
-    views: '1.5K',
-    youtubeId: 'dQw4w9WgXcQ',
-    description: 'Somo kuhusu jinsi tunavyoweza kuishi maisha ya lengo kwa kukaa ndani ya Kristo kila siku.',
-    tags: ['Swahili', 'Discipleship', 'Purpose'],
-  },
-  {
-    id: '7',
-    title: "Easter Sunday: He Is Risen — Now What?",
-    preacher: 'The Very Rev. Dr. James Mwangi',
-    date: '2024-03-31',
-    scripture: '1 Corinthians 15:12-22',
-    series: 'Easter 2024',
-    duration: '55:00',
-    views: '7.4K',
-    youtubeId: 'dQw4w9WgXcQ',
-    description: 'A special Easter celebration message on the significance of the resurrection for every believer\'s daily life and eternal hope.',
-    tags: ['Easter', 'Resurrection', 'Hope'],
-  },
-  {
-    id: '8',
-    title: 'Youth Service: Your Generation, God\'s Purpose',
-    preacher: 'Rev. Daniel Kariuki',
-    date: '2024-02-25',
-    scripture: '1 Timothy 4:12',
-    series: 'Raised for Such a Time',
-    duration: '40:10',
-    views: '3.6K',
-    youtubeId: 'dQw4w9WgXcQ',
-    description: 'A powerful message for young people reminding them that God has a specific purpose for their generation, calling them to rise up with courage.',
-    tags: ['Youth', 'Purpose', 'Identity'],
-  },
-  {
-    id: '9',
-    title: "The Lord's Prayer: A Model for All Prayer",
-    preacher: 'Rev. Sarah Kamau',
-    date: '2024-02-18',
-    scripture: 'Matthew 6:9-13',
-    series: 'School of Prayer',
-    duration: '47:30',
-    views: '2.1K',
-    youtubeId: 'dQw4w9WgXcQ',
-    description: 'Jesus gave us a model prayer that encompasses every aspect of our relationship with God. A deep dive into each petition.',
-    tags: ['Prayer', 'Discipleship', 'Worship'],
-  },
-  {
-    id: '10',
-    title: 'Fruits of the Spirit: Growing in Christlikeness',
-    preacher: 'Archdeacon Peter Oduya',
-    date: '2024-02-11',
-    scripture: 'Galatians 5:22-23',
-    series: 'Life in the Spirit',
-    duration: '41:55',
-    views: '2.7K',
-    youtubeId: 'dQw4w9WgXcQ',
-    description: 'The fruit of the Spirit is not a list to achieve but a character to grow into. This message explores each fruit and how it manifests in daily life.',
-    tags: ['Holy Spirit', 'Character', 'Growth'],
-  },
-  {
-    id: '11',
-    title: 'Community & the Body of Christ',
-    preacher: 'Rev. Grace Otieno',
-    date: '2024-02-04',
-    scripture: '1 Corinthians 12:12-27',
-    series: 'Together We Thrive',
-    duration: '38:40',
-    views: '1.8K',
-    youtubeId: 'dQw4w9WgXcQ',
-    description: 'What does it mean to be one body with many parts? A vision for authentic Christian community in the local church.',
-    tags: ['Community', 'Unity', 'Church'],
-  },
-  {
-    id: '12',
-    title: "Women's Day Special: Women Who Shaped History",
-    preacher: 'Rev. Sarah Kamau',
-    date: '2024-03-08',
-    scripture: 'Proverbs 31:25-31',
-    series: 'Special Services',
-    duration: '43:15',
-    views: '5.2K',
-    youtubeId: 'dQw4w9WgXcQ',
-    description: 'A special Women\'s Day message celebrating the women of the Bible and the women of faith in our congregation today.',
-    tags: ['Women', 'Special Service', 'Celebration'],
-  },
-];
-
-export const sermonSeries = [...new Set(sermons.map(s => s.series))];
-export const sermonPreachers = [...new Set(sermons.map(s => s.preacher))];
+// Sermons are served from the cathedral YouTube channel via
+// app/api/youtube/latest, so there is no sermon data here.
 
 // ─── EVENTS ─────────────────────────────────────────────────────────────────
 

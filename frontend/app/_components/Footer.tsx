@@ -1,6 +1,16 @@
+'use client';
+
 import Link from 'next/link';
+import { useContactInfoStore } from '@/stores/cms/contactInfoStore';
 
 export default function Footer() {
+  // Phone, email and hours come from /cms/contact-info. They used to be
+  // hardcoded here *and* stored there, so the two drifted apart — the footer
+  // still showed a placeholder number.
+  const { departments, officeHours, serviceTimes } = useContactInfoStore();
+  const general = departments.find((d) => /general/i.test(d.name)) ?? departments[0];
+  const weekday = officeHours[0];
+
   return (
     <footer className="bg-gray-900 text-white pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -95,19 +105,26 @@ export default function Footer() {
                 <svg className="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                 </svg>
-                <a href="tel:+254700123456" className="hover:text-white transition-colors">+254 700 123 456</a>
+                <a href={`tel:${(general?.phone ?? '').replace(/\s/g, '')}`} className="hover:text-white transition-colors">
+                  {general?.phone}
+                </a>
               </li>
               <li className="flex items-center gap-2.5">
                 <svg className="w-4 h-4 text-amber-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                <a href="mailto:info@ackmombasa.org" className="hover:text-white transition-colors">info@ackmombasa.org</a>
+                <a href={`mailto:${general?.email ?? ''}`} className="hover:text-white transition-colors">
+                  {general?.email}
+                </a>
               </li>
               <li className="flex items-start gap-2.5">
                 <svg className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <span>Sun: 7 AM, 9 AM, 11 AM, 6 PM<br />Office: Mon–Fri, 8 AM–5 PM</span>
+                <span>
+                  Sun: {serviceTimes.map((s) => s.time).join(', ')}
+                  {weekday && <><br />Office: {weekday.day}, {weekday.time}</>}
+                </span>
               </li>
             </ul>
             <Link href="/contact" className="inline-flex items-center gap-1.5 mt-4 text-sm text-amber-400 hover:text-amber-300 font-medium transition-colors">

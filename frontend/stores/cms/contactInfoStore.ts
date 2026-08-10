@@ -73,21 +73,20 @@ interface ContactInfoStore extends ContactInfo {
 
 const uid = () => globalThis.crypto?.randomUUID?.() ?? `id-${Date.now()}-${Math.random()}`;
 
-// Fallback shown only until the server responds. The authoritative values live
-// in MongoDB — edit them in /cms/contact-info, not here.
+// Fallback shown only until the server responds, so service times don't flicker
+// on first paint. Limited to details that have been verified — the placeholder
+// booking contacts, facility capacities and sequential department numbers were
+// removed. The authoritative copy lives in MongoDB; edit it in
+// /cms/contact-info, not here.
 const seed: ContactInfo = {
-  spaces: [
-    { id: 'sp1', name: 'Main Cathedral', icon: '⛪', capacity: 'Up to 1,200 guests', desc: 'The full cathedral nave — perfect for weddings, memorial services, and large gatherings.', color: 'blue', active: true },
-    { id: 'sp2', name: 'Cathedral Hall', icon: '🏛️', capacity: 'Up to 300 guests', desc: 'A versatile hall suitable for conferences, receptions, workshops, and community meetings.', color: 'green', active: true },
-    { id: 'sp3', name: 'Chapel', icon: '🕊️', capacity: 'Up to 80 guests', desc: 'An intimate chapel space ideal for small ceremonies, prayer groups, and quiet retreats.', color: 'purple', active: true },
-  ],
-  bookingPhone: '+254 722 000 006',
-  bookingEmail: 'events@ackmombasa.org',
+  spaces: [],
+  bookingPhone: '',
+  bookingEmail: '',
   serviceTimes: [
-    { id: 'st1', name: 'English Service', time: '7:00 AM', lang: 'English' },
-    { id: 'st2', name: 'Swahili Service', time: '9:00 AM', lang: 'Kiswahili' },
-    { id: 'st3', name: 'Main Service', time: '11:00 AM', lang: 'English + Swahili' },
-    { id: 'st4', name: 'Evensong', time: '6:00 PM', lang: 'English' },
+    { id: 'st1', name: 'English Service', time: '7:00 AM',  lang: 'English',           description: 'Traditional Anglican liturgy in English', duration: '1 hour',      liveStreamed: true,  color: 'blue' },
+    { id: 'st2', name: 'Swahili Service', time: '9:00 AM',  lang: 'Kiswahili',         description: 'Ibada ya Kiswahili',                      duration: '1 hr 30 min', liveStreamed: true,  color: 'green' },
+    { id: 'st3', name: 'Main Service',    time: '11:00 AM', lang: 'English + Swahili', description: 'Our main bilingual family service',        duration: '2 hours',     liveStreamed: true,  color: 'purple' },
+    { id: 'st4', name: 'Evensong',        time: '6:00 PM',  lang: 'English',           description: 'Choral Evening Prayer',                   duration: '1 hour',      liveStreamed: false, color: 'amber' },
   ],
   officeHours: [
     { id: 'oh1', day: 'Monday – Friday', time: '8:00 AM – 5:00 PM' },
@@ -95,12 +94,7 @@ const seed: ContactInfo = {
     { id: 'oh3', day: 'Sunday', time: 'Open during services' },
   ],
   departments: [
-    { id: 'dp1', name: "Sub Dean's Office", email: 'subdean@ackmombasa.org', phone: '0724 906 951' },
-    { id: 'dp2', name: 'General Enquiries', email: 'info@ackmombasa.org', phone: '+254 700 123 456' },
-    { id: 'dp3', name: 'Youth Ministry', email: 'youth@ackmombasa.org', phone: '+254 722 000 004' },
-    { id: 'dp4', name: "Children's Ministry", email: 'children@ackmombasa.org', phone: '+254 722 000 005' },
-    { id: 'dp5', name: 'Events & Bookings', email: 'events@ackmombasa.org', phone: '+254 722 000 006' },
-    { id: 'dp6', name: 'Media Team', email: 'media@ackmombasa.org', phone: '+254 722 000 007' },
+    { id: 'dp1', name: "Sub Dean's Office", email: '', phone: '0724 906 951' },
   ],
 };
 

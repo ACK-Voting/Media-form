@@ -212,6 +212,39 @@ export default function MinistryHubPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Description</label>
                 <textarea className={`${inputCls} h-40 resize-y`} value={(info as Record<string, string>).longDescription ?? ''} onChange={(e) => setInfoForm((f) => ({ ...(f ?? ministry as unknown as Record<string, string>), longDescription: e.target.value }))} />
               </div>
+
+              {/* Controls the four-card grid on the home page. */}
+              <div className="pt-4 border-t border-gray-100">
+                <label className="flex items-center gap-2.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={Boolean((info as Record<string, unknown>).featured)}
+                    onChange={(e) => setInfoForm((f) => ({
+                      ...(f ?? ministry as unknown as Record<string, string>),
+                      featured: e.target.checked as unknown as string,
+                    }))}
+                    className="w-4 h-4 accent-blue-600 rounded"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Feature on the home page</span>
+                </label>
+                <p className="text-xs text-gray-400 mt-1 ml-6.5">
+                  The home page shows the first four featured ministries as large cards.
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Home page icon</label>
+                <input
+                  className={inputCls}
+                  value={(info as Record<string, string>).icon ?? ''}
+                  onChange={(e) => setInfoForm((f) => ({ ...(f ?? ministry as unknown as Record<string, string>), icon: e.target.value }))}
+                  placeholder="Heroicons outline path data"
+                />
+                <p className="text-xs text-gray-400 mt-1">
+                  The <code>d</code> value from a{' '}
+                  <a href="https://heroicons.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Heroicons</a>{' '}
+                  outline icon. Leave as-is unless you want a different symbol.
+                </p>
+              </div>
             </div>
           </div>
         )}

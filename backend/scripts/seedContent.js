@@ -11,6 +11,7 @@ const { isSection, isSingleton } = require('../config/contentSections');
  *
  *   npm run seed:content            # only fills gaps, never overwrites
  *   npm run seed:content -- --force # overwrite existing documents
+ *   npm run seed:content -- --prune # also DELETE documents not in the seed
  *   npm run seed:content -- --dry   # report what would change
  *
  * Deliberately NOT run on boot. The old seedCMSUsers() did that, and a restart
@@ -23,6 +24,9 @@ const SEED_FILE = path.join(__dirname, '../seed/content.json');
 async function seedContent() {
   const force = process.argv.includes('--force');
   const dryRun = process.argv.includes('--dry');
+  // Destructive: removes anything in a seeded section that the seed no longer
+  // lists. Used to clear the original mock-up content out of production.
+  const prune = process.argv.includes('--prune');
 
   if (!fs.existsSync(SEED_FILE)) {
     console.error(`❌ ${SEED_FILE} not found. Run: node scripts/generateSeed.js`);
@@ -37,6 +41,7 @@ async function seedContent() {
     let created = 0;
     let updated = 0;
     let skipped = 0;
+    let deleted = 0;
 
     for (const [section, payload] of Object.entries(seed)) {
       if (!isSection(section)) {
@@ -48,6 +53,17 @@ async function seedContent() {
       if (!Array.isArray(docs)) {
         console.warn(`⚠️  Section "${section}" is malformed, skipping`);
         continue;
+      }
+
+      if (prune) {
+        const keep = docs.map((d) => d.itemId);
+        const filter = { section, itemId: { $nin: keep } };
+        const doomed = await ContentItem.countDocuments(filter);
+        if (doomed) {
+          if (!dryRun) await ContentItem.deleteMany(filter);
+          deleted += doomed;
+          console.log(`  − ${section}: removed ${doomed} item(s) not in the seed`);
+        }
       }
 
       for (const doc of docs) {
@@ -88,7 +104,7 @@ async function seedContent() {
       }
     }
 
-    console.log(`\n  created: ${created}\n  updated: ${updated}\n  skipped (already present): ${skipped}`);
+    console.log(`\n  created: ${created}\n  updated: ${updated}\n  deleted: ${deleted}\n  skipped (already present): ${skipped}`);
     if (skipped && !force) {
       console.log('\n  Existing documents were left alone. Re-run with --force to overwrite them.');
     }

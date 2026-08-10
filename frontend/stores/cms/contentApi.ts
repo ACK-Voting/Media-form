@@ -62,6 +62,12 @@ export async function submitToInbox(kind: InboxKind, payload: Record<string, unk
   });
 }
 
+/** The public prayer wall: shared requests only, with emails stripped. */
+export async function fetchPublicPrayers<T>(): Promise<T[]> {
+  const json = await request<{ requests: T[] }>('/inbox/prayer/public');
+  return json.requests || [];
+}
+
 export async function fetchInbox<T>(kind: InboxKind): Promise<T[]> {
   const json = await request<{ items: T[] }>(`/inbox/${kind}`);
   return json.items || [];

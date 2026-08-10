@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ministryPosts as seed, MinistryPost } from '@/app/_data/mockData';
+import { MinistryPost } from '@/app/_data/mockData';
 import { listOps } from './contentApi';
 
 interface MinistryPostsStore {
@@ -22,7 +22,10 @@ export const useMinistryPostsStore = create<MinistryPostsStore>()((set, get) => 
   });
 
   return {
-    posts: seed,
+  // Starts empty: this content is entered in the CMS. Shipping the old
+  // mock-up data as a fallback would flash invented content on screen
+  // before the real (possibly empty) response arrives.
+    posts: [],
     loaded: false,
     error: null,
     hydrate: (items) => set({ posts: items, loaded: true }),

@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { useCMSAuth } from '@/contexts/CMSAuthContext';
 import { useCMSPermissions } from '@/hooks/useCMSPermissions';
-import { useSermonsStore } from '@/stores/cms/sermonsStore';
 import { useEventsStore } from '@/stores/cms/eventsStore';
 import { useAnnouncementsStore } from '@/stores/cms/announcementsStore';
 import { usePrayerStore } from '@/stores/cms/prayerStore';
@@ -34,7 +33,6 @@ export default function CMSDashboard() {
   const { user } = useCMSAuth();
   const { isMinistryOnly, ministryAccess } = useCMSPermissions();
 
-  const sermons = useSermonsStore((s) => s.sermons);
   const events = useEventsStore((s) => s.events);
   const posts = useAnnouncementsStore((s) => s.posts);
   const prayers = usePrayerStore((s) => s.requests);
@@ -54,7 +52,6 @@ export default function CMSDashboard() {
   const quickActions = isMinistryOnly ? [
     { label: 'New Ministry Post', href: `/cms/ministries/${ministryAccess[0]}`, icon: 'M12 4v16m8-8H4', color: 'bg-blue-600' },
   ] : [
-    { label: 'Add Sermon', href: '/cms/sermons', icon: 'M12 4v16m8-8H4', color: 'bg-blue-600' },
     { label: 'Add Event', href: '/cms/events', icon: 'M12 4v16m8-8H4', color: 'bg-green-600' },
     { label: 'New Announcement', href: '/cms/announcements', icon: 'M12 4v16m8-8H4', color: 'bg-purple-600' },
     { label: 'Upload to Gallery', href: '/cms/gallery', icon: 'M12 4v16m8-8H4', color: 'bg-amber-600' },
@@ -76,7 +73,6 @@ export default function CMSDashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {!isMinistryOnly ? (
           <>
-            <StatCard label="Total Sermons" value={sermons.length} icon="M15 10l4.553-2.069A1 1 0 0121 8.882V17.5a1 1 0 01-1.447.894L15 16M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" color="bg-blue-600" href="/cms/sermons" />
             <StatCard label="Upcoming Events" value={upcomingEvents} icon="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" color="bg-green-600" href="/cms/events" />
             <StatCard label="Published Posts" value={publishedPosts} icon="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" color="bg-purple-600" href="/cms/announcements" />
             <StatCard label="Unread Prayers" value={unreadPrayers} icon="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" color="bg-red-500" href="/cms/prayer-requests" />

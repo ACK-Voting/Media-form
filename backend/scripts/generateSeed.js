@@ -16,24 +16,24 @@ const { execFileSync } = require('child_process');
 
 const REPO = path.resolve(__dirname, '../..');
 const FRONTEND = path.join(REPO, 'frontend');
-const MOCK_DATA = path.join(FRONTEND, 'app/mockup/_data/mockData.ts');
+const MOCK_DATA = path.join(FRONTEND, 'app/_data/mockData.ts');
 const TSC = path.join(FRONTEND, 'node_modules/typescript/bin/tsc');
 const OUT = path.join(__dirname, '../seed/content.json');
 
-function loadMockData() {
+function compile(file) {
   if (!fs.existsSync(TSC)) {
     console.error('❌ TypeScript not found. Run `npm install` in frontend/ first.');
     process.exit(1);
   }
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ack-seed-'));
   execFileSync(process.execPath, [
-    TSC, MOCK_DATA,
+    TSC, file,
     '--outDir', tmp,
     '--module', 'commonjs',
     '--target', 'es2020',
     '--skipLibCheck',
   ], { stdio: 'inherit' });
-  const compiled = path.join(tmp, 'mockData.js');
+  const compiled = path.join(tmp, path.basename(file).replace(/\.ts$/, '.js'));
   const data = require(compiled);
   fs.rmSync(tmp, { recursive: true, force: true });
   return data;
@@ -63,73 +63,109 @@ function singleton(data) {
 // Ported once, here, because after the migration those store defaults become
 // dead code — the server is the source of truth.
 
-const CONTACT_INFO = {
-  spaces: [
-    { id: 'sp1', name: 'Main Cathedral', icon: '⛪', capacity: 'Up to 1,200 guests', desc: 'The full cathedral nave — perfect for weddings, memorial services, and large gatherings.', color: 'blue', active: true },
-    { id: 'sp2', name: 'Cathedral Hall', icon: '🏛️', capacity: 'Up to 300 guests', desc: 'A versatile hall suitable for conferences, receptions, workshops, and community meetings.', color: 'green', active: true },
-    { id: 'sp3', name: 'Chapel', icon: '🕊️', capacity: 'Up to 80 guests', desc: 'An intimate chapel space ideal for small ceremonies, prayer groups, and quiet retreats.', color: 'purple', active: true },
-  ],
-  bookingPhone: '+254 722 000 006',
-  bookingEmail: 'events@ackmombasa.org',
-  serviceTimes: [
-    { id: 'st1', name: 'English Service', time: '7:00 AM', lang: 'English' },
-    { id: 'st2', name: 'Swahili Service', time: '9:00 AM', lang: 'Kiswahili' },
-    { id: 'st3', name: 'Main Service', time: '11:00 AM', lang: 'English + Swahili' },
-    { id: 'st4', name: 'Evensong', time: '6:00 PM', lang: 'English' },
-  ],
-  officeHours: [
-    { id: 'oh1', day: 'Monday – Friday', time: '8:00 AM – 5:00 PM' },
-    { id: 'oh2', day: 'Saturday', time: '9:00 AM – 1:00 PM' },
-    { id: 'oh3', day: 'Sunday', time: 'Open during services' },
-  ],
-  departments: [
-    { id: 'dp1', name: "Sub Dean's Office", email: 'subdean@ackmombasa.org', phone: '0724 906 951' },
-    { id: 'dp2', name: 'General Enquiries', email: 'info@ackmombasa.org', phone: '+254 700 123 456' },
-    { id: 'dp3', name: 'Youth Ministry', email: 'youth@ackmombasa.org', phone: '+254 722 000 004' },
-    { id: 'dp4', name: "Children's Ministry", email: 'children@ackmombasa.org', phone: '+254 722 000 005' },
-    { id: 'dp5', name: 'Events & Bookings', email: 'events@ackmombasa.org', phone: '+254 722 000 006' },
-    { id: 'dp6', name: 'Media Team', email: 'media@ackmombasa.org', phone: '+254 722 000 007' },
-  ],
-};
-
-const OPPORTUNITIES = [
-  { id: 'op1', role: 'Administrative Assistant', type: 'Full-Time', dept: 'Cathedral Office', desc: 'Support the cathedral office with correspondence, scheduling, and records management.', active: true },
-  { id: 'op2', role: 'Sunday School Teacher', type: 'Volunteer', dept: "Children's Ministry", desc: 'Passionate about kids? Lead Sunday school sessions for ages 4–12 during the 9 AM and 11 AM services.', active: true },
-  { id: 'op3', role: 'Media & Communications', type: 'Part-Time', dept: 'Media Team', desc: 'Help manage our social media, website updates, and live-stream production on Sundays.', active: true },
+const VERIFIED_SERVICE_TIMES = [
+  { id: 'st1', name: 'English Service', time: '7:00 AM',  lang: 'English',           description: 'Traditional Anglican liturgy in English', duration: '1 hour',      liveStreamed: true,  color: 'blue' },
+  { id: 'st2', name: 'Swahili Service', time: '9:00 AM',  lang: 'Kiswahili',         description: 'Ibada ya Kiswahili',                      duration: '1 hr 30 min', liveStreamed: true,  color: 'green' },
+  { id: 'st3', name: 'Main Service',    time: '11:00 AM', lang: 'English + Swahili', description: 'Our main bilingual family service',        duration: '2 hours',     liveStreamed: true,  color: 'purple' },
+  { id: 'st4', name: 'Evensong',        time: '6:00 PM',  lang: 'English',           description: 'Choral Evening Prayer',                   duration: '1 hour',      liveStreamed: false, color: 'amber' },
 ];
 
+const OFFICE_HOURS = [
+  { id: 'oh1', day: 'Monday – Friday', time: '8:00 AM – 5:00 PM' },
+  { id: 'oh2', day: 'Saturday', time: '9:00 AM – 1:00 PM' },
+  { id: 'oh3', day: 'Sunday', time: 'Open during services' },
+];
+
+// The four ministries shown as large cards on the home page, with the icon each
+// card draws. Staff can change both in /cms/ministries/<slug>.
+const MINISTRY_ICONS = {
+  children: 'M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+  kayo:     'M13 10V3L4 14h7v7l9-11h-7z',
+  awf:      'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z',
+  amf:      'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
+};
+const DEFAULT_MINISTRY_ICON =
+  'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z';
+
+function withHomePageFields(ministries) {
+  return ministries.map((doc) => ({
+    ...doc,
+    data: {
+      ...doc.data,
+      featured: Object.prototype.hasOwnProperty.call(MINISTRY_ICONS, doc.itemId),
+      icon: MINISTRY_ICONS[doc.itemId] ?? DEFAULT_MINISTRY_ICON,
+    },
+  }));
+}
+
 function build() {
-  const m = loadMockData();
+  const m = compile(MOCK_DATA);
+
+  // ── What gets seeded ──────────────────────────────────────────────────────
+  //
+  // Only content that has been verified as real. Everything the public reads
+  // starts empty and is entered through the CMS, because a church website that
+  // publishes invented events, news or history is worse than one with an
+  // empty section. The original mock-up data lives on in git history if it is
+  // ever needed as a layout reference.
+
+  // Real: the cathedral's clergy and lay leaders, with their own phone numbers
+  // and the photographs uploaded for them.
+  const leadership = list(m.leadership);
+
+  // Real ministries, but their leader/contact/member fields were placeholders.
+  // Keeping the pages and navigation while blanking the unverified claims.
+  const ministries = withHomePageFields(list(m.ministries, { idKey: 'slug' })).map((doc) => ({
+    ...doc,
+    data: { ...doc.data, leader: '', leaderTitle: '', contact: '', members: '' },
+  }));
+
+  // Only the photographs that actually exist; the rest were coloured
+  // placeholders with invented captions.
+  const gallery = list(m.galleryItems).filter((doc) => doc.data.photo);
+
+  // Real paybill. The bank block held a placeholder account number, which is a
+  // problem on a page asking people to send money — cleared until verified.
+  const giving = singleton({
+    mpesa: m.givingInfo.mpesa,
+    bank: { name: '', branch: '', accountName: '', accountNumber: '', swiftCode: '' },
+    givingCategories: m.givingInfo.givingCategories,
+  });
+
+  // Service times are real. The Sub Dean's line matches the clergy record; the
+  // other numbers were sequential placeholders (+254 722 000 004-7).
+  const contactInfo = singleton({
+    spaces: [],
+    bookingPhone: '',
+    bookingEmail: '',
+    serviceTimes: VERIFIED_SERVICE_TIMES,
+    officeHours: OFFICE_HOURS,
+    departments: [
+      { id: 'dp1', name: "Sub Dean's Office", email: '', phone: '0724 906 951' },
+    ],
+  });
 
   const sections = {
-    sermons:       list(m.sermons),
-    events:        list(m.events),
-    gallery:       list(m.galleryItems),
-    announcements: list(m.blogPosts),
-    ministries:    list(m.ministries, { idKey: 'slug' }),
-    ministryPosts: list(m.ministryPosts, { ministryKey: 'ministrySlug' }),
-    leadership:    list(m.leadership),
-    resources:     list(m.resources),
+    leadership,
+    ministries,
+    gallery,
+    giving,
+    contactInfo,
 
-    // staffStore deliberately starts empty: the six entries in mockData are
-    // placeholders sharing /bishop.jpeg, and its existing migration already
-    // strips them from browsers that stored them.
-    staff:         [],
-
-    opportunities: list(OPPORTUNITIES),
-
-    giving:           singleton(m.givingInfo),
-    contactInfo:      singleton(CONTACT_INFO),
+    // Department names are organisational scaffolding for the staff directory,
+    // not claims about anyone, so they stay as a starting point.
     staffDepartments: singleton({ departments: m.departments }),
 
-    // Filled in when the home page and history page move into the CMS.
-    home:    singleton({}),
-    history: singleton({}),
+    // Entered through the CMS. Empty on purpose — see the note above.
+    events: [],
+    announcements: [],
+    ministryPosts: [],
+    resources: [],
+    staff: [],
+    opportunities: [],
+    home: singleton({}),
+    history: singleton({ historicalEvents: [], keyFigures: [], architecturalFeatures: [] }),
   };
-
-  // Prayer requests and contact messages are NOT seeded. mockData's nine
-  // entries are invented people ("Mary Wanjiku", "Peter Kamau") that staff
-  // would reasonably read as real requests needing a pastoral response.
 
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, JSON.stringify(sections, null, 2) + '\n');

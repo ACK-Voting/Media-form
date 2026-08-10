@@ -8,7 +8,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 // Canonical role -> section table. frontend/hooks/useCMSPermissions.ts mirrors
 // this for UI gating only; this file is the one that actually enforces it.
 const CHURCH_ADMIN_SECTIONS = [
-  'sermons', 'events', 'gallery', 'announcements', 'leadership', 'staff',
+  'events', 'gallery', 'announcements', 'leadership', 'staff',
   'giving', 'resources', 'prayer-requests', 'contacts', 'get-involved',
   'contact-info', 'ministries', 'home', 'history', 'staffDepartments',
   'ministryPosts', 'opportunities', 'footer',

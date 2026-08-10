@@ -11,7 +11,6 @@
 // same collection shape and must never leak.
 
 const SECTIONS = {
-  sermons:          { kind: 'list',      public: true,  scopable: false },
   events:           { kind: 'list',      public: true,  scopable: true  },
   gallery:          { kind: 'list',      public: true,  scopable: true  },
   announcements:    { kind: 'list',      public: true,  scopable: false },

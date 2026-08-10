@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react';
 import { fetchAllContent } from '@/stores/cms/contentApi';
-import { useSermonsStore } from '@/stores/cms/sermonsStore';
 import { useEventsStore } from '@/stores/cms/eventsStore';
 import { useGalleryStore } from '@/stores/cms/galleryStore';
 import { useAnnouncementsStore } from '@/stores/cms/announcementsStore';
@@ -14,6 +13,7 @@ import { useGivingStore } from '@/stores/cms/givingStore';
 import { useStaffStore } from '@/stores/cms/staffStore';
 import { useContactInfoStore } from '@/stores/cms/contactInfoStore';
 import { useGetInvolvedStore } from '@/stores/cms/getInvolvedStore';
+import { useHistoryStore } from '@/stores/cms/historyStore';
 
 /**
  * Loads every content section in one request and pushes it into the stores.
@@ -35,9 +35,6 @@ export default function ContentBootstrap() {
 
         const list = <T,>(value: unknown): T[] | null =>
           Array.isArray(value) ? (value as T[]) : null;
-
-        const sermons = list(s.sermons);
-        if (sermons) useSermonsStore.getState().hydrate(sermons as never);
 
         const events = list(s.events);
         if (events) useEventsStore.getState().hydrate(events as never);
@@ -69,6 +66,7 @@ export default function ContentBootstrap() {
         if (s.giving) useGivingStore.getState().hydrate(s.giving as never);
         if (s.contactInfo) useContactInfoStore.getState().hydrate(s.contactInfo as never);
         if (s.staffDepartments) useStaffStore.getState().hydrateDepartments(s.staffDepartments as never);
+        if (s.history) useHistoryStore.getState().hydrate(s.history as never);
       })
       .catch(() => {
         // The seed is already on screen. Failing loudly here would replace a

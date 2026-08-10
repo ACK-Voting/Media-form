@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react';
 import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
 import { useEventsStore } from '@/stores/cms/eventsStore';
+import { useContactsStore } from '@/stores/cms/contactsStore';
 import type { ChurchEvent } from '../_data/mockData';
 
 const categoryColors: Record<ChurchEvent['category'], string> = {
@@ -46,6 +47,27 @@ export default function EventsPage() {
   const [tab, setTab] = useState<'upcoming' | 'past'>('upcoming');
   const [category, setCategory] = useState<ChurchEvent['category'] | 'All'>('All');
   const [registrationModal, setRegistrationModal] = useState<ChurchEvent | null>(null);
+
+  const addContact = useContactsStore((s) => s.addFromForm);
+
+  // Event registration
+  const [regForm, setRegForm] = useState({ name: '', phone: '', email: '', attendees: '1' });
+  const [regSending, setRegSending] = useState(false);
+  const [regDone, setRegDone] = useState(false);
+  const [regError, setRegError] = useState('');
+
+  // Newsletter
+  const [subEmail, setSubEmail] = useState('');
+  const [subSending, setSubSending] = useState(false);
+  const [subDone, setSubDone] = useState(false);
+  const [subError, setSubError] = useState('');
+
+  function openRegistration(event: ChurchEvent) {
+    setRegForm({ name: '', phone: '', email: '', attendees: '1' });
+    setRegDone(false);
+    setRegError('');
+    setRegistrationModal(event);
+  }
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -204,7 +226,7 @@ export default function EventsPage() {
 
                       {tab === 'upcoming' && (
                         <button
-                          onClick={() => event.registrationRequired && setRegistrationModal(event)}
+                          onClick={() => event.registrationRequired && openRegistration(event)}
                           className={`w-full py-2.5 rounded-xl text-sm font-semibold transition-all ${
                             event.spotsLeft === 0
                               ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
@@ -239,27 +261,69 @@ export default function EventsPage() {
                 </svg>
               </button>
             </div>
-            <form className="space-y-4" onSubmit={e => { e.preventDefault(); alert('Registration submitted! (mockup)'); setRegistrationModal(null); }}>
+            {regDone ? (
+              <div className="text-center py-6">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                </div>
+                <h4 className="font-bold text-gray-900 mb-1">Registration Received</h4>
+                <p className="text-sm text-gray-600">The Cathedral office will be in touch to confirm your place.</p>
+              </div>
+            ) : (
+            <form className="space-y-4" onSubmit={async e => {
+              e.preventDefault();
+              setRegSending(true);
+              setRegError('');
+              try {
+                // Registrations land in the CMS contact inbox with the event
+                // named in the subject, so staff see them alongside enquiries.
+                await addContact({
+                  name: regForm.name,
+                  email: regForm.email,
+                  phone: regForm.phone,
+                  subject: `Event registration — ${registrationModal.title}`,
+                  message: `${regForm.name} would like to attend "${registrationModal.title}" on ${formatDate(registrationModal.date)} at ${registrationModal.time}.\n\nNumber of attendees: ${regForm.attendees}\nPhone: ${regForm.phone}\nEmail: ${regForm.email || '—'}`,
+                });
+                setRegDone(true);
+              } catch (err) {
+                setRegError(err instanceof Error ? err.message : 'Could not submit your registration. Please try again.');
+              } finally {
+                setRegSending(false);
+              }
+            }}>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <input type="text" required placeholder="Your full name" className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="text" required placeholder="Your full name" value={regForm.name}
+                  onChange={e => setRegForm(f => ({ ...f, name: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                <input type="tel" required placeholder="+254 700 000 000" className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="tel" required placeholder="+254 700 000 000" value={regForm.phone}
+                  onChange={e => setRegForm(f => ({ ...f, phone: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
-                <input type="email" placeholder="your@email.com" className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="email" placeholder="your@email.com" value={regForm.email}
+                  onChange={e => setRegForm(f => ({ ...f, email: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Number of Attendees</label>
-                <input type="number" min="1" max="10" defaultValue="1" className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <input type="number" min="1" max="10" value={regForm.attendees}
+                  onChange={e => setRegForm(f => ({ ...f, attendees: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
-              <button type="submit" className="w-full bg-blue-900 text-white py-3 rounded-xl font-semibold hover:bg-blue-800 transition-colors">
-                Confirm Registration
+              {regError && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">{regError}</p>
+              )}
+              <button type="submit" disabled={regSending}
+                className="w-full bg-blue-900 text-white py-3 rounded-xl font-semibold hover:bg-blue-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                {regSending ? 'Submitting…' : 'Confirm Registration'}
               </button>
             </form>
+            )}
           </div>
         </div>
       )}
@@ -269,10 +333,42 @@ export default function EventsPage() {
         <div className="max-w-3xl mx-auto px-4 text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Stay Updated</h2>
           <p className="text-gray-600 mb-6">Get our weekly bulletin and event announcements delivered to your inbox.</p>
-          <form className="flex gap-3 max-w-md mx-auto" onSubmit={e => { e.preventDefault(); alert('Subscribed! (mockup)'); }}>
-            <input type="email" required placeholder="Your email address" className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-            <button type="submit" className="bg-blue-900 text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-800 transition-colors">Subscribe</button>
-          </form>
+          {subDone ? (
+            <p className="text-sm font-semibold text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-3 max-w-md mx-auto">
+              Thank you — we&apos;ll add you to the bulletin list.
+            </p>
+          ) : (
+            <form className="flex gap-3 max-w-md mx-auto" onSubmit={async e => {
+              e.preventDefault();
+              setSubSending(true);
+              setSubError('');
+              try {
+                // There is no mailing-list service yet, so a subscription
+                // request goes to the CMS inbox for staff to action. Better a
+                // real request someone reads than a button that does nothing.
+                await addContact({
+                  name: subEmail,
+                  email: subEmail,
+                  subject: 'Newsletter subscription request',
+                  message: `${subEmail} asked to receive the weekly bulletin and event announcements.`,
+                });
+                setSubDone(true);
+              } catch (err) {
+                setSubError(err instanceof Error ? err.message : 'Could not subscribe. Please try again.');
+              } finally {
+                setSubSending(false);
+              }
+            }}>
+              <input type="email" required placeholder="Your email address" value={subEmail}
+                onChange={e => setSubEmail(e.target.value)}
+                className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <button type="submit" disabled={subSending}
+                className="bg-blue-900 text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-blue-800 transition-colors disabled:opacity-60">
+                {subSending ? '…' : 'Subscribe'}
+              </button>
+            </form>
+          )}
+          {subError && <p className="text-sm text-red-600 mt-3">{subError}</p>}
         </div>
       </section>
 

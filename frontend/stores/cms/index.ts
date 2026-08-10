@@ -1,4 +1,3 @@
-export { useSermonsStore } from './sermonsStore';
 export { useEventsStore } from './eventsStore';
 export { useGalleryStore } from './galleryStore';
 export { useAnnouncementsStore } from './announcementsStore';

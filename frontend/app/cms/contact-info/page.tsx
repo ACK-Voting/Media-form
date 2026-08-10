@@ -278,6 +278,21 @@ export default function ContactInfoPage() {
                   onChange={e => updateServiceTime(s.id, { time: e.target.value })} placeholder="7:00 AM" />
                 <input className={inputCls} value={s.lang}
                   onChange={e => updateServiceTime(s.id, { lang: e.target.value })} placeholder="English" />
+                {/* Shown on the home page service cards. */}
+                <input className={inputCls} value={s.description ?? ''}
+                  onChange={e => updateServiceTime(s.id, { description: e.target.value })} placeholder="Short description" />
+                <input className={inputCls} value={s.duration ?? ''}
+                  onChange={e => updateServiceTime(s.id, { duration: e.target.value })} placeholder="1 hour" />
+                <select className={inputCls} value={s.color ?? 'blue'}
+                  onChange={e => updateServiceTime(s.id, { color: e.target.value })}>
+                  {['blue', 'green', 'purple', 'amber'].map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+                <label className="flex items-center gap-2 text-sm text-gray-600 whitespace-nowrap">
+                  <input type="checkbox" checked={s.liveStreamed ?? false}
+                    onChange={e => updateServiceTime(s.id, { liveStreamed: e.target.checked })}
+                    className="w-4 h-4 accent-blue-600 rounded" />
+                  Live streamed
+                </label>
               </EditableRow>
             ))}
           </div>

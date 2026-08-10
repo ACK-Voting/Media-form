@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { resources as seed, Resource } from '@/app/_data/mockData';
+import { Resource } from '@/app/_data/mockData';
 import { listOps } from './contentApi';
 
 interface ResourcesStore {
@@ -20,7 +20,10 @@ export const useResourcesStore = create<ResourcesStore>()((set, get) => {
   });
 
   return {
-    resources: seed,
+  // Starts empty: this content is entered in the CMS. Shipping the old
+  // mock-up data as a fallback would flash invented content on screen
+  // before the real (possibly empty) response arrives.
+    resources: [],
     loaded: false,
     error: null,
     hydrate: (items) => set({ resources: items, loaded: true }),

@@ -60,13 +60,6 @@ interface GetInvolvedStore {
   removeApplication: (id: string) => void;
 }
 
-// Fallback until the server responds; the real list lives in /cms/get-involved.
-const seedOpportunities: Opportunity[] = [
-  { id: 'op1', role: 'Administrative Assistant', type: 'Full-Time', dept: 'Cathedral Office', desc: 'Support the cathedral office with correspondence, scheduling, and records management.', active: true },
-  { id: 'op2', role: 'Sunday School Teacher', type: 'Volunteer', dept: "Children's Ministry", desc: 'Passionate about kids? Lead Sunday school sessions for ages 4–12 during the 9 AM and 11 AM services.', active: true },
-  { id: 'op3', role: 'Media & Communications', type: 'Part-Time', dept: 'Media Team', desc: 'Help manage our social media, website updates, and live-stream production on Sundays.', active: true },
-];
-
 // Submissions and applications share one backend collection so staff have a
 // single inbox. `type: 'application'` marks an application to a listed role.
 async function staffRequest(path: string, init?: RequestInit) {
@@ -99,7 +92,9 @@ export const useGetInvolvedStore = create<GetInvolvedStore>()((set, get) => {
 
   return {
     submissions: [],
-    opportunities: seedOpportunities,
+    // Entered in /cms/get-involved. No bundled fallback: the previous
+    // three entries were invented job listings.
+    opportunities: [],
     applications: [],
     loaded: false,
     error: null,

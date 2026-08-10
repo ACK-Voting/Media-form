@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { galleryItems as seed, GalleryItem } from '@/app/_data/mockData';
+import { GalleryItem } from '@/app/_data/mockData';
 import { listOps } from './contentApi';
 
 interface GalleryStore {
@@ -21,7 +21,10 @@ export const useGalleryStore = create<GalleryStore>()((set, get) => {
   });
 
   return {
-    items: seed,
+  // Starts empty: this content is entered in the CMS. Shipping the old
+  // mock-up data as a fallback would flash invented content on screen
+  // before the real (possibly empty) response arrives.
+    items: [],
     loaded: false,
     error: null,
     hydrate: (items) => set({ items, loaded: true }),

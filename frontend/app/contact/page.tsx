@@ -5,15 +5,43 @@ import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
 import { Select } from '@/components/ui/Select';
 import { useContactInfoStore } from '@/stores/cms/contactInfoStore';
+import { useContactsStore } from '@/stores/cms/contactsStore';
 
 export default function ContactPage() {
   const { officeHours, serviceTimes: servicesTimes, departments, spaces, bookingPhone, bookingEmail } = useContactInfoStore();
+  const addFromForm = useContactsStore((s) => s.addFromForm);
   const [formState, setFormState] = useState({ name: '', email: '', phone: '', subject: '', message: '', department: 'General Enquiries' });
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // This used to only setSubmitted(true) — the visitor was thanked and the
+  // message was thrown away. It now reaches the CMS inbox.
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setSending(true);
+    setError('');
+    try {
+      await addFromForm({
+        name: formState.name,
+        email: formState.email,
+        phone: formState.phone,
+        // The chosen department is part of what staff need to route the message.
+        subject: formState.department
+          ? `${formState.subject} — ${formState.department}`
+          : formState.subject,
+        message: formState.message,
+      });
+      setSubmitted(true);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Sorry, your message could not be sent. Please try again or call the office.'
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -156,11 +184,27 @@ export default function ContactPage() {
                       className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-none" />
                   </div>
 
-                  <button type="submit" className="w-full bg-blue-900 text-white py-3.5 rounded-xl font-semibold hover:bg-blue-800 hover:shadow-lg transition-all inline-flex items-center justify-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg>
-                    Send Message
+                  {error && (
+                    <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                      {error}
+                    </p>
+                  )}
+
+                  <button type="submit" disabled={sending}
+                    className="w-full bg-blue-900 text-white py-3.5 rounded-xl font-semibold hover:bg-blue-800 hover:shadow-lg transition-all inline-flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+                    {sending ? (
+                      <>
+                        <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Sending…
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                        Send Message
+                      </>
+                    )}
                   </button>
                 </form>
               )}

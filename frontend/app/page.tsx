@@ -1,14 +1,97 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import Footer from './_components/Footer';
 import { useYouTubeVideos, formatViews, CATHEDRAL_CHANNEL_URL, CATHEDRAL_LIVE_URL } from '@/hooks/useYouTubeVideos';
+import { usePrayerStore } from '@/stores/cms/prayerStore';
+import { useEventsStore } from '@/stores/cms/eventsStore';
+import { useMinistriesStore } from '@/stores/cms/ministriesStore';
+import { useContactInfoStore } from '@/stores/cms/contactInfoStore';
+
+// Service cards are themed by a colour *key* stored in the CMS, not by raw
+// class names. Tailwind only keeps classes it can find in source, so a class
+// string coming from the database would be purged and the card would render
+// unstyled. These literals keep them in the build.
+const SERVICE_THEMES: Record<string, { card: string; icon: string; time: string; accent: string; border: string; glyph: string }> = {
+    blue: {
+        card: 'from-blue-50 to-indigo-50', icon: 'from-blue-600 to-indigo-600',
+        time: 'text-blue-900', accent: 'text-blue-600', border: 'border-blue-200',
+        // sunrise — early service
+        glyph: 'M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z',
+    },
+    green: {
+        card: 'from-green-50 to-emerald-50', icon: 'from-green-600 to-emerald-600',
+        time: 'text-green-900', accent: 'text-green-600', border: 'border-green-200',
+        // open book — the Word
+        glyph: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
+    },
+    purple: {
+        card: 'from-purple-50 to-fuchsia-50', icon: 'from-purple-600 to-fuchsia-600',
+        time: 'text-purple-900', accent: 'text-purple-600', border: 'border-purple-200',
+        // gathered people — the main family service
+        glyph: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z',
+    },
+    amber: {
+        card: 'from-amber-50 to-orange-50', icon: 'from-amber-600 to-orange-600',
+        time: 'text-amber-900', accent: 'text-amber-600', border: 'border-amber-200',
+        // musical notes — choral evensong
+        glyph: 'M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3',
+    },
+};
+
+// Events carry a category rather than a colour, so the accent bar is derived
+// here. Literal class strings again, so Tailwind keeps them.
+const EVENT_CATEGORY_COLORS: Record<string, string> = {
+    Worship:    'from-blue-700 to-indigo-700',
+    Fellowship: 'from-purple-600 to-pink-600',
+    Outreach:   'from-orange-600 to-red-600',
+    Training:   'from-teal-600 to-cyan-600',
+    Music:      'from-fuchsia-600 to-purple-600',
+    Youth:      'from-green-600 to-emerald-600',
+    Children:   'from-pink-500 to-rose-500',
+    Special:    'from-amber-600 to-orange-600',
+};
+
+// Home page dates are short and human ("Sat, 12 Oct"); the events page uses its
+// own longer format.
+function formatEventDate(iso: string): string {
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime())
+        ? iso
+        : d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+}
 
 function PrayerRequestForm() {
     const [done, setDone] = useState(false);
+    const [sending, setSending] = useState(false);
+    const [error, setError] = useState('');
     const [form, setForm] = useState({ name: '', email: '', request: '', private: false });
-    const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); setDone(true); };
+    const addFromForm = usePrayerStore((s) => s.addFromForm);
+
+    // This previously just set `done` — the visitor was told their request had
+    // been received and it was never recorded anywhere.
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setSending(true);
+        setError('');
+        try {
+            await addFromForm({
+                name: form.name.trim() || 'Anonymous',
+                email: form.email,
+                request: form.request,
+                isAnonymous: !form.name.trim(),
+                // "Keep this request private" is the inverse of consenting to
+                // have it shown on the public prayer wall.
+                shareable: !form.private,
+            });
+            setDone(true);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Could not submit your request. Please try again.');
+        } finally {
+            setSending(false);
+        }
+    };
     if (done) return (
         <div className="bg-green-50 border border-green-200 rounded-2xl p-8 text-center">
             <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -42,8 +125,12 @@ function PrayerRequestForm() {
                 <input type="checkbox" checked={form.private} onChange={e => setForm(f => ({ ...f, private: e.target.checked }))} className="w-4 h-4 accent-indigo-700 rounded" />
                 <span className="text-sm text-gray-600">Keep this request private (shared with prayer team only, not publicly)</span>
             </label>
-            <button type="submit" className="w-full bg-indigo-900 text-white py-3 rounded-xl font-bold text-sm hover:bg-indigo-800 transition-colors">
-                Submit Prayer Request
+            {error && (
+                <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">{error}</p>
+            )}
+            <button type="submit" disabled={sending}
+                className="w-full bg-indigo-900 text-white py-3 rounded-xl font-bold text-sm hover:bg-indigo-800 transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+                {sending ? 'Submitting…' : 'Submit Prayer Request'}
             </button>
         </form>
     );
@@ -56,6 +143,33 @@ export default function ACKCathedralMockup() {
     const { videos, loading: videosLoading } = useYouTubeVideos();
     const recentSermons = videos.slice(0, 3);
     const heroVideoRef = useRef<HTMLVideoElement>(null);
+
+    // The three soonest events still to come, straight from the CMS. This
+    // section used to be a hardcoded "will be announced here" placeholder, so
+    // the events editor had no visible effect on the home page.
+    const allEvents = useEventsStore((s) => s.events);
+    const upcomingEvents = useMemo(() => {
+        const today = new Date().toISOString().split('T')[0];
+        return allEvents
+            .filter((e) => e.date >= today)
+            .sort((a, b) => a.date.localeCompare(b.date))
+            .slice(0, 3);
+    }, [allEvents]);
+
+    // The grid below used to hardcode four ministries with their own copies of
+    // the schedule and colours, which drifted from the CMS the moment anyone
+    // edited a ministry. Both rows now come from the store.
+    const ministries = useMinistriesStore((s) => s.ministries);
+    const featuredMinistries = useMemo(() => {
+        const flagged = ministries.filter((m) => m.featured);
+        return (flagged.length ? flagged : ministries).slice(0, 4);
+    }, [ministries]);
+    const otherMinistries = useMemo(() => {
+        const shown = new Set(featuredMinistries.map((m) => m.slug));
+        return ministries.filter((m) => !shown.has(m.slug)).slice(0, 6);
+    }, [ministries, featuredMinistries]);
+
+    const serviceTimes = useContactInfoStore((s) => s.serviceTimes);
 
     // Slow the hero background video down for a calmer feel
     useEffect(() => {
@@ -437,161 +551,59 @@ export default function ACKCathedralMockup() {
                         </div>
                         <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Sunday Service Times</h2>
                         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                            Four services every Sunday to worship with us. All services are live streamed. Everyone is welcome!
+                            {serviceTimes.length} services every Sunday to worship with us. Everyone is welcome!
                         </p>
                     </div>
 
                     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-                        {/* 7 AM English Service */}
-                        <div className="group bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-100 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer">
-                            <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center mb-4 group-hover:rotate-6 transition-transform">
-                                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
-                                </svg>
-                            </div>
-                            <div className="text-4xl font-bold text-blue-900 mb-2">7:00 AM</div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">English Service</h3>
-                            <p className="text-gray-600 mb-4">Traditional Anglican liturgy in English</p>
-                            <div className="space-y-1 mb-5">
-                                <div className="flex items-center gap-2 text-sm text-blue-600 font-medium">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                    </svg>
-                                    Live Streamed
+                        {serviceTimes.map((service) => {
+                            const theme = SERVICE_THEMES[service.color ?? 'blue'] ?? SERVICE_THEMES.blue;
+                            return (
+                                <div key={service.id} className={`group bg-gradient-to-br ${theme.card} rounded-2xl p-8 border ${theme.border} hover:shadow-2xl hover:scale-105 transition-all duration-300`}>
+                                    <div className={`w-16 h-16 bg-gradient-to-br ${theme.icon} rounded-xl flex items-center justify-center mb-4 group-hover:rotate-6 transition-transform`}>
+                                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={theme.glyph} />
+                                        </svg>
+                                    </div>
+                                    <div className={`text-4xl font-bold ${theme.time} mb-2`}>{service.time}</div>
+                                    <h3 className="text-xl font-bold text-gray-900 mb-2">{service.name}</h3>
+                                    <p className="text-gray-600 mb-4">{service.description ?? service.lang}</p>
+                                    <div className="space-y-1 mb-5">
+                                        {service.liveStreamed && (
+                                            <div className={`flex items-center gap-2 text-sm ${theme.accent} font-medium`}>
+                                                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                </svg>
+                                                Live Streamed
+                                            </div>
+                                        )}
+                                        {service.duration && (
+                                            <div className={`flex items-center gap-2 text-sm ${theme.accent} font-medium`}>
+                                                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                {service.duration}
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-2 text-sm text-gray-500 font-medium">
+                                            <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                                            </svg>
+                                            {service.lang}
+                                        </div>
+                                    </div>
+                                    {service.liveStreamed && (
+                                        <div className={`flex flex-col gap-2 pt-4 border-t ${theme.border}`}>
+                                            <a href={CATHEDRAL_LIVE_URL} target="_blank" rel="noopener noreferrer"
+                                                className="flex items-center justify-center gap-2 bg-red-600 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                                                Watch Live
+                                            </a>
+                                        </div>
+                                    )}
                                 </div>
-                                <div className="flex items-center gap-2 text-sm text-blue-600 font-medium">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    1 hour
-                                </div>
-                            </div>
-                            <div className="flex flex-col gap-2 pt-4 border-t border-blue-200">
-                                <a href={CATHEDRAL_LIVE_URL} target="_blank" rel="noopener noreferrer"
-                                    className="flex items-center justify-center gap-2 bg-red-600 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-red-700 transition-colors">
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                                    Watch Live
-                                </a>
-                                <a href="#" className="flex items-center justify-center gap-2 bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-2 rounded-lg hover:bg-blue-200 transition-colors">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                    Service Sheet
-                                </a>
-                            </div>
-                        </div>
-
-                        {/* 9 AM Swahili Service */}
-                        <div className="group bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-8 border border-green-100 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer">
-                            <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-emerald-600 rounded-xl flex items-center justify-center mb-4 group-hover:rotate-6 transition-transform">
-                                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
-                                </svg>
-                            </div>
-                            <div className="text-4xl font-bold text-green-900 mb-2">9:00 AM</div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Swahili Service</h3>
-                            <p className="text-gray-600 mb-4">Ibada kwa Kiswahili</p>
-                            <div className="space-y-1 mb-5">
-                                <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                    </svg>
-                                    Live Streamed
-                                </div>
-                                <div className="flex items-center gap-2 text-sm text-green-600 font-medium">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    1.5 hours
-                                </div>
-                            </div>
-                            <div className="flex flex-col gap-2 pt-4 border-t border-green-200">
-                                <a href={CATHEDRAL_LIVE_URL} target="_blank" rel="noopener noreferrer"
-                                    className="flex items-center justify-center gap-2 bg-red-600 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-red-700 transition-colors">
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                                    Tazama Moja kwa Moja
-                                </a>
-                                <a href="#" className="flex items-center justify-center gap-2 bg-green-100 text-green-800 text-xs font-semibold px-3 py-2 rounded-lg hover:bg-green-200 transition-colors">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                    Karatasi ya Ibada
-                                </a>
-                            </div>
-                        </div>
-
-                        {/* 11 AM Main Service */}
-                        <div className="group bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-8 border-2 border-purple-300 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer relative overflow-hidden">
-                            <div className="absolute top-3 right-3 bg-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                                POPULAR
-                            </div>
-                            <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 rounded-xl flex items-center justify-center mb-4 group-hover:rotate-6 transition-transform">
-                                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
-                                </svg>
-                            </div>
-                            <div className="text-4xl font-bold text-purple-900 mb-2">11:00 AM</div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Main Service</h3>
-                            <p className="text-gray-600 mb-4">English with live streaming & translation</p>
-                            <div className="space-y-1 mb-5">
-                                <div className="flex items-center gap-2 text-sm text-purple-600 font-medium">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                    </svg>
-                                    Live Streamed
-                                </div>
-                                <div className="flex items-center gap-2 text-sm text-purple-600 font-medium">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    2 hours
-                                </div>
-                            </div>
-                            <div className="flex flex-col gap-2 pt-4 border-t border-purple-200">
-                                <a href={CATHEDRAL_LIVE_URL} target="_blank" rel="noopener noreferrer"
-                                    className="flex items-center justify-center gap-2 bg-red-600 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-red-700 transition-colors">
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                                    Watch Live
-                                </a>
-                                <a href="#" className="flex items-center justify-center gap-2 bg-purple-100 text-purple-800 text-xs font-semibold px-3 py-2 rounded-lg hover:bg-purple-200 transition-colors">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                    Service Sheet
-                                </a>
-                            </div>
-                        </div>
-
-                        {/* 6 PM Evensong Service */}
-                        <div className="group bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-8 border border-amber-100 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer">
-                            <div className="w-16 h-16 bg-gradient-to-br from-amber-600 to-orange-600 rounded-xl flex items-center justify-center mb-4 group-hover:rotate-6 transition-transform">
-                                <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                                </svg>
-                            </div>
-                            <div className="text-4xl font-bold text-amber-900 mb-2">6:00 PM</div>
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">Evensong Service</h3>
-                            <p className="text-gray-600 mb-4">Choral Evening Prayer</p>
-                            <div className="space-y-1 mb-5">
-                                <div className="flex items-center gap-2 text-sm text-amber-600 font-medium">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                    </svg>
-                                    Live Streamed
-                                </div>
-                                <div className="flex items-center gap-2 text-sm text-amber-600 font-medium">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                    1 hour
-                                </div>
-                            </div>
-                            <div className="flex flex-col gap-2 pt-4 border-t border-amber-200">
-                                <a href={CATHEDRAL_LIVE_URL} target="_blank" rel="noopener noreferrer"
-                                    className="flex items-center justify-center gap-2 bg-red-600 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-red-700 transition-colors">
-                                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                                    Watch Live
-                                </a>
-                                <a href="#" className="flex items-center justify-center gap-2 bg-amber-100 text-amber-800 text-xs font-semibold px-3 py-2 rounded-lg hover:bg-amber-200 transition-colors">
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                    Service Sheet
-                                </a>
-                            </div>
-                        </div>
+                            );
+                        })}
                     </div>
 
                     {/* Additional Service Info */}
@@ -750,61 +762,28 @@ export default function ACKCathedralMockup() {
                     </div>
 
                     <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-                        {[
-                            {
-                                name: "Children's Ministry",
-                                icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />,
-                                color: "from-pink-500 to-rose-500",
-                                bgColor: "from-pink-50 to-rose-50",
-                                href: "/ministries/children",
-                                schedule: "Sundays 9 AM & 11 AM"
-                            },
-                            {
-                                name: "Youth Ministry",
-                                icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />,
-                                color: "from-blue-500 to-indigo-500",
-                                bgColor: "from-blue-50 to-indigo-50",
-                                href: "/ministries/kayo",
-                                schedule: "Fridays 6 PM"
-                            },
-                            {
-                                name: "Women's Fellowship",
-                                icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />,
-                                color: "from-purple-500 to-pink-500",
-                                bgColor: "from-purple-50 to-pink-50",
-                                href: "/ministries/awf",
-                                schedule: "Thursdays 2 PM"
-                            },
-                            {
-                                name: "Men's Fellowship",
-                                icon: <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />,
-                                color: "from-green-500 to-emerald-500",
-                                bgColor: "from-green-50 to-emerald-50",
-                                href: "/ministries/amf",
-                                schedule: "Saturdays 8 AM"
-                            }
-                        ].map((ministry, index) => (
-                            <div key={index} className={`group bg-gradient-to-br ${ministry.bgColor} rounded-2xl p-6 border border-gray-100 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer`}>
+                        {featuredMinistries.map((ministry) => (
+                            <div key={ministry.slug} className={`group bg-gradient-to-br ${ministry.bgColor} rounded-2xl p-6 border border-gray-100 hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer`}>
                                 <div className={`w-14 h-14 bg-gradient-to-br ${ministry.color} rounded-xl flex items-center justify-center mb-4 group-hover:rotate-12 transition-transform`}>
                                     <svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        {ministry.icon}
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={ministry.icon} />
                                     </svg>
                                 </div>
                                 <h3 className="text-xl font-bold text-gray-900 mb-2">{ministry.name}</h3>
                                 <div className="space-y-2 text-sm text-gray-600">
                                     <p className="flex items-center gap-2">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
                                         {ministry.schedule}
                                     </p>
                                 </div>
-                                <a href={ministry.href} className="mt-4 text-sm font-semibold text-blue-900 hover:text-blue-700 inline-flex items-center gap-1">
+                                <Link href={`/ministries/${ministry.slug}`} className="mt-4 text-sm font-semibold text-blue-900 hover:text-blue-700 inline-flex items-center gap-1">
                                     Learn More
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                     </svg>
-                                </a>
+                                </Link>
                             </div>
                         ))}
                     </div>
@@ -813,22 +792,15 @@ export default function ACKCathedralMockup() {
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-8 border border-blue-100">
                         <h3 className="text-xl font-bold text-gray-900 mb-6 text-center">More Ministries</h3>
                         <div className="grid md:grid-cols-3 gap-4">
-                            {[
-                              { label: 'Choir & Music', href: '/ministries/choir' },
-                              { label: 'Prayer Ministry', href: '/ministries/prayer' },
-                              { label: 'Ushers & Hospitality', href: '/ministries/ushers' },
-                              { label: 'Media Team', href: '/ministries/media' },
-                              { label: 'Counseling', href: '/ministries/counseling' },
-                              { label: 'Missions & Outreach', href: '/ministries/missions' },
-                            ].map((ministry, index) => (
-                                <a key={index} href={ministry.href} className="flex items-center gap-3 bg-white rounded-lg p-4 hover:shadow-md transition-all group">
-                                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                            {otherMinistries.map((ministry) => (
+                                <Link key={ministry.slug} href={`/ministries/${ministry.slug}`} className="flex items-center gap-3 bg-white rounded-lg p-4 hover:shadow-md transition-all group">
+                                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-600 transition-colors flex-shrink-0">
                                         <svg className="w-5 h-5 text-blue-600 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                         </svg>
                                     </div>
-                                    <span className="font-semibold text-gray-900 group-hover:text-blue-900 transition-colors">{ministry.label}</span>
-                                </a>
+                                    <span className="font-semibold text-gray-900 group-hover:text-blue-900 transition-colors">{ministry.name}</span>
+                                </Link>
                             ))}
                         </div>
                     </div>
@@ -921,16 +893,66 @@ export default function ACKCathedralMockup() {
                         <p className="text-lg text-gray-600">Join us for fellowship, learning, and community activities</p>
                     </div>
 
-                    <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
-                        <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">Upcoming events will be announced here</h3>
-                        <p className="text-gray-600 mb-6">Follow our announcements or contact the church office to learn what&rsquo;s coming up.</p>
-                        <a href="/contact" className="inline-flex items-center gap-2 bg-blue-900 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-800 transition-colors">
-                            Contact the Church Office
-                        </a>
-                    </div>
+                    {upcomingEvents.length > 0 ? (
+                        <>
+                            <div className="grid md:grid-cols-3 gap-6">
+                                {upcomingEvents.map((event) => (
+                                    <Link key={event.id} href="/events"
+                                        className="group bg-white rounded-2xl border border-gray-200 overflow-hidden hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                                        <div className={`h-2 bg-gradient-to-r ${EVENT_CATEGORY_COLORS[event.category] ?? 'from-blue-700 to-indigo-700'}`} />
+                                        <div className="p-6">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <span className="inline-block bg-blue-50 text-blue-800 px-2.5 py-1 rounded-full text-xs font-bold">
+                                                    {event.category}
+                                                </span>
+                                                {event.registrationRequired && (
+                                                    <span className="inline-block bg-amber-50 text-amber-700 px-2.5 py-1 rounded-full text-xs font-bold">
+                                                        Registration
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <h3 className="font-bold text-gray-900 mb-2 leading-snug group-hover:text-blue-900 transition-colors">
+                                                {event.title}
+                                            </h3>
+                                            <p className="text-sm text-gray-600 line-clamp-2 mb-4">{event.description}</p>
+                                            <div className="space-y-1.5 text-xs text-gray-500">
+                                                <p className="flex items-center gap-2">
+                                                    <svg className="w-4 h-4 text-blue-700 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                    </svg>
+                                                    {formatEventDate(event.date)} · {event.time}
+                                                </p>
+                                                <p className="flex items-center gap-2">
+                                                    <svg className="w-4 h-4 text-blue-700 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                    </svg>
+                                                    {event.location}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </Link>
+                                ))}
+                            </div>
+                            <div className="text-center mt-10">
+                                <Link href="/events" className="inline-flex items-center gap-2 bg-blue-900 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-800 transition-colors">
+                                    See All Events
+                                </Link>
+                            </div>
+                        </>
+                    ) : (
+                        // Kept as the empty state: staff add events in /cms/events,
+                        // and until they do this is what visitors see.
+                        <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+                            <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <h3 className="text-xl font-bold text-gray-900 mb-2">Upcoming events will be announced here</h3>
+                            <p className="text-gray-600 mb-6">Follow our announcements or contact the church office to learn what&rsquo;s coming up.</p>
+                            <Link href="/contact" className="inline-flex items-center gap-2 bg-blue-900 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-800 transition-colors">
+                                Contact the Church Office
+                            </Link>
+                        </div>
+                    )}
                 </div>
             </section>
 

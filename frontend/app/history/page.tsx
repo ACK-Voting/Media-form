@@ -1,160 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
+import { useHistoryStore } from '@/stores/cms/historyStore';
 
 export default function CathedralHistory() {
     const [activeEra, setActiveEra] = useState('all');
-
-    const historicalEvents = [
-        {
-            era: 'founding',
-            year: '1903',
-            title: 'Foundation of ACK Mombasa Memorial Cathedral',
-            description: 'Anglican missionaries established the cathedral as a beacon of faith on the Kenyan coast. The mission began with a small congregation meeting in a modest building near the Old Town.',
-            image: '🏛️',
-            significance: 'Major Milestone'
-        },
-        {
-            era: 'founding',
-            year: '1905',
-            title: 'First Permanent Structure Built',
-            description: 'Construction completed on the first permanent church building, featuring traditional coastal architecture with coral stone walls.',
-            image: '⛪',
-            significance: 'Building'
-        },
-        {
-            era: 'early',
-            year: '1920',
-            title: 'Establishment of Mission School',
-            description: 'Cathedral opened its first mission school, providing education to local children and becoming a center of learning in the community.',
-            image: '📚',
-            significance: 'Education'
-        },
-        {
-            era: 'early',
-            year: '1935',
-            title: 'First Kenyan Bishop Consecrated',
-            description: 'A historic moment as the first Kenyan bishop was consecrated at the cathedral, marking the beginning of indigenous leadership in the Anglican Church of Kenya.',
-            image: '⛪',
-            significance: 'Major Milestone'
-        },
-        {
-            era: 'growth',
-            year: '1952',
-            title: 'Cathedral Expanded',
-            description: 'Major expansion project completed, doubling the seating capacity to accommodate the growing congregation.',
-            image: '🏗️',
-            significance: 'Building'
-        },
-        {
-            era: 'growth',
-            year: '1963',
-            title: 'Kenya Independence Celebration',
-            description: 'Cathedral hosted special thanksgiving service for Kenya\'s independence, attended by local and national leaders.',
-            image: '🇰🇪',
-            significance: 'Major Milestone'
-        },
-        {
-            era: 'growth',
-            year: '1970',
-            title: 'Youth Ministry Established',
-            description: 'Formal youth ministry program launched, focusing on discipleship and community engagement for young people.',
-            image: '👥',
-            significance: 'Ministry'
-        },
-        {
-            era: 'modern',
-            year: '1985',
-            title: 'Major Renovation Completed',
-            description: 'Comprehensive renovation of the cathedral structure, preserving historical elements while modernizing facilities for worship and community programs.',
-            image: '🔧',
-            significance: 'Building'
-        },
-        {
-            era: 'modern',
-            year: '1995',
-            title: 'Community Outreach Programs',
-            description: 'Launched extensive community outreach initiatives including medical clinics, food programs, and skills training centers.',
-            image: '🤝',
-            significance: 'Ministry'
-        },
-        {
-            era: 'modern',
-            year: '2010',
-            title: 'Digital Ministry Launch',
-            description: 'Cathedral embraced technology with live streaming services, online sermons, and digital engagement platforms reaching believers worldwide.',
-            image: '📡',
-            significance: 'Major Milestone'
-        },
-        {
-            era: 'modern',
-            year: '2015',
-            title: 'Interfaith Dialogue Center',
-            description: 'Established interfaith dialogue center promoting understanding and cooperation among different religious communities in Mombasa.',
-            image: '☮️',
-            significance: 'Ministry'
-        },
-        {
-            era: 'modern',
-            year: '2024',
-            title: 'New Website & Digital Platform',
-            description: 'Launched comprehensive digital platform with dynamic CMS, enhanced online engagement, and improved member communication systems.',
-            image: '💻',
-            significance: 'Major Milestone'
-        }
-    ];
-
-    const keyFigures = [
-        {
-            name: 'Rev. John Thompson',
-            role: 'Founding Missionary',
-            years: '1903-1920',
-            contribution: 'Established the cathedral and led the early mission work among the coastal communities.'
-        },
-        {
-            name: 'Bishop Samuel Mwangi',
-            role: 'First Kenyan Bishop',
-            years: '1935-1955',
-            contribution: 'First indigenous bishop, championed local leadership and expanded community programs.'
-        },
-        {
-            name: 'Canon Margaret Nyambura',
-            role: 'Education Pioneer',
-            years: '1960-1985',
-            contribution: 'Established numerous schools and literacy programs, transforming education in the region.'
-        },
-        {
-            name: 'Archbishop Peter Njenga',
-            role: 'Community Leader',
-            years: '1985-2005',
-            contribution: 'Led major renovation projects and established lasting community development initiatives.'
-        }
-    ];
-
-    const architecturalFeatures = [
-        {
-            feature: 'Coral Stone Construction',
-            description: 'Traditional coastal architecture using locally-sourced coral stone, reflecting Swahili building traditions.',
-            icon: '🏛️'
-        },
-        {
-            feature: 'Stained Glass Windows',
-            description: 'Beautiful stained glass windows installed in 1952, depicting biblical scenes and local saints.',
-            icon: '🎨'
-        },
-        {
-            feature: 'Bell Tower',
-            description: 'Historic bell tower with three bells cast in England, ringing daily to call the faithful to prayer.',
-            icon: '🔔'
-        },
-        {
-            feature: 'Main Sanctuary',
-            description: 'Seats 800 worshippers with excellent acoustics for both speech and choral performances.',
-            icon: '⛪'
-        }
-    ];
+    // Editable in /cms/history; falls back to the bundled copy until loaded.
+    const { historicalEvents, keyFigures, architecturalFeatures } = useHistoryStore();
 
     const filteredEvents = activeEra === 'all'
         ? historicalEvents
@@ -269,6 +123,15 @@ export default function CathedralHistory() {
                         <div className="hidden lg:block absolute left-1/2 transform -translate-x-1/2 w-1 bg-gradient-to-b from-blue-200 via-blue-400 to-blue-200 h-full"></div>
 
                         {/* Timeline Events */}
+                        {filteredEvents.length === 0 && (
+                            <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+                                <p className="text-gray-500">
+                                    {historicalEvents.length === 0
+                                        ? 'The Cathedral timeline is being prepared and will appear here soon.'
+                                        : 'No milestones recorded for this era yet.'}
+                                </p>
+                            </div>
+                        )}
                         <div className="space-y-12">
                             {filteredEvents.map((event, index) => (
                                 <div
@@ -329,6 +192,11 @@ export default function CathedralHistory() {
                         </p>
                     </div>
 
+                    {keyFigures.length === 0 && (
+                        <p className="text-center text-gray-500 py-8">
+                            Profiles of the leaders who shaped the Cathedral are being prepared.
+                        </p>
+                    )}
                     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
                         {keyFigures.map((figure, index) => (
                             <div key={index} className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-6 border border-blue-100 hover:shadow-xl transition-all duration-300 hover:scale-105">
@@ -358,6 +226,11 @@ export default function CathedralHistory() {
                         </p>
                     </div>
 
+                    {architecturalFeatures.length === 0 && (
+                        <p className="text-center text-gray-500 py-8">
+                            Details of the Cathedral&apos;s architecture are being prepared.
+                        </p>
+                    )}
                     <div className="grid md:grid-cols-2 gap-8">
                         {architecturalFeatures.map((feature, index) => (
                             <div key={index} className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-blue-100 hover:scale-105">

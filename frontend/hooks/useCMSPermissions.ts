@@ -1,7 +1,6 @@
 import { useCMSAuth } from '@/contexts/CMSAuthContext';
 
 type Section =
-  | 'sermons'
   | 'events'
   | 'gallery'
   | 'announcements'
@@ -17,7 +16,7 @@ type Section =
   | 'users';
 
 const CHURCH_ADMIN_SECTIONS: Section[] = [
-  'sermons', 'events', 'gallery', 'announcements',
+  'events', 'gallery', 'announcements',
   'leadership', 'staff', 'giving', 'resources', 'prayer-requests', 'contacts', 'get-involved', 'contact-info', 'ministries',
 ];
 

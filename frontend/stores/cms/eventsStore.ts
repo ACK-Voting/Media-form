@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { events as seed, ChurchEvent } from '@/app/_data/mockData';
+import { ChurchEvent } from '@/app/_data/mockData';
 import { listOps } from './contentApi';
 
 interface EventsStore {
@@ -20,7 +20,10 @@ export const useEventsStore = create<EventsStore>()((set, get) => {
   });
 
   return {
-    events: seed,
+  // Starts empty: this content is entered in the CMS. Shipping the old
+  // mock-up data as a fallback would flash invented content on screen
+  // before the real (possibly empty) response arrives.
+    events: [],
     loaded: false,
     error: null,
     hydrate: (items) => set({ events: items, loaded: true }),

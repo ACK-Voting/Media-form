@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
 import { Select } from '@/components/ui/Select';
@@ -54,10 +54,16 @@ const prayerFocus = [
 const todayIndex = new Date().getDay(); // 0=Sunday, 1=Monday, etc.
 
 export default function PrayerPage() {
-  const { requests, addFromForm } = usePrayerStore();
-  const publicRequests = requests.filter((r) => !r.isAnonymous).slice(0, 5);
+  const { publicRequests: shared, addFromForm, loadPublic } = usePrayerStore();
+  // Only requests whose sender agreed to share them, fetched from the public
+  // endpoint. The full inbox needs a staff session and must never reach here.
+  const publicRequests = shared.slice(0, 5);
+
+  useEffect(() => { loadPublic(); }, [loadPublic]);
 
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -134,15 +140,25 @@ export default function PrayerPage() {
                   </button>
                 </div>
               ) : (
-                <form onSubmit={(e) => {
+                <form onSubmit={async (e) => {
                   e.preventDefault();
-                  addFromForm({
-                    name: formData.name || 'Anonymous',
-                    email: formData.email,
-                    request: formData.request,
-                    isAnonymous: formData.isPrivate,
-                  });
-                  setSubmitted(true);
+                  setSending(true);
+                  setError('');
+                  try {
+                    await addFromForm({
+                      name: formData.name || 'Anonymous',
+                      email: formData.email,
+                      request: formData.request,
+                      isAnonymous: formData.isPrivate || !formData.name,
+                      // A private request goes to the prayer team only.
+                      shareable: !formData.isPrivate,
+                    });
+                    setSubmitted(true);
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : 'Could not submit your request. Please try again.');
+                  } finally {
+                    setSending(false);
+                  }
                 }} className="space-y-5 bg-white rounded-2xl border border-gray-100 shadow-sm p-8">
                   <div className="grid sm:grid-cols-2 gap-5">
                     <div>
@@ -207,11 +223,25 @@ export default function PrayerPage() {
                     </label>
                   </div>
 
-                  <button type="submit" className="w-full bg-blue-900 text-white py-4 rounded-xl font-bold hover:bg-blue-800 hover:shadow-lg transition-all flex items-center justify-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                    Submit Prayer Request
+                  {error && (
+                    <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">{error}</p>
+                  )}
+
+                  <button type="submit" disabled={sending}
+                    className="w-full bg-blue-900 text-white py-4 rounded-xl font-bold hover:bg-blue-800 hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
+                    {sending ? (
+                      <>
+                        <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Submitting…
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                        Submit Prayer Request
+                      </>
+                    )}
                   </button>
                 </form>
               )}
