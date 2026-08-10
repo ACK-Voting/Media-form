@@ -14,7 +14,13 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      # CORS allowlist only — comma-separated. Do not concatenate paths onto it.
       - key: FRONTEND_URL
+        sync: false
+      # Link bases for emails and payment returns.
+      - key: CHURCH_URL
+        sync: false
+      - key: MEDIA_URL
         sync: false
       - key: RESEND_API_KEY
         sync: false
@@ -23,4 +29,26 @@ services:
       - key: EMAIL_FROM
         sync: false
       - key: ADMIN_EMAIL
+        sync: false
+      - key: MPESA_CONSUMER_KEY
+        sync: false
+      - key: MPESA_CONSUMER_SECRET
+        sync: false
+      - key: MPESA_SHORTCODE
+        sync: false
+      - key: MPESA_PASSKEY
+        sync: false
+      - key: MPESA_CALLBACK_URL
+        sync: false
+      - key: MPESA_ENVIRONMENT
+        sync: false
+      - key: PESAPAL_CONSUMER_KEY
+        sync: false
+      - key: PESAPAL_CONSUMER_SECRET
+        sync: false
+      - key: PESAPAL_IPN_URL
+        sync: false
+      - key: PESAPAL_CALLBACK_URL
+        sync: false
+      - key: PESAPAL_ENVIRONMENT
         sync: false

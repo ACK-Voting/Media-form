@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { CMSUser, CMSUserRole } from '@/app/mockup/_data/mockData';
+import { apiUrl, cmsAuthHeaders, clearCMSSession, CMS_TOKEN_KEY, CMS_USER_KEY } from '@/lib/apiBase';
 
 interface CMSAuthState {
   user: CMSUser | null;
@@ -17,7 +18,7 @@ interface CMSAuthContextValue extends CMSAuthState {
 
 const CMSAuthContext = createContext<CMSAuthContextValue | null>(null);
 
-const STORAGE_KEY = 'cms_current_user';
+const STORAGE_KEY = CMS_USER_KEY;
 
 export function CMSAuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<CMSAuthState>({
@@ -27,23 +28,52 @@ export function CMSAuthProvider({ children }: { children: React.ReactNode }) {
   });
   const router = useRouter();
 
+  // Restore the session from localStorage for an instant first paint, then
+  // confirm it against the server. Without the second step a deactivated or
+  // demoted user would see a fully populated CMS whose every write then 401s.
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const user: CMSUser = JSON.parse(stored);
-        setState({ user, isLoading: false, isAuthenticated: true });
-      } else {
-        setState((s) => ({ ...s, isLoading: false }));
+    let cancelled = false;
+
+    async function restore() {
+      let cached: CMSUser | null = null;
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) cached = JSON.parse(stored);
+      } catch {
+        cached = null;
       }
-    } catch {
-      setState((s) => ({ ...s, isLoading: false }));
+
+      if (!cached) {
+        if (!cancelled) setState({ user: null, isLoading: false, isAuthenticated: false });
+        return;
+      }
+
+      try {
+        const res = await fetch(apiUrl('/cms-users/me'), { headers: cmsAuthHeaders() });
+        const data = await res.json();
+        if (cancelled) return;
+
+        if (res.ok && data.success) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data.user));
+          setState({ user: data.user, isLoading: false, isAuthenticated: true });
+        } else {
+          clearCMSSession();
+          setState({ user: null, isLoading: false, isAuthenticated: false });
+        }
+      } catch {
+        // Network failure, not an auth failure — keep the cached session rather
+        // than logging someone out because the backend was briefly unreachable.
+        if (!cancelled) setState({ user: cached, isLoading: false, isAuthenticated: true });
+      }
     }
+
+    restore();
+    return () => { cancelled = true; };
   }, []);
 
   const login = useCallback(async (username: string, password: string) => {
     try {
-      const res = await fetch('http://localhost:3000/api/cms-users/login', {
+      const res = await fetch(apiUrl('/cms-users/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password }),
@@ -54,7 +84,7 @@ export function CMSAuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data.user));
-      localStorage.setItem('cms_token', data.token);
+      localStorage.setItem(CMS_TOKEN_KEY, data.token);
       setState({ user: data.user, isLoading: false, isAuthenticated: true });
 
       const found = data.user;
@@ -73,7 +103,7 @@ export function CMSAuthProvider({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   const logout = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
+    clearCMSSession();
     setState({ user: null, isLoading: false, isAuthenticated: false });
     router.push('/cms/login');
   }, [router]);

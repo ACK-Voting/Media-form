@@ -3,6 +3,10 @@ const { Resend } = require('resend');
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM_ADDRESS = process.env.EMAIL_FROM || `ACK Mombasa Media Team <${process.env.EMAIL_USER}>`;
 
+// Every link in this file goes to the media-team app. FRONTEND_URL is a
+// comma-separated CORS allowlist and cannot be concatenated onto.
+const MEDIA_URL = (process.env.MEDIA_URL || 'http://localhost:3001').replace(/\/$/, '');
+
 // Thin wrapper so existing call sites (sendMail) still work
 const createTransporter = () => ({
     sendMail: async (options) => {
@@ -244,7 +248,7 @@ const sendAdminNotification = async (registration) => {
 
             <p>Please log in to the admin dashboard to review the full application and approve or reject it.</p>
 
-            <p><a href="${process.env.FRONTEND_URL}/admin-dashboard.html" style="display: inline-block; padding: 12px 30px; background: #2196f3; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">View Dashboard</a></p>
+            <p><a href="${MEDIA_URL}/admin" style="display: inline-block; padding: 12px 30px; background: #2196f3; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">View Dashboard</a></p>
           </div>
         </body>
         </html>
@@ -443,7 +447,7 @@ const sendWelcomeEmail = async (user, temporaryPassword) => {
               <p>Please change your password immediately after logging in for the first time. This temporary password should not be shared with anyone.</p>
             </div>
 
-            <p><a href="${process.env.FRONTEND_URL}/login" class="button">Login Now</a></p>
+            <p><a href="${MEDIA_URL}/login" class="button">Login Now</a></p>
 
             <h3>What you can do in your account:</h3>
             <ul>
@@ -540,7 +544,7 @@ const sendRoleAssignmentEmail = async (user, role) => {
 
             <p>Log in to your account to view complete role details and get started!</p>
 
-            <p><a href="${process.env.FRONTEND_URL}/login" style="display: inline-block; padding: 12px 30px; background: #2196f3; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">View Dashboard</a></p>
+            <p><a href="${MEDIA_URL}/login" style="display: inline-block; padding: 12px 30px; background: #2196f3; color: white; text-decoration: none; border-radius: 5px; margin: 20px 0;">View Dashboard</a></p>
 
             <p><strong>ACK Mombasa Memorial Cathedral Media Team</strong></p>
           </div>
@@ -562,7 +566,7 @@ const sendRoleAssignmentEmail = async (user, role) => {
 const sendPasswordResetEmail = async (user, resetToken) => {
     try {
         const transporter = createTransporter();
-        const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+        const resetUrl = `${MEDIA_URL}/reset-password?token=${resetToken}`;
 
         const mailOptions = {
             from: `"ACK Mombasa Media Team" <${process.env.EMAIL_USER}>`,

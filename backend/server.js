@@ -7,6 +7,12 @@ const rateLimit = require('express-rate-limit');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Fail fast rather than signing tokens with a fallback secret.
+if (!process.env.JWT_SECRET) {
+    console.error('❌ JWT_SECRET is not set. Refusing to start.');
+    process.exit(1);
+}
+
 // Trust Render's proxy
 app.set('trust proxy', 1);
 
@@ -34,40 +40,18 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// MongoDB Connection + CMS user seed
+// MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true
 })
-    .then(async () => {
-        console.log('✅ Connected to MongoDB');
-        await seedCMSUsers();
-    })
+    .then(() => console.log('✅ Connected to MongoDB'))
     .catch(err => console.error('❌ MongoDB connection error:', err));
 
-async function seedCMSUsers() {
-    try {
-        const bcrypt = require('bcryptjs');
-        const CMSUser = require('./models/CMSUser');
-        const count = await CMSUser.countDocuments();
-        if (count > 0) return;
-        const seed = [
-            { name: 'Hillary Okello',     email: 'hillariouskelly@gmail.com',  username: 'admin',          password: 'admin123', role: 'super_admin',    ministryAccess: [] },
-            { name: 'Cathedral Secretary',email: 'secretary@ackmombasa.org',   username: 'secretary',       password: 'admin123', role: 'church_admin',   ministryAccess: [] },
-            { name: 'Rev. Heri Ryanga',   email: 'kayo@ackmombasa.org',        username: 'kayo.admin',      password: 'admin123', role: 'ministry_admin', ministryAccess: ['kayo'] },
-            { name: 'Prof. Wycliffe Oloo',email: 'music@ackmombasa.org',       username: 'choir.admin',     password: 'admin123', role: 'ministry_admin', ministryAccess: ['choir'] },
-            { name: 'AWF Chairlady',      email: 'awf@ackmombasa.org',         username: 'awf.admin',       password: 'admin123', role: 'ministry_admin', ministryAccess: ['awf'] },
-            { name: 'Joyce Achieng',      email: 'children@ackmombasa.org',    username: 'children.admin',  password: 'admin123', role: 'ministry_admin', ministryAccess: ['children'] },
-        ];
-        for (const u of seed) {
-            u.password = await bcrypt.hash(u.password, 10);
-        }
-        await CMSUser.insertMany(seed);
-        console.log('✅ CMS seed users created');
-    } catch (err) {
-        console.error('⚠️  CMS seed error:', err.message);
-    }
-}
+// CMS users are no longer seeded on boot. Seeding on every start meant a
+// restart against a partly-emptied collection resurrected deleted accounts,
+// and the seed shipped six accounts sharing one hardcoded password.
+// Create the first account with: npm run seed:admin
 
 // Routes
 const submissionRoutes = require('./routes/submissions');

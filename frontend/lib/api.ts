@@ -1,7 +1,9 @@
 import axios from 'axios';
 import type { Registration, LoginResponse, ApiResponse, PaginatedResponse, Stats } from '@/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api';
+import { API_BASE } from './apiBase';
+
+const API_URL = API_BASE;
 
 const api = axios.create({
     baseURL: API_URL,

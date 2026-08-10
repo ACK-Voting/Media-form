@@ -5,6 +5,7 @@ import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
 import { useGetInvolvedStore } from '@/stores/cms/getInvolvedStore';
 import { Select } from '@/components/ui/Select';
+import { apiUrl } from '@/lib/apiBase';
 
 const ministryOptions = [
   "Children's Ministry", "Youth Ministry (KAYO)", "Anglican Women's Fellowship (AWF)",
@@ -42,7 +43,7 @@ export default function GetInvolvedPage() {
     setSubmitting(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:3000/api/get-involved', {
+      const res = await fetch(apiUrl('/get-involved'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...form, type: tab }),

@@ -4,8 +4,10 @@ const nextConfig = {
   images: {
     unoptimized: false,
   },
-  // Enable standalone output for better Netlify performance
-  output: 'standalone',
+  // No `output` setting: @netlify/plugin-nextjs produces its own output, and
+  // 'standalone' conflicts with it in ways that surface as confusing runtime
+  // errors rather than build failures.
+  //
   // Skip type checking and linting during build
   typescript: {
     ignoreBuildErrors: true,

@@ -102,14 +102,6 @@ export default function CMSLoginPage() {
               ) : 'Sign In'}
             </button>
           </form>
-
-          {/* Demo credentials hint */}
-          <div className="mt-6 p-3 bg-white/5 rounded-xl border border-white/10 text-xs text-blue-300">
-            <p className="font-semibold text-blue-200 mb-1">Demo credentials:</p>
-            <p>Super Admin: <span className="text-white">admin</span> / <span className="text-white">admin123</span></p>
-            <p>Church Admin: <span className="text-white">secretary</span> / <span className="text-white">admin123</span></p>
-            <p>Ministry (KAYO): <span className="text-white">kayo.admin</span> / <span className="text-white">admin123</span></p>
-          </div>
         </div>
 
         <p className="text-center text-blue-400/60 text-xs mt-6">

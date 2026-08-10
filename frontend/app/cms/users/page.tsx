@@ -5,8 +5,9 @@ import { useMinistriesStore } from '@/stores/cms/ministriesStore';
 import { CMSUserRole } from '@/app/mockup/_data/mockData';
 import { CMSProtectedRoute } from '@/contexts/CMSAuthContext';
 import { Select } from '@/components/ui/Select';
+import { API_BASE } from '@/lib/apiBase';
 
-const API = 'http://localhost:3000/api';
+const API = API_BASE;
 
 const ROLE_LABELS: Record<CMSUserRole, string> = {
   super_admin: 'Super Admin', church_admin: 'Church Admin', ministry_admin: 'Ministry Admin',

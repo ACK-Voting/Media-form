@@ -51,7 +51,10 @@ router.post('/create-order', async (req, res) => {
     const ipnId = await getOrRegisterIpnId(token);
     const merchantReference = `ACK-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+    // CHURCH_URL, not FRONTEND_URL: FRONTEND_URL is a comma-separated CORS
+    // allowlist, so concatenating a path onto it yields a malformed return URL
+    // and every payment silently fails to come back.
+    const frontendUrl = process.env.CHURCH_URL || 'http://localhost:3001';
     const iframeCallbackUrl = `${frontendUrl}/api/pesapal/iframe-return`;
 
     const orderRes = await fetch(`${BASE_URL}/api/Transactions/SubmitOrderRequest`, {

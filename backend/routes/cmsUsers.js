@@ -3,8 +3,10 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const CMSUser = require('../models/CMSUser');
+const { requireCMSUser, requireSuperAdmin } = require('../middleware/cmsAuth');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'cms-dev-secret';
+// No fallback secret — server.js refuses to boot without JWT_SECRET.
+const JWT_SECRET = process.env.JWT_SECRET;
 
 function formatUser(u) {
   return {
@@ -20,22 +22,10 @@ function formatUser(u) {
   };
 }
 
-function requireCMSAdmin(req, res, next) {
-  const header = req.headers.authorization;
-  if (!header?.startsWith('Bearer ')) {
-    return res.status(401).json({ success: false, message: 'Unauthorised' });
-  }
-  try {
-    const payload = jwt.verify(header.slice(7), JWT_SECRET);
-    if (payload.role !== 'super_admin') {
-      return res.status(403).json({ success: false, message: 'Super Admin access required' });
-    }
-    req.cmsUser = payload;
-    next();
-  } catch {
-    res.status(401).json({ success: false, message: 'Invalid or expired token' });
-  }
-}
+// Guard for the super-admin-only routes below. requireCMSUser reloads the user
+// from Mongo, so a deactivated or demoted account loses access immediately
+// rather than when its 7-day token expires.
+const requireCMSAdmin = [requireCMSUser, requireSuperAdmin];
 
 // POST /api/cms-users/login
 router.post('/login', async (req, res) => {
@@ -57,6 +47,20 @@ router.post('/login', async (req, res) => {
   } catch (err) {
     console.error('CMS login error:', err);
     res.status(500).json({ success: false, message: 'Login failed. Please try again.' });
+  }
+});
+
+// GET /api/cms-users/me  — validate a stored token and return the current role.
+// The frontend restores its session from localStorage; without this it would
+// trust whatever user object is sitting in the browser.
+router.get('/me', requireCMSUser, async (req, res) => {
+  try {
+    const user = await CMSUser.findById(req.cmsUser.id);
+    if (!user) return res.status(401).json({ success: false, message: 'Account no longer exists' });
+    res.json({ success: true, user: formatUser(user) });
+  } catch (err) {
+    console.error('CMS me error:', err);
+    res.status(500).json({ success: false, message: 'Failed to load account.' });
   }
 });
 

@@ -2,10 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const { Resend } = require('resend');
+const { requireCMSUser, requireSuperAdmin } = require('../middleware/cmsAuth');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM   = process.env.EMAIL_FROM || `ACK Mombasa Memorial Cathedral <${process.env.EMAIL_USER}>`;
-const LOGIN_URL = (process.env.FRONTEND_URL || 'http://localhost:3001') + '/cms/login';
+// CHURCH_URL, not FRONTEND_URL: FRONTEND_URL is a comma-separated CORS
+// allowlist, and concatenating a path onto it produces a malformed link.
+const LOGIN_URL = (process.env.CHURCH_URL || 'http://localhost:3001') + '/cms/login';
 
 const ROLE_LABELS = {
   super_admin:    'Super Admin',
@@ -21,8 +24,10 @@ const validation = [
   body('role').isIn(['super_admin', 'church_admin', 'ministry_admin']).withMessage('Invalid role'),
 ];
 
-// POST /api/invite  — send CMS account credentials to a new user
-router.post('/', validation, async (req, res) => {
+// POST /api/invite  — send CMS account credentials to a new user.
+// Auth is required: without it this is an open relay that will send authentic,
+// domain-branded credential emails to any address on request.
+router.post('/', requireCMSUser, requireSuperAdmin, validation, async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ success: false, errors: errors.array() });
