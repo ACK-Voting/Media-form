@@ -22,11 +22,6 @@ export default function CMSLoginPage() {
     }
   }
 
-  function fillDemoAccount(u: string, p: string) {
-    setUsername(u);
-    setPassword(p);
-  }
-
   return (
     <div className="min-h-screen bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-blue-900 via-slate-900 to-indigo-950 flex items-center justify-center p-4 relative overflow-hidden">
       {/* Subtle Background Glow Spheres */}
@@ -154,26 +149,9 @@ export default function CMSLoginPage() {
             </button>
           </form>
 
-          {/* Quick Demo Access Bar */}
-          <div className="mt-6 pt-5 border-t border-slate-800">
-            <p className="text-[11px] font-semibold text-slate-400 text-center mb-2.5">Quick Demo Logins</p>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => fillDemoAccount('superadmin', 'admin123')}
-                className="flex-1 py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg transition-colors border border-slate-700 text-center cursor-pointer"
-              >
-                Super Admin
-              </button>
-              <button
-                type="button"
-                onClick={() => fillDemoAccount('churchadmin', 'admin123')}
-                className="flex-1 py-1.5 px-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs rounded-lg transition-colors border border-slate-700 text-center cursor-pointer"
-              >
-                Church Admin
-              </button>
-            </div>
-          </div>
+          {/* No quick-login shortcuts here: this is a public page, and buttons
+              that prefill real credentials publish them to anyone who views
+              the source. */}
         </div>
 
         <p className="text-center text-slate-400/70 text-xs mt-6">
