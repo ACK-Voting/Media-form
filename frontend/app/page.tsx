@@ -9,6 +9,7 @@ import { usePrayerStore } from '@/stores/cms/prayerStore';
 import { useEventsStore } from '@/stores/cms/eventsStore';
 import { useMinistriesStore } from '@/stores/cms/ministriesStore';
 import { useContactInfoStore } from '@/stores/cms/contactInfoStore';
+import { isServiceLiveAt, useNowTick } from '@/lib/serviceLive';
 
 // Service cards are themed by a colour *key* stored in the CMS, not by raw
 // class names. Tailwind only keeps classes it can find in source, so a class
@@ -178,6 +179,11 @@ export default function ACKCathedralMockup() {
 
     const serviceTimes = useContactInfoStore((s) => s.serviceTimes);
 
+    // Ticks every 30s so a service card goes live mid-visit without a reload.
+    // Null until mounted — the server cannot know when the visitor arrives, and
+    // a live badge rendered during SSR would be wrong and get cached.
+    const now = useNowTick();
+
     // Slow the hero background video down for a calmer feel
     useEffect(() => {
         if (heroVideoRef.current) heroVideoRef.current.playbackRate = 0.5;
@@ -302,6 +308,7 @@ export default function ACKCathedralMockup() {
                     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                         {serviceTimes.map((service) => {
                             const theme = SERVICE_THEMES[service.color ?? 'blue'] ?? SERVICE_THEMES.blue;
+                            const isLive = now !== null && isServiceLiveAt(service, now);
                             return (
                                 <div key={service.id} className={`group bg-gradient-to-br ${theme.card} rounded-2xl p-8 border ${theme.border} hover:shadow-2xl hover:scale-105 transition-all duration-300`}>
                                     <div className={`w-16 h-16 bg-gradient-to-br ${theme.icon} rounded-xl flex items-center justify-center mb-4 group-hover:rotate-6 transition-transform`}>
@@ -314,11 +321,18 @@ export default function ACKCathedralMockup() {
                                     <p className="text-gray-600 mb-4">{service.description ?? service.lang}</p>
                                     <div className="space-y-1 mb-5">
                                         {service.liveStreamed && (
-                                            <div className={`flex items-center gap-2 text-sm ${theme.accent} font-medium`}>
-                                                <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                                </svg>
-                                                Live Streamed
+                                            <div className={`flex items-center gap-2 text-sm font-medium ${isLive ? 'text-red-600 font-bold' : theme.accent}`}>
+                                                {isLive ? (
+                                                    <span className="relative flex h-3 w-3 flex-shrink-0">
+                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+                                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600" />
+                                                    </span>
+                                                ) : (
+                                                    <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                    </svg>
+                                                )}
+                                                {isLive ? 'Live now' : 'Live streamed'}
                                             </div>
                                         )}
                                         {service.duration && (
@@ -336,12 +350,17 @@ export default function ACKCathedralMockup() {
                                             {service.lang}
                                         </div>
                                     </div>
-                                    {service.liveStreamed && (
+                                    {/* Only while the service is actually on air. A button that is
+                                        always there sends people to an offline channel six days a week. */}
+                                    {isLive && (
                                         <div className={`flex flex-col gap-2 pt-4 border-t ${theme.border}`}>
                                             <a href={CATHEDRAL_LIVE_URL} target="_blank" rel="noopener noreferrer"
                                                 className="flex items-center justify-center gap-2 bg-red-600 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-red-700 transition-colors">
-                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
-                                                Watch Live
+                                                <span className="relative flex h-2 w-2">
+                                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-white" />
+                                                </span>
+                                                Watch Live Now
                                             </a>
                                         </div>
                                     )}

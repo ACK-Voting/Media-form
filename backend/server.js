@@ -79,6 +79,7 @@ const mpesaRoutes = require('./routes/mpesa');
 const pesapalRoutes = require('./routes/pesapal');
 const contentRoutes = require('./routes/content');
 const inboxRoutes = require('./routes/inbox');
+const cmsActivityRoutes = require('./routes/cmsActivity');
 
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/auth', authRoutes);
@@ -101,6 +102,7 @@ app.use('/api/pesapal', pesapalRoutes);
 // Website content, edited in /cms and read by every visitor.
 app.use('/api/content', contentRoutes);
 app.use('/api/inbox', inboxRoutes);
+app.use('/api/cms-activity', cmsActivityRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

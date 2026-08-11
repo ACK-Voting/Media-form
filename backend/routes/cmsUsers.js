@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const CMSUser = require('../models/CMSUser');
 const { requireCMSUser, requireSuperAdmin } = require('../middleware/cmsAuth');
+const { logActivity } = require('../utils/activityLog');
 
 // No fallback secret — server.js refuses to boot without JWT_SECRET.
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -43,6 +44,10 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ success: false, message: 'Invalid username or password.' });
     }
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    logActivity({
+      actor: { id: user._id.toString(), name: user.name, role: user.role },
+      action: 'login', section: 'auth', label: user.username,
+    });
     res.json({ success: true, user: formatUser(user), token });
   } catch (err) {
     console.error('CMS login error:', err);
@@ -89,6 +94,10 @@ router.post('/', requireCMSAdmin, async (req, res) => {
       ministryAccess: ministryAccess ?? [],
       active: true,
     });
+    logActivity({
+      actor: req.cmsUser, action: 'user_create', section: 'cms-users',
+      itemId: user._id.toString(), label: `${user.name} (${user.username}, ${user.role})`,
+    });
     res.status(201).json({ success: true, user: formatUser(user) });
   } catch (err) {
     if (err.code === 11000) {
@@ -109,6 +118,12 @@ router.patch('/:id', requireCMSAdmin, async (req, res) => {
     }
     const user = await CMSUser.findByIdAndUpdate(req.params.id, update, { new: true });
     if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+    logActivity({
+      actor: req.cmsUser, action: 'user_update', section: 'cms-users',
+      itemId: user._id.toString(), label: `${user.name} (${user.username})`,
+      // Never record the password itself — only that it was changed.
+      changes: Object.keys(update).map((k) => (k === 'password' ? 'password (reset)' : k)),
+    });
     res.json({ success: true, user: formatUser(user) });
   } catch (err) {
     console.error('CMS update user error:', err);
@@ -121,6 +136,10 @@ router.delete('/:id', requireCMSAdmin, async (req, res) => {
   try {
     const user = await CMSUser.findByIdAndDelete(req.params.id);
     if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+    logActivity({
+      actor: req.cmsUser, action: 'user_delete', section: 'cms-users',
+      itemId: req.params.id, label: `${user.name} (${user.username})`,
+    });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Failed to delete user.' });

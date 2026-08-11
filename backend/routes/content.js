@@ -8,6 +8,7 @@ const {
   SECTIONS, PUBLIC_SECTIONS, isSection, isSingleton, sanitize, stripReserved,
 } = require('../config/contentSections');
 const { requireCMSUser, requireSection, checkItemScope } = require('../middleware/cmsAuth');
+const { logActivity, labelFor, changedFields } = require('../utils/activityLog');
 
 // max-age=0 so a browser always revalidates: an admin who saves an edit and
 // then opens the public site must see their change, not a minute-old copy they
@@ -106,6 +107,10 @@ router.post('/:section', sectionParam, requireCMSUser, (req, res, next) => {
       data,
       updatedBy: editor(req),
     });
+    logActivity({
+      actor: req.cmsUser, action: 'create', section, itemId,
+      label: labelFor(data),
+    });
     res.status(201).json({ success: true, item: doc.toContent() });
   } catch (err) {
     if (err.code === 11000) {
@@ -129,6 +134,9 @@ router.patch('/:section/:itemId', sectionParam, requireCMSUser, (req, res, next)
     const scope = checkItemScope(req.cmsUser, section, existing, incomingSlug);
     if (!scope.ok) return res.status(403).json({ success: false, message: scope.message });
 
+    const before = { ...(existing.data || {}) };
+    const wasPublished = existing.published;
+
     if (req.body.data) {
       existing.data = { ...(existing.data || {}), ...sanitize(stripReserved(req.body.data)) };
       existing.markModified('data');
@@ -139,6 +147,18 @@ router.patch('/:section/:itemId', sectionParam, requireCMSUser, (req, res, next)
     existing.updatedBy = editor(req);
 
     await existing.save();
+
+    // A publish/unpublish is the change staff care about most, so it gets its
+    // own action rather than being buried in a field list.
+    const publishToggled = req.body.published !== undefined && wasPublished !== existing.published;
+    logActivity({
+      actor: req.cmsUser,
+      action: publishToggled ? (existing.published ? 'publish' : 'unpublish') : 'update',
+      section, itemId,
+      label: labelFor(existing.data, itemId),
+      changes: changedFields(before, existing.data),
+    });
+
     res.json({ success: true, item: existing.toContent() });
   } catch (err) {
     console.error('Content update error:', err);
@@ -166,6 +186,13 @@ router.delete('/:section/:itemId?', sectionParam, requireCMSUser, (req, res, nex
       if (!scope.ok) return res.status(403).json({ success: false, message: scope.message });
     }
     const result = await ContentItem.deleteMany({ section, itemId: { $in: ids } });
+    // Labels are read before deletion — afterwards there is nothing to name.
+    for (const doc of docs) {
+      logActivity({
+        actor: req.cmsUser, action: 'delete', section,
+        itemId: doc.itemId, label: labelFor(doc.data, doc.itemId),
+      });
+    }
     res.json({ success: true, deleted: result.deletedCount });
   } catch (err) {
     console.error('Content delete error:', err);
@@ -195,6 +222,7 @@ router.put('/:section', sectionParam, requireCMSUser, (req, res, next) => {
       const created = await ContentItem.create({
         section, itemId: SINGLETON_ID, data, version: 1, updatedBy: editor(req),
       });
+      logActivity({ actor: req.cmsUser, action: 'create', section, itemId: SINGLETON_ID, label: section });
       return res.status(201).json({ success: true, data: created.data, version: created.version });
     }
 
@@ -222,6 +250,11 @@ router.put('/:section', sectionParam, requireCMSUser, (req, res, next) => {
       });
     }
 
+    logActivity({
+      actor: req.cmsUser, action: 'update', section, itemId: SINGLETON_ID,
+      label: section,
+      changes: changedFields(existing.data, updated.data),
+    });
     res.json({ success: true, data: updated.data, version: updated.version });
   } catch (err) {
     console.error('Content save error:', err);
