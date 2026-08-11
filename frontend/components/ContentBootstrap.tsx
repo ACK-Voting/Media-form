@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { fetchAllContent } from '@/stores/cms/contentApi';
 import { useEventsStore } from '@/stores/cms/eventsStore';
 import { useGalleryStore } from '@/stores/cms/galleryStore';
@@ -15,64 +15,85 @@ import { useContactInfoStore } from '@/stores/cms/contactInfoStore';
 import { useGetInvolvedStore } from '@/stores/cms/getInvolvedStore';
 import { useHistoryStore } from '@/stores/cms/historyStore';
 
+type Sections = Record<string, unknown> | null;
+
 /**
- * Loads every content section in one request and pushes it into the stores.
+ * Pushes CMS content into the zustand stores.
  *
- * Mounted once in the root layout. Fifteen stores fetching independently would
- * mean fifteen round trips on every page load; the backend serves the whole
- * site from a single cached endpoint instead.
+ * Rendered as a sibling *before* the page in the root layout, and it applies
+ * `initial` during render rather than in an effect. That ordering is what makes
+ * server rendering work: React renders siblings top-down, so by the time the
+ * page reads a store, this component has already filled it. Doing it in an
+ * effect would leave the server-rendered HTML showing the bundled fallback,
+ * which is what crawlers would then index.
  *
- * Until it resolves the stores show their bundled seed, so pages paint
- * immediately rather than flashing empty.
+ * The stores are module-level singletons, so on the server this state is shared
+ * across requests. That is safe here only because the content is global — the
+ * same for every visitor — and each request overwrites it with the same values.
+ * Never put per-user data through this path.
  */
-export default function ContentBootstrap() {
+function applySections(s: Sections) {
+  if (!s) return;
+
+  const list = <T,>(value: unknown): T[] | null => (Array.isArray(value) ? (value as T[]) : null);
+
+  const events = list(s.events);
+  if (events) useEventsStore.setState({ events: events as never, loaded: true });
+
+  const gallery = list(s.gallery);
+  if (gallery) useGalleryStore.setState({ items: gallery as never, loaded: true });
+
+  const announcements = list(s.announcements);
+  if (announcements) useAnnouncementsStore.setState({ posts: announcements as never, loaded: true });
+
+  const ministries = list<{ slug?: string; id?: string }>(s.ministries);
+  if (ministries) {
+    useMinistriesStore.setState({
+      ministries: ministries.map((m) => ({ ...m, id: m.slug ?? m.id })) as never,
+      loaded: true,
+    });
+  }
+
+  const ministryPosts = list(s.ministryPosts);
+  if (ministryPosts) useMinistryPostsStore.setState({ posts: ministryPosts as never, loaded: true });
+
+  const leadership = list(s.leadership);
+  if (leadership) useLeadershipStore.setState({ leaders: leadership as never, loaded: true });
+
+  const resources = list(s.resources);
+  if (resources) useResourcesStore.setState({ resources: resources as never, loaded: true });
+
+  const staff = list(s.staff);
+  if (staff) useStaffStore.setState({ staff: staff as never, loaded: true });
+
+  const opportunities = list(s.opportunities);
+  if (opportunities) useGetInvolvedStore.setState({ opportunities: opportunities as never });
+
+  if (s.giving) useGivingStore.getState().hydrate(s.giving as never);
+  if (s.contactInfo) useContactInfoStore.getState().hydrate(s.contactInfo as never);
+  if (s.staffDepartments) useStaffStore.getState().hydrateDepartments(s.staffDepartments as never);
+  if (s.history) useHistoryStore.getState().hydrate(s.history as never);
+}
+
+export default function ContentBootstrap({ initial }: { initial?: Sections }) {
+  // Apply the server's copy synchronously, before the page renders.
+  const applied = useRef(false);
+  if (!applied.current && initial) {
+    applySections(initial);
+    applied.current = true;
+  }
+
   useEffect(() => {
+    // The server copy is up to 60s stale, and a page served from the CDN can be
+    // older still. Refetch on mount so an editor who just saved sees their
+    // change, and so a long-lived tab stays current.
     let cancelled = false;
-
     fetchAllContent()
-      .then((s) => {
-        if (cancelled || !s) return;
-
-        const list = <T,>(value: unknown): T[] | null =>
-          Array.isArray(value) ? (value as T[]) : null;
-
-        const events = list(s.events);
-        if (events) useEventsStore.getState().hydrate(events as never);
-
-        const gallery = list(s.gallery);
-        if (gallery) useGalleryStore.getState().hydrate(gallery as never);
-
-        const announcements = list(s.announcements);
-        if (announcements) useAnnouncementsStore.getState().hydrate(announcements as never);
-
-        const ministries = list(s.ministries);
-        if (ministries) useMinistriesStore.getState().hydrate(ministries as never);
-
-        const ministryPosts = list(s.ministryPosts);
-        if (ministryPosts) useMinistryPostsStore.getState().hydrate(ministryPosts as never);
-
-        const leadership = list(s.leadership);
-        if (leadership) useLeadershipStore.getState().hydrate(leadership as never);
-
-        const resources = list(s.resources);
-        if (resources) useResourcesStore.getState().hydrate(resources as never);
-
-        const staff = list(s.staff);
-        if (staff) useStaffStore.getState().hydrateStaff(staff as never);
-
-        const opportunities = list(s.opportunities);
-        if (opportunities) useGetInvolvedStore.getState().hydrateOpportunities(opportunities as never);
-
-        if (s.giving) useGivingStore.getState().hydrate(s.giving as never);
-        if (s.contactInfo) useContactInfoStore.getState().hydrate(s.contactInfo as never);
-        if (s.staffDepartments) useStaffStore.getState().hydrateDepartments(s.staffDepartments as never);
-        if (s.history) useHistoryStore.getState().hydrate(s.history as never);
-      })
+      .then((s) => { if (!cancelled) applySections(s); })
       .catch(() => {
-        // The seed is already on screen. Failing loudly here would replace a
-        // working page with an error for a visitor who can't act on it.
+        // Content is already on screen from the server render; a failed refresh
+        // is not something a visitor can act on.
       });
-
     return () => { cancelled = true; };
   }, []);
 
