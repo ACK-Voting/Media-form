@@ -24,10 +24,10 @@ export default function GivingPage() {
   }
 
   return (
-    <div className="p-8 max-w-3xl">
+    <div className="p-4 sm:p-8 space-y-6 max-w-3xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Giving Information</h1>
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Giving Information</h1>
           <p className="text-gray-500 text-sm mt-1">Update M-Pesa, bank details, and giving categories</p>
         </div>
         <button onClick={saveAll} className={`px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors ${saved ? 'bg-green-600 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>

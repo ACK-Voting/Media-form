@@ -101,10 +101,10 @@ export default function ResourcesPage() {
   }
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8 space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Resources &amp; Downloads</h1>
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Resources &amp; Downloads</h1>
           <p className="text-gray-500 text-sm mt-1">{resources.length} files</p>
         </div>
         <button onClick={openModal} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors">

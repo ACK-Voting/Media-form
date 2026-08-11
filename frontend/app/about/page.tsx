@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
 import { useLeadershipStore } from '@/stores/cms/leadershipStore';
+import { displayName } from '@/lib/displayName';
 
 const values = [
   {
@@ -227,7 +228,7 @@ export default function AboutPage() {
                 </div>
                 <div className="p-5 flex flex-col flex-1">
                   <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">{leader.role}</p>
-                  <h4 className="font-bold text-gray-900 mb-1">{leader.title} {leader.name}</h4>
+                  <h4 className="font-bold text-gray-900 mb-1">{displayName(leader.title, leader.name)}</h4>
                   {leader.ordained && (
                     <p className="text-xs text-gray-400 mb-2">{leader.ordained}</p>
                   )}
@@ -265,7 +266,7 @@ export default function AboutPage() {
                 </div>
                 <div className="p-5 flex flex-col flex-1">
                   <p className="text-xs font-semibold text-blue-600 uppercase tracking-wider mb-1">{leader.role}</p>
-                  <h4 className="font-bold text-gray-900 mb-1">{leader.title} {leader.name}</h4>
+                  <h4 className="font-bold text-gray-900 mb-1">{displayName(leader.title, leader.name)}</h4>
                   <p className="text-sm text-gray-600 leading-relaxed flex-1">{leader.bio}</p>
                   {leader.email && (
                     <a href={`mailto:${leader.email}`} className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 mt-3 font-medium">

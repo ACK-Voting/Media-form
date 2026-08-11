@@ -5,6 +5,7 @@ import { uploadFile } from '@/lib/uploadToCloudinary';
 import { useState, useRef } from 'react';
 import { useLeadershipStore } from '@/stores/cms/leadershipStore';
 import { Leader } from '@/app/_data/mockData';
+import { displayName } from '@/lib/displayName';
 
 const emptyLeader: Omit<Leader, 'id'> = {
   name: '', role: '', title: '', bio: '', phone: '', email: '', ordained: '', photo: '',
@@ -76,10 +77,10 @@ export default function LeadershipPage() {
   const wardens = leaders.filter(l => !l.ordained);
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8 space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Leadership &amp; Clergy</h1>
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Leadership &amp; Clergy</h1>
           <p className="text-gray-500 text-sm mt-1">{leaders.length} members</p>
         </div>
         <button onClick={openAdd} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors">
@@ -104,7 +105,7 @@ export default function LeadershipPage() {
                 </div>
               )}
               <div className="flex-1 min-w-0 pr-6">
-                <p className="font-bold text-gray-900 text-sm">{l.title} {l.name}</p>
+                <p className="font-bold text-gray-900 text-sm">{displayName(l.title, l.name)}</p>
                 <p className="text-xs text-gray-500 mt-0.5">{l.role}</p>
                 {l.ordained && <span className="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full mt-1">{l.ordained}</span>}
               </div>
@@ -134,7 +135,7 @@ export default function LeadershipPage() {
                 </div>
               )}
               <div className="flex-1 min-w-0 pr-6">
-                <p className="font-bold text-gray-900 text-sm">{l.title} {l.name}</p>
+                <p className="font-bold text-gray-900 text-sm">{displayName(l.title, l.name)}</p>
                 <p className="text-xs text-gray-500 mt-0.5">{l.role}</p>
               </div>
             </div>

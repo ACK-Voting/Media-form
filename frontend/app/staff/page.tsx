@@ -3,6 +3,7 @@
 import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
 import { useStaffStore } from '@/stores/cms/staffStore';
+import { displayName } from '@/lib/displayName';
 
 export default function StaffPage() {
   const { staff, departments } = useStaffStore();
@@ -72,7 +73,7 @@ export default function StaffPage() {
                         {member.role}
                       </p>
                       <h3 className="text-lg font-bold text-gray-900 mb-1">
-                        {member.title} {member.name}
+                        {displayName(member.title, member.name)}
                       </h3>
                       <p className="text-xs text-gray-400 mb-3">{getDeptName(member.departmentId)}</p>
                       {member.bio && (
@@ -117,7 +118,7 @@ export default function StaffPage() {
                     </div>
                     <div className="p-5">
                       <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-1">{member.role}</p>
-                      <h3 className="text-lg font-bold text-gray-900 mb-1">{member.title} {member.name}</h3>
+                      <h3 className="text-lg font-bold text-gray-900 mb-1">{displayName(member.title, member.name)}</h3>
                       {member.bio && <p className="text-sm text-gray-600 leading-relaxed mb-3">{member.bio}</p>}
                       {member.email && (
                         <a href={`mailto:${member.email}`} className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors">

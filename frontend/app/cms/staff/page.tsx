@@ -6,6 +6,7 @@ import { useState, useRef } from 'react';
 import { useStaffStore } from '@/stores/cms/staffStore';
 import { StaffMember, Department } from '@/app/_data/mockData';
 import { Select } from '@/components/ui/Select';
+import { displayName } from '@/lib/displayName';
 
 const inputCls =
   'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500';
@@ -98,11 +99,11 @@ export default function StaffCMSPage() {
   const staffInDept = (id: string) => staff.filter((s) => s.departmentId === id).length;
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8 space-y-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Staff</h1>
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight">Staff</h1>
           <p className="text-gray-500 text-sm mt-1">{staff.length} staff members · {departments.length} departments</p>
         </div>
         <button
@@ -141,7 +142,7 @@ export default function StaffCMSPage() {
               </div>
               <div className="p-4">
                 <p className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-0.5">{s.role}</p>
-                <p className="font-bold text-gray-900 text-sm">{s.title} {s.name}</p>
+                <p className="font-bold text-gray-900 text-sm">{displayName(s.title, s.name)}</p>
                 <span className="inline-block mt-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">{getDeptName(s.departmentId)}</span>
                 {s.bio && <p className="text-xs text-gray-500 mt-2 line-clamp-2">{s.bio}</p>}
                 <div className="flex gap-2 mt-3">

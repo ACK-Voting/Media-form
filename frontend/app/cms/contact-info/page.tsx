@@ -146,9 +146,9 @@ export default function ContactInfoPage() {
   ];
 
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8 space-y-6 max-w-7xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Church Info</h1>
+        <h1 className="text-2xl font-black text-gray-900 tracking-tight">Church Info</h1>
         <p className="text-gray-500 text-sm mt-1">Manage contact page content — facility spaces, departments, service times, and office hours</p>
       </div>
 

@@ -104,16 +104,10 @@ function UsersContent() {
     setAddError('');
     const password = generatePassword();
     try {
-      // 1. Send invite email
-      const emailRes = await fetch(`${API}/invite`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...addForm, password }),
-      });
-      const emailData = await emailRes.json();
-      if (!emailData.success) throw new Error(emailData.message || 'Failed to send invitation email.');
-
-      // 2. Save user to MongoDB
+      // 1. Create the account first. The email used to be sent before this,
+      //    which meant a failed save (a duplicate username, say) still sent
+      //    someone working-looking credentials for an account that never
+      //    existed.
       const saveRes = await fetch(`${API}/cms-users`, {
         method: 'POST',
         headers: authHeaders(),
@@ -121,6 +115,23 @@ function UsersContent() {
       });
       const saveData = await saveRes.json();
       if (!saveData.success) throw new Error(saveData.message || 'Failed to save user.');
+
+      // 2. Then email the credentials. /api/invite requires a super-admin token
+      //    — it is otherwise an open relay for domain-branded credential mail.
+      const emailRes = await fetch(`${API}/invite`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ ...addForm, password }),
+      });
+      const emailData = await emailRes.json();
+      if (!emailData.success) {
+        // The account exists; only the email failed. Say so precisely rather
+        // than implying nothing happened.
+        await fetchUsers();
+        throw new Error(
+          `${saveData.user?.username ?? 'The account'} was created, but the invitation email could not be sent (${emailData.message || 'unknown error'}). Set the password again from Edit to retry.`
+        );
+      }
 
       await fetchUsers();
       setAddDone(true);
@@ -157,7 +168,7 @@ function UsersContent() {
       if (editForm.password.trim()) {
         const emailRes = await fetch(`${API}/invite`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: authHeaders(),
           body: JSON.stringify({
             name: editForm.name,
             email: editForm.email,
@@ -232,10 +243,10 @@ function UsersContent() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="p-8">
+    <div className="p-4 sm:p-8 space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">CMS Users</h1>
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight">CMS Users</h1>
           <p className="text-gray-500 text-sm mt-1">{users.filter(u => u.active).length} active users</p>
         </div>
         <button onClick={openAdd} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 transition-colors">
