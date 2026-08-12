@@ -1,4 +1,5 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const { Resend } = require('resend');
@@ -15,7 +16,20 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const FROM  = process.env.EMAIL_FROM || `ACK Mombasa Memorial Cathedral <${process.env.EMAIL_USER}>`;
 const ADMIN = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
 
+// This endpoint is public and previously had neither a honeypot nor a
+// per-route limiter — only the global 1000/15min. /api/inbox has both, and an
+// unprotected public write fills the inbox with spam until staff stop reading
+// it, which quietly undoes the point of having the form.
+const submitLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: { success: false, message: 'Too many submissions. Please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
 const validation = [
+    body('website').isEmpty().withMessage('Rejected'), // honeypot: bots fill it, humans never see it
     body('firstName').trim().notEmpty().withMessage('First name is required'),
     body('lastName').trim().notEmpty().withMessage('Last name is required'),
     body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
@@ -24,7 +38,7 @@ const validation = [
 ];
 
 // POST /api/get-involved — public form submission
-router.post('/', validation, async (req, res) => {
+router.post('/', submitLimiter, validation, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
         return res.status(400).json({ success: false, errors: errors.array() });
@@ -40,7 +54,10 @@ router.post('/', validation, async (req, res) => {
     const ministriesList = Array.isArray(ministries) && ministries.length ? ministries.join(', ') : '—';
 
     try {
-        // Save to database
+        // Save first. The two emails below are deliberately NOT awaited: they
+        // used to be, which meant a Resend outage returned 500 for a submission
+        // that had already been stored — so the visitor submitted again and the
+        // office got duplicates.
         await GetInvolvedSubmission.create({
             firstName, lastName, email, phone, address, type,
             baptized, confirmed, previousChurch,
@@ -52,7 +69,7 @@ router.post('/', validation, async (req, res) => {
         });
 
         // Confirmation to applicant
-        await resend.emails.send({
+        resend.emails.send({
             from: FROM,
             to: [email],
             subject: `Thank you for your ${typeName} — ACK Mombasa Memorial Cathedral`,
@@ -71,10 +88,10 @@ router.post('/', validation, async (req, res) => {
                     </div>
                 </div>
             `,
-        });
+        }).catch((e) => console.error('Applicant confirmation email failed:', e.message));
 
         // Notification to admin
-        await resend.emails.send({
+        resend.emails.send({
             from: FROM,
             to: [ADMIN],
             subject: `New ${typeName}: ${fullName}`,
@@ -100,9 +117,9 @@ router.post('/', validation, async (req, res) => {
                     </div>
                 </div>
             `,
-        });
+        }).catch((e) => console.error('Admin notification email failed:', e.message));
 
-        res.json({ success: true, message: 'Submission received. Confirmation email sent.' });
+        res.json({ success: true, message: 'Submission received.' });
     } catch (err) {
         console.error('Get-involved error:', err);
         res.status(500).json({ success: false, message: 'Failed to process submission.' });

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
 import { useMinistriesStore } from '@/stores/cms/ministriesStore';
+import EnquiryModal from '@/app/_components/EnquiryModal';
 
 const categoryFilter = ['All', 'Core', 'Fellowship', 'Worship', 'Service'] as const;
 type Filter = typeof categoryFilter[number];
@@ -12,6 +13,7 @@ type Filter = typeof categoryFilter[number];
 export default function MinistriesPage() {
   const ministries = useMinistriesStore((s) => s.ministries);
   const [activeFilter, setActiveFilter] = useState<Filter>('All');
+  const [enquiryOpen, setEnquiryOpen] = useState(false);
 
   const filtered = activeFilter === 'All' ? ministries : ministries.filter(m => m.category === activeFilter);
 
@@ -157,15 +159,28 @@ export default function MinistriesPage() {
             ))}
           </div>
           <div className="text-center mt-12">
-            <a href="mailto:info@ackmombasa.org" className="inline-flex items-center gap-2 bg-blue-900 text-white px-8 py-4 rounded-xl font-semibold hover:bg-blue-800 hover:shadow-lg transition-all">
+            <button onClick={() => setEnquiryOpen(true)} className="inline-flex items-center gap-2 bg-blue-900 text-white px-8 py-4 rounded-xl font-semibold hover:bg-blue-800 hover:shadow-lg transition-all">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
               Contact Us to Get Started
-            </a>
+            </button>
           </div>
         </div>
       </section>
+
+      <EnquiryModal
+        open={enquiryOpen}
+        onClose={() => setEnquiryOpen(false)}
+        title="Get Started with a Ministry"
+        intro="Let us know which ministry interests you and we will connect you with its leader."
+        subject="Ministry enquiry"
+        submitLabel="Send Enquiry"
+        extraFields={[{
+          name: 'ministry', label: 'Which ministry?', type: 'select', required: true,
+          options: ministries.map((m) => m.name),
+        }]}
+      />
 
       <Footer />
     </div>

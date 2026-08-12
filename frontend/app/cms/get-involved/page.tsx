@@ -201,10 +201,10 @@ function SubmissionCard({ s, onStatus, onDelete }: {
 // ── Application status helpers ─────────────────────────────────────────────────
 
 const APP_STATUS_COLORS: Record<Application['status'], string> = {
-  pending:     'bg-amber-100 text-amber-700',
-  reviewed:    'bg-blue-100 text-blue-700',
-  shortlisted: 'bg-purple-100 text-purple-700',
-  rejected:    'bg-red-100 text-red-700',
+  pending:  'bg-amber-100 text-amber-700',
+  reviewed: 'bg-blue-100 text-blue-700',
+  accepted: 'bg-green-100 text-green-700',
+  declined: 'bg-red-100 text-red-700',
 };
 
 // ── Main page ──────────────────────────────────────────────────────────────────
@@ -353,7 +353,7 @@ export default function GetInvolvedCMSPage() {
               ))}
             </div>
             <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-              {(['all', 'pending', 'reviewed', 'shortlisted', 'rejected'] as const).map(s => (
+              {(['all', 'pending', 'reviewed', 'accepted', 'declined'] as const).map(s => (
                 <button key={s} onClick={() => setAppStatusFilter(s)}
                   className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all capitalize ${appStatusFilter === s ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
                   {s === 'all' ? 'All Statuses' : s}
@@ -384,7 +384,7 @@ export default function GetInvolvedCMSPage() {
                     )}
                     <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
                       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</span>
-                      {(['pending', 'reviewed', 'shortlisted', 'rejected'] as Application['status'][]).map(st => (
+                      {(['pending', 'reviewed', 'accepted', 'declined'] as Application['status'][]).map(st => (
                         <button key={st} onClick={() => updateApplicationStatus(a.id, st)}
                           className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors capitalize ${a.status === st ? APP_STATUS_COLORS[st] : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
                           {st}

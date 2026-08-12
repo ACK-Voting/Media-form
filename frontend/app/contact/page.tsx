@@ -6,12 +6,17 @@ import Footer from '../_components/Footer';
 import { Select } from '@/components/ui/Select';
 import { useContactInfoStore } from '@/stores/cms/contactInfoStore';
 import { useContactsStore } from '@/stores/cms/contactsStore';
+import EnquiryModal from '../_components/EnquiryModal';
 
 export default function ContactPage() {
   const { officeHours, serviceTimes: servicesTimes, departments, spaces, bookingPhone, bookingEmail } = useContactInfoStore();
+  // Same lookup the Navbar and Footer use, so the number shown here can't drift
+  // from the one in the footer of this very page — it previously did.
+  const general = departments.find((d) => /general/i.test(d.name)) ?? departments[0];
   const addFromForm = useContactsStore((s) => s.addFromForm);
   const [formState, setFormState] = useState({ name: '', email: '', phone: '', subject: '', message: '', department: 'General Enquiries' });
   const [submitted, setSubmitted] = useState(false);
+  const [bookingOpen, setBookingOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
 
@@ -80,17 +85,17 @@ export default function ContactPage() {
               {
                 icon: 'M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z',
                 title: 'Call Us',
-                info: '+254 700 123 456\nMon–Fri, 8 AM–5 PM',
+                info: `${general?.phone ?? ''}\nMon–Fri, 8 AM–5 PM`,
                 cta: 'Call Now',
-                href: 'tel:+254700123456',
+                href: `tel:${(general?.phone ?? '').replace(/\s/g, '')}`,
                 color: 'green',
               },
               {
                 icon: 'M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z',
                 title: 'Email Us',
-                info: 'info@ackmombasa.org\nWe reply within 24–48 hours',
-                cta: 'Send Email',
-                href: 'mailto:info@ackmombasa.org',
+                info: `${general?.email ?? ''}\nWe reply within 24–48 hours`,
+                cta: 'Send a Message',
+                href: '#contact-form',
                 color: 'purple',
               },
             ].map(card => (
@@ -122,7 +127,10 @@ export default function ContactPage() {
           <div className="grid lg:grid-cols-5 gap-12">
 
             {/* Contact Form */}
-            <div className="lg:col-span-3">
+            {/* Anchor target for the "Email Us" card above, which used to open
+                the visitor's mail client rather than using the form on this
+                very page. */}
+            <div className="lg:col-span-3 scroll-mt-24" id="contact-form">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Send Us a Message</h2>
 
               {submitted ? (
@@ -358,13 +366,31 @@ export default function ContactPage() {
                 </a>
               </div>
             </div>
-            <a href={`mailto:${bookingEmail}`}
+            <button onClick={() => setBookingOpen(true)}
               className="flex-shrink-0 bg-white text-blue-900 font-bold px-6 py-3 rounded-xl hover:bg-blue-50 transition-colors text-sm">
               Request Booking
-            </a>
+            </button>
           </div>
         </div>
       </section>
+
+      <EnquiryModal
+        open={bookingOpen}
+        onClose={() => setBookingOpen(false)}
+        title="Request a Facility Booking"
+        intro="Tell us what you need and the office will confirm availability."
+        subject="Facility booking request"
+        submitLabel="Send Booking Request"
+        extraFields={[
+          { name: 'space', label: 'Which space?', type: 'select', required: true,
+            options: spaces.filter((s) => s.active).map((s) => s.name) },
+          { name: 'eventType', label: 'Type of event', required: true, placeholder: 'Wedding, conference, memorial…' },
+          { name: 'date', label: 'Preferred date', type: 'date', required: true },
+          { name: 'startTime', label: 'Start time', type: 'time' },
+          { name: 'endTime', label: 'End time', type: 'time' },
+          { name: 'attendance', label: 'Expected attendance', type: 'number', placeholder: 'e.g. 150' },
+        ]}
+      />
 
       <Footer />
     </div>

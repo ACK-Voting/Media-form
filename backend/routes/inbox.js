@@ -5,6 +5,7 @@ const router = express.Router();
 
 const InboxMessage = require('../models/InboxMessage');
 const { requireCMSUser, requireSection } = require('../middleware/cmsAuth');
+const { notifyOffice } = require('../utils/mailer');
 
 // The inverse of /api/content: writing is public, reading requires staff auth.
 
@@ -55,7 +56,7 @@ router.post('/:kind', kindParam, submitLimiter, submitValidation, async (req, re
   }
 
   try {
-    await InboxMessage.create({
+    const saved = await InboxMessage.create({
       kind,
       name: isAnonymous ? 'Anonymous' : name,
       email: email || '',
@@ -66,6 +67,34 @@ router.post('/:kind', kindParam, submitLimiter, submitValidation, async (req, re
       isAnonymous: !!isAnonymous,
       shareable: !!shareable,
     });
+
+    // Tell the office. Deliberately not awaited: nothing about a mail outage
+    // should stop a prayer request being recorded, and the visitor has already
+    // done their part.
+    if (kind === 'prayer') {
+      notifyOffice({
+        heading: 'New Prayer Request',
+        subject: `New prayer request${saved.isAnonymous ? '' : ` from ${saved.name}`}`,
+        rows: [
+          ['From', saved.isAnonymous ? 'Anonymous' : saved.name],
+          ['Email', saved.isAnonymous ? '' : saved.email],
+          ['Share publicly', saved.shareable ? 'Yes' : 'No'],
+        ],
+        body: saved.request,
+      });
+    } else {
+      notifyOffice({
+        heading: 'New Contact Message',
+        subject: `New message: ${saved.subject || 'Website enquiry'}`,
+        rows: [
+          ['From', saved.name],
+          ['Email', saved.email],
+          ['Phone', saved.phone],
+          ['Subject', saved.subject],
+        ],
+        body: saved.message,
+      });
+    }
     // Deliberately no echo of the stored record — a public endpoint should not
     // confirm back what it saved about other people.
     res.status(201).json({ success: true });

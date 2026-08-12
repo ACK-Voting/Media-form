@@ -5,6 +5,7 @@ import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
 import { useResourcesStore } from '@/stores/cms/resourcesStore';
 import type { Resource } from '@/app/_data/mockData';
+import EnquiryModal from '@/app/_components/EnquiryModal';
 
 type FilterCategory = 'All' | Resource['category'];
 
@@ -48,6 +49,7 @@ const FILTER_LABEL: Record<FilterCategory, string> = {
 export default function ResourcesPage() {
   const resources = useResourcesStore((s) => s.resources);
   const [active, setActive] = useState<FilterCategory>('All');
+  const [enquiryOpen, setEnquiryOpen] = useState(false);
 
   const filtered = active === 'All'
     ? resources.filter((r) => r.url) // only show resources with an uploaded file
@@ -144,12 +146,22 @@ export default function ResourcesPage() {
         <div className="max-w-2xl mx-auto px-4 text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-3">Can&apos;t Find What You Need?</h2>
           <p className="text-gray-600 mb-6 text-sm">Contact the cathedral office and we will assist you in getting the document or resource you are looking for.</p>
-          <a href="mailto:info@ackmombasa.org" className="inline-flex items-center gap-2 bg-gray-900 text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-700 transition-colors text-sm">
+          <button onClick={() => setEnquiryOpen(true)} className="inline-flex items-center gap-2 bg-gray-900 text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-700 transition-colors text-sm">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
             Contact the Office
-          </a>
+          </button>
         </div>
       </section>
+
+      <EnquiryModal
+        open={enquiryOpen}
+        onClose={() => setEnquiryOpen(false)}
+        title="Request a Document"
+        intro="Tell us what you are looking for and the office will send it to you."
+        subject="Resource request"
+        submitLabel="Send Request"
+        extraFields={[{ name: 'document', label: 'What are you looking for?', required: true, placeholder: 'e.g. Sunday bulletin, 12 July' }]}
+      />
 
       <Footer />
     </div>

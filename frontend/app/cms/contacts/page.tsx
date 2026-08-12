@@ -120,7 +120,10 @@ export default function ContactsPage() {
                     <span className="text-xs text-gray-400 font-medium ml-auto">{c.date}</span>
                   </div>
                   <p className="font-bold text-gray-800 text-xs mb-1.5">Subject: {c.subject}</p>
-                  <p className="text-gray-600 text-sm leading-relaxed">{c.message}</p>
+                  {/* Enquiry modals prefix the body with a labelled block of
+                      answers separated by newlines; without pre-line those run
+                      together into one unreadable paragraph. */}
+                  <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">{c.message}</p>
                 </div>
               </div>
               <div className="flex flex-col items-end gap-2 flex-shrink-0">

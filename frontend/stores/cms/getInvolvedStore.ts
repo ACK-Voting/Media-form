@@ -28,7 +28,10 @@ export type Application = {
   email: string;
   phone: string;
   coverLetter?: string;
-  status: 'pending' | 'reviewed' | 'shortlisted' | 'rejected';
+  // Must match the backend enum in models/GetInvolvedSubmission.js. It used to
+  // read 'shortlisted' | 'rejected', which the API rejects — so those two
+  // buttons appeared to work, then silently rolled back.
+  status: 'pending' | 'reviewed' | 'accepted' | 'declined';
   date: string;
 };
 

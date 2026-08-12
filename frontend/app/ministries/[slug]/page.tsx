@@ -10,6 +10,7 @@ import { useEventsStore } from '@/stores/cms/eventsStore';
 import { useGalleryStore } from '@/stores/cms/galleryStore';
 import { useMinistryPostsStore } from '@/stores/cms/ministryPostsStore';
 import type { MinistryPost } from '../../_data/mockData';
+import EnquiryModal from '@/app/_components/EnquiryModal';
 
 type Tab = 'about' | 'updates' | 'gallery' | 'events';
 
@@ -25,6 +26,7 @@ function formatDate(d: string) {
 }
 
 export default function MinistryDetailPage() {
+  const [enquiryOpen, setEnquiryOpen] = useState(false);
   const ministries = useMinistriesStore((s) => s.ministries);
   const events = useEventsStore((s) => s.events);
   const galleryItems = useGalleryStore((s) => s.items);
@@ -155,12 +157,12 @@ export default function MinistryDetailPage() {
                 <p className="text-gray-600 text-sm mb-4">
                   We would love to have you. Reach out to our ministry leader or visit us during our regular meeting times.
                 </p>
-                <a
-                  href={`mailto:${ministry.contact}`}
+                <button
+                  onClick={() => setEnquiryOpen(true)}
                   className={`inline-block px-5 py-2.5 rounded-xl bg-gradient-to-r ${ministry.color} text-white font-semibold text-sm hover:opacity-90 transition-opacity`}
                 >
                   Get in Touch
-                </a>
+                </button>
               </div>
             </div>
 
@@ -360,6 +362,16 @@ export default function MinistryDetailPage() {
           </div>
         </div>
       )}
+
+      <EnquiryModal
+        open={enquiryOpen}
+        onClose={() => setEnquiryOpen(false)}
+        title={`Join ${ministry.name}`}
+        intro="Tell us a little about yourself and the ministry leader will get in touch."
+        subject={`Ministry enquiry — ${ministry.name}`}
+        submitLabel="Send Enquiry"
+        extraFields={[{ name: 'ministry', label: 'Ministry', fixedValue: ministry.name }]}
+      />
 
       <Footer />
     </div>

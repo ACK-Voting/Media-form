@@ -20,6 +20,7 @@ export default function GetInvolvedPage() {
   const [applyForm, setApplyForm] = useState({ firstName: '', lastName: '', email: '', phone: '', coverLetter: '' });
   const [applySubmitted, setApplySubmitted] = useState(false);
   const [applySubmitting, setApplySubmitting] = useState(false);
+  const [applyError, setApplyError] = useState('');
 
   const [tab, setTab] = useState<'membership' | 'volunteer'>('membership');
   const [submitted, setSubmitted] = useState(false);
@@ -299,10 +300,26 @@ export default function GetInvolvedPage() {
               <form className="p-6 space-y-4" onSubmit={async (e) => {
                 e.preventDefault();
                 setApplySubmitting(true);
-                addApplication({ opportunityId: applyModal.id, opportunityRole: applyModal.role, ...applyForm });
-                await new Promise(r => setTimeout(r, 400));
-                setApplySubmitting(false);
-                setApplySubmitted(true);
+                setApplyError('');
+                try {
+                  // This used to fire without awaiting, wait a cosmetic 400ms,
+                  // then show success unconditionally — so a rejected
+                  // application still told the applicant it had been received.
+                  await addApplication({
+                    opportunityId: applyModal.id,
+                    opportunityRole: applyModal.role,
+                    ...applyForm,
+                  });
+                  setApplySubmitted(true);
+                } catch (err) {
+                  setApplyError(
+                    err instanceof Error
+                      ? err.message
+                      : 'Your application could not be submitted. Please try again.'
+                  );
+                } finally {
+                  setApplySubmitting(false);
+                }
               }}>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -332,6 +349,9 @@ export default function GetInvolvedPage() {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                     placeholder="Tell us about your relevant experience and why this role interests you..." />
                 </div>
+                {applyError && (
+                  <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">{applyError}</p>
+                )}
                 <button type="submit" disabled={applySubmitting}
                   className="w-full bg-blue-900 text-white py-3 rounded-xl font-bold text-sm hover:bg-blue-800 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
                   {applySubmitting && (

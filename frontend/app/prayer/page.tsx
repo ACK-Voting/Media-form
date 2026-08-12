@@ -5,6 +5,7 @@ import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
 import { Select } from '@/components/ui/Select';
 import { usePrayerStore } from '@/stores/cms/prayerStore';
+import EnquiryModal from '@/app/_components/EnquiryModal';
 
 const prayerFocus = [
   {
@@ -62,6 +63,7 @@ export default function PrayerPage() {
   useEffect(() => { loadPublic(); }, [loadPublic]);
 
   const [submitted, setSubmitted] = useState(false);
+  const [enquiryOpen, setEnquiryOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
@@ -316,17 +318,26 @@ export default function PrayerPage() {
                     </div>
                   ))}
                 </div>
-                <a href="mailto:prayer@ackmombasa.org" className="mt-4 flex items-center gap-2 text-amber-400 hover:text-amber-300 text-sm font-semibold transition-colors">
+                <button onClick={() => setEnquiryOpen(true)} className="mt-4 flex items-center gap-2 text-amber-400 hover:text-amber-300 text-sm font-semibold transition-colors">
                   Contact Prayer Ministry
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
-                </a>
+                </button>
               </div>
             </div>
           </div>
         </div>
       </section>
+
+      <EnquiryModal
+        open={enquiryOpen}
+        onClose={() => setEnquiryOpen(false)}
+        title="Contact the Prayer Ministry"
+        intro="For questions about the prayer ministry. To ask for prayer, use the form above."
+        subject="Prayer ministry enquiry"
+        submitLabel="Send Enquiry"
+      />
 
       <Footer />
     </div>

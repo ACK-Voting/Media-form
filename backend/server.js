@@ -80,6 +80,7 @@ const pesapalRoutes = require('./routes/pesapal');
 const contentRoutes = require('./routes/content');
 const inboxRoutes = require('./routes/inbox');
 const cmsActivityRoutes = require('./routes/cmsActivity');
+const cmsCountsRoutes = require('./routes/cmsCounts');
 
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/auth', authRoutes);
@@ -103,6 +104,7 @@ app.use('/api/pesapal', pesapalRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/inbox', inboxRoutes);
 app.use('/api/cms-activity', cmsActivityRoutes);
+app.use('/api/cms-counts', cmsCountsRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
