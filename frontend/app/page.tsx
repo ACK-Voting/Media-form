@@ -10,6 +10,7 @@ import { useEventsStore } from '@/stores/cms/eventsStore';
 import { useMinistriesStore } from '@/stores/cms/ministriesStore';
 import { useContactInfoStore } from '@/stores/cms/contactInfoStore';
 import { useHistoryStore } from '@/stores/cms/historyStore';
+import { usePrayerPageStore } from '@/stores/cms/prayerPageStore';
 import { isServiceLiveAt, useNowTick } from '@/lib/serviceLive';
 
 // Service cards are themed by a colour *key* stored in the CMS, not by raw
@@ -194,6 +195,33 @@ export default function ACKCathedralMockup() {
     }, [ministries, featuredMinistries]);
 
     const serviceTimes = useContactInfoStore((s) => s.serviceTimes);
+    const departments = useContactInfoStore((s) => s.departments);
+    const officeHours = useContactInfoStore((s) => s.officeHours);
+
+    // The prayer meeting times shown here are the same records /prayer shows.
+    // They used to be hardcoded as Monday/Wednesday/Friday 6–7 AM, which
+    // contradicted the CMS outright: the actual entries are weekday 5:30 AM
+    // and Wednesday *evening*. A visitor reading this page turned up on the
+    // wrong day at the wrong time.
+    const prayerMeetings = usePrayerPageStore((s) => s.meetings);
+
+    // Named after the CMS entry rather than a hardcoded label: the office
+    // designates which desks exist, not this page.
+    const weekdayHours = officeHours[0];
+
+    // The service the live banner points at. Prefers one named "Main", else the
+    // last of the day, so it degrades sensibly if the Cathedral renames things.
+    const mainService = useMemo(
+        () => serviceTimes.find((s) => /main/i.test(s.name)) ?? serviceTimes[serviceTimes.length - 1],
+        [serviceTimes]
+    );
+
+    // Services with a Sunday School alongside them, taken from the CMS list
+    // rather than the hardcoded "9 AM & 11 AM".
+    const sundaySchoolTimes = useMemo(
+        () => serviceTimes.filter((s) => /swahili|main/i.test(s.name)).map((s) => s.time),
+        [serviceTimes]
+    );
 
     // Ticks every 30s so a service card goes live mid-visit without a reload.
     // Null until mounted — the server cannot know when the visitor arrives, and
@@ -294,7 +322,14 @@ export default function ACKCathedralMockup() {
                                 <div className="w-3 h-3 bg-white rounded-full"></div>
                             </div>
                             <div>
-                                <p className="font-bold text-lg">Next Service: Sunday 11:00 AM (Main Service)</p>
+                                {/* Named from the CMS rather than hardcoded, so changing a
+                                    service time in /cms/contact-info cannot leave this
+                                    banner advertising one that no longer runs. */}
+                                <p className="font-bold text-lg">
+                                    {mainService
+                                        ? `Next Service: Sunday ${mainService.time} (${mainService.name})`
+                                        : 'Join us for worship this Sunday'}
+                                </p>
                                 <p className="text-sm text-red-100">Join us live or watch online</p>
                             </div>
                         </div>
@@ -395,8 +430,12 @@ export default function ACKCathedralMockup() {
                                     </svg>
                                 </div>
                                 <div>
-                                    <h4 className="font-bold text-gray-900 mb-1">Children's Ministry</h4>
-                                    <p className="text-sm text-gray-600">Sunday School during 9 AM & 11 AM services</p>
+                                    <h4 className="font-bold text-gray-900 mb-1">Children&apos;s Ministry</h4>
+                                    <p className="text-sm text-gray-600">
+                                        {sundaySchoolTimes.length
+                                            ? `Sunday School during the ${sundaySchoolTimes.join(' & ')} services`
+                                            : 'Sunday School during our Sunday services'}
+                                    </p>
                                 </div>
                             </div>
                             <div className="flex items-start gap-4">
@@ -444,19 +483,16 @@ export default function ACKCathedralMockup() {
                             </a>
                         </div>
                         <div className="grid sm:grid-cols-3 gap-4 flex-1">
-                            {[
-                                { day: 'Monday', time: '6:00 AM – 7:00 AM', type: 'Morning Prayer', location: 'Main Sanctuary' },
-                                { day: 'Wednesday', time: '6:00 AM – 7:00 AM', type: 'Morning Prayer', location: 'Main Sanctuary' },
-                                { day: 'Friday', time: '6:00 AM – 7:00 AM', type: 'Morning Prayer & Intercession', location: 'Chapel' },
-                            ].map(session => (
-                                <div key={session.day} className="bg-white/10 border border-white/20 rounded-2xl p-5 hover:bg-white/20 transition-colors">
-                                    <div className="text-xs font-bold text-blue-300 uppercase tracking-wider mb-1">{session.day}</div>
+                            {prayerMeetings.map(session => (
+                                <div key={session.id} className="bg-white/10 border border-white/20 rounded-2xl p-5 hover:bg-white/20 transition-colors">
+                                    <div className="text-xs font-bold text-blue-300 uppercase tracking-wider mb-1">{session.name}</div>
                                     <div className="text-lg font-bold text-white mb-1">{session.time}</div>
-                                    <div className="text-sm text-blue-200 mb-2">{session.type}</div>
-                                    <div className="flex items-center gap-1 text-xs text-blue-300">
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                        {session.location}
-                                    </div>
+                                    {session.location && (
+                                        <div className="flex items-center gap-1 text-xs text-blue-300 mt-2">
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                            {session.location}
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -765,12 +801,19 @@ export default function ACKCathedralMockup() {
                             <p className="text-blue-200 text-sm leading-relaxed mb-8">
                                 Our trained counselors and clergy offer confidential emotional and spiritual support. Whether you&apos;re facing a personal challenge, grief, marriage difficulties, or simply need someone to talk to — reach out.
                             </p>
+                            {/* Every line here comes from /cms/contact-info. These were
+                                hardcoded, and wrong: a counselling line and a prayer line
+                                that appear in no Cathedral record, an address on a domain
+                                the Cathedral does not use, and walk-in hours that
+                                contradicted the office hours in the CMS. Someone in
+                                distress was being sent to numbers nobody answers. */}
                             <div className="space-y-4 mb-8">
                                 {[
-                                    { label: 'Counseling Line', value: '+254 726 000 462', icon: 'phone' },
-                                    { label: 'Prayer Line', value: '0110-095-533', icon: 'phone' },
-                                    { label: 'Email', value: 'care@ackmombasa.org', icon: 'email' },
-                                    { label: 'Walk-In Hours', value: 'Mon – Fri, 9 AM – 4 PM', icon: 'clock' },
+                                    ...departments.flatMap((d) => [
+                                        ...(d.phone ? [{ label: d.name, value: d.phone, icon: 'phone' }] : []),
+                                        ...(d.email ? [{ label: `${d.name} email`, value: d.email, icon: 'email' }] : []),
+                                    ]),
+                                    ...(weekdayHours ? [{ label: 'Office Hours', value: `${weekdayHours.day}, ${weekdayHours.time}`, icon: 'clock' }] : []),
                                 ].map(item => (
                                     <div key={item.label} className="flex items-center gap-3">
                                         <div className="w-9 h-9 bg-white/10 rounded-lg flex items-center justify-center flex-shrink-0">
