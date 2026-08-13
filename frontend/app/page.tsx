@@ -9,6 +9,7 @@ import { usePrayerStore } from '@/stores/cms/prayerStore';
 import { useEventsStore } from '@/stores/cms/eventsStore';
 import { useMinistriesStore } from '@/stores/cms/ministriesStore';
 import { useContactInfoStore } from '@/stores/cms/contactInfoStore';
+import { useHistoryStore } from '@/stores/cms/historyStore';
 import { isServiceLiveAt, useNowTick } from '@/lib/serviceLive';
 
 // Service cards are themed by a colour *key* stored in the CMS, not by raw
@@ -166,6 +167,23 @@ export default function ACKCathedralMockup() {
     // the schedule and colours, which drifted from the CMS the moment anyone
     // edited a ministry. Both rows now come from the store.
     const ministries = useMinistriesStore((s) => s.ministries);
+
+    // The heritage summary reads from the same CMS section as /history, so the
+    // two can never drift. It used to be a hardcoded list — "1935 First Kenyan
+    // bishop consecrated", "1985 Major cathedral renovation completed" and so
+    // on — none of which appears in any Cathedral record.
+    const historicalEvents = useHistoryStore((s) => s.historicalEvents);
+    const historyStats = useHistoryStore((s) => s.heroStats);
+
+    const summaryMilestones = useMemo(() => {
+        const major = historicalEvents.filter((e) => e.significance === 'Major Milestone');
+        return (major.length >= 4 ? major : historicalEvents).slice(0, 6);
+    }, [historicalEvents]);
+
+    const summaryStats = useMemo(
+        () => (historyStats ?? []).filter((s) => s.value?.trim()).slice(0, 2),
+        [historyStats]
+    );
     const featuredMinistries = useMemo(() => {
         const flagged = ministries.filter((m) => m.featured);
         return (flagged.length ? flagged : ministries).slice(0, 4);
@@ -456,21 +474,26 @@ export default function ACKCathedralMockup() {
                             </div>
                             <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-6">120+ Years of Faithful Service</h2>
                             <p className="text-lg text-gray-600 mb-6 leading-relaxed">
-                                Founded in 1903, ACK Mombasa Memorial Cathedral has been a cornerstone of faith and community in the coastal region. Our rich heritage spans over a century of worship, mission, and service to the people of Mombasa.
+                                Ground was broken on the Feast of St John the Baptist in 1902, and the Cathedral was
+                                dedicated on the Feast of St Michael and All Angels in 1904 — mainland East Africa&apos;s
+                                first Anglican Cathedral, and the seat of the Diocese of Mombasa ever since.
                             </p>
                             <p className="text-lg text-gray-600 mb-8 leading-relaxed">
-                                From our humble beginnings as a small mission church, we have grown into a vibrant cathedral serving over 2,500 members, while maintaining our commitment to biblical truth and compassionate service.
+                                Bishop William Peel asked for a building that would be a powerhouse of prayer and an
+                                anchor for the Diocese in times of challenge. Designed by John H. Sinclair to sit
+                                comfortably among the coral walls of Old Town, it was raised in 506 working days by
+                                fundis recruited from the Old Town, overseen by the Corps of Royal Engineers.
                             </p>
-                            <div className="grid sm:grid-cols-2 gap-6 mb-8">
-                                <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-all">
-                                    <div className="text-4xl font-bold text-blue-900 mb-2">1903</div>
-                                    <p className="text-sm text-gray-600">Cathedral Founded</p>
+                            {summaryStats.length > 0 && (
+                                <div className="grid sm:grid-cols-2 gap-6 mb-8">
+                                    {summaryStats.map((stat, i) => (
+                                        <div key={i} className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-all">
+                                            <div className="text-4xl font-bold text-blue-900 mb-2">{stat.value}</div>
+                                            <p className="text-sm text-gray-600">{stat.label}</p>
+                                        </div>
+                                    ))}
                                 </div>
-                                <div className="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition-all">
-                                    <div className="text-4xl font-bold text-blue-900 mb-2">2,500+</div>
-                                    <p className="text-sm text-gray-600">Active Members</p>
-                                </div>
-                            </div>
+                            )}
                             <a href="/history" className="inline-flex items-center gap-2 bg-blue-900 text-white px-8 py-4 rounded-lg font-semibold hover:bg-blue-800 hover:scale-105 transition-all">
                                 Read Full History
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -483,21 +506,22 @@ export default function ACKCathedralMockup() {
                                 <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjA1IiBzdHJva2Utd2lkdGg9IjEiLz48L3BhdHRlcm4+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAlIiBoZWlnaHQ9IjEwMCUiIGZpbGw9InVybCgjZ3JpZCkiLz48L3N2Zz4=')] opacity-30"></div>
                                 <div className="relative">
                                     <h3 className="text-2xl font-bold text-white mb-6">Historical Milestones</h3>
+                                    {summaryMilestones.length === 0 && (
+                                        <p className="text-blue-100 text-sm">
+                                            The Cathedral timeline is being prepared.
+                                        </p>
+                                    )}
                                     <div className="space-y-6">
-                                        {[
-                                            { year: '1903', event: 'Cathedral established by Anglican missionaries' },
-                                            { year: '1935', event: 'First Kenyan bishop consecrated' },
-                                            { year: '1963', event: 'Independence celebration service held' },
-                                            { year: '1985', event: 'Major cathedral renovation completed' },
-                                            { year: '2010', event: 'Digital ministry & live streaming launched' },
-                                            { year: '2024', event: 'New website and online engagement platform' }
-                                        ].map((milestone, index) => (
-                                            <div key={index} className="flex gap-4 group cursor-pointer">
+                                        {summaryMilestones.map((milestone, index) => (
+                                            <div key={index} className="flex items-center gap-4 group cursor-pointer">
                                                 <div className="w-16 h-16 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-white/30 transition-all">
-                                                    <span className="text-white font-bold">{milestone.year}</span>
+                                                    <span className="text-white font-bold text-lg">{milestone.year}</span>
                                                 </div>
                                                 <div className="flex-1">
-                                                    <p className="text-white text-sm leading-relaxed group-hover:text-amber-200 transition-colors">{milestone.event}</p>
+                                                    {/* text-base, not text-sm: this sits beside 18px prose in
+                                                        the left column, and at 14px it read as a caption
+                                                        rather than as the milestone list it is. */}
+                                                    <p className="text-white text-base leading-relaxed group-hover:text-amber-200 transition-colors">{milestone.title}</p>
                                                 </div>
                                             </div>
                                         ))}

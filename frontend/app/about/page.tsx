@@ -125,8 +125,11 @@ export default function AboutPage() {
 
             <div className="grid grid-cols-2 gap-4">
               {[
-                { value: '1903', label: 'Founded', sub: 'Over 120 years of faith' },
-                { value: '2,500+', label: 'Active Members', sub: 'Growing congregation' },
+                // Both dates are from the Cathedral's own record. The card here
+                // used to read "2,500+ Active Members", a figure that appears in
+                // no parish record; it is not replaced by another guess.
+                { value: '1902', label: 'Ground Broken', sub: 'Feast of St John the Baptist' },
+                { value: '1904', label: 'Dedicated', sub: 'Feast of St Michael & All Angels' },
                 { value: '4', label: 'Sunday Services', sub: '7 AM, 9 AM, 11 AM, 6 PM' },
                 { value: '10+', label: 'Ministry Groups', sub: 'Something for everyone' },
               ].map(stat => (

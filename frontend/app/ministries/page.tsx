@@ -34,10 +34,12 @@ export default function MinistriesPage() {
           </p>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-6 max-w-lg mx-auto mt-12">
+          {/* "1,500+ Volunteers" used to sit here. Nobody has that number, so it
+              is gone rather than guessed at; the ministry count is now the real
+              one from the CMS instead of a hardcoded "10+". */}
+          <div className="grid grid-cols-2 gap-6 max-w-md mx-auto mt-12">
             {[
-              { value: '10+', label: 'Active Ministries' },
-              { value: '1,500+', label: 'Volunteers' },
+              { value: ministries.length ? String(ministries.length) : '—', label: ministries.length === 1 ? 'Active Ministry' : 'Active Ministries' },
               { value: '7 days', label: 'A Week of Service' },
             ].map(stat => (
               <div key={stat.label} className="text-center">

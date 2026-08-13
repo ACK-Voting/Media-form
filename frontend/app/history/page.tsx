@@ -146,9 +146,15 @@ export default function CathedralHistory() {
                             {filteredEvents.map((event, index) => (
                                 <div
                                     key={index}
+                                    // justify-between matters: two w-5/12 columns plus the gap
+                                    // span only 10/12 of the row, so left-aligned they sit
+                                    // off-centre and the 50% timeline line lands inside a
+                                    // column rather than in the gap — where wide photographs
+                                    // then cover it. Pushing them to the edges keeps the row
+                                    // symmetrical about the line.
                                     className={`relative flex items-center ${
                                         index % 2 === 0 ? 'lg:flex-row' : 'lg:flex-row-reverse'
-                                    } flex-col gap-8`}
+                                    } flex-col gap-8 lg:justify-between`}
                                 >
                                     {/* Content Card */}
                                     <div className={`w-full lg:w-5/12 ${index % 2 === 0 ? 'lg:text-right' : 'lg:text-left'}`}>
