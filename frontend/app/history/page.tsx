@@ -1,12 +1,51 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
 import { useHistoryStore } from '@/stores/cms/historyStore';
 
+// Labels live here rather than in five near-identical blocks of JSX.
+const ERAS: { key: string; label: string }[] = [
+    { key: 'all', label: 'All Events' },
+    { key: 'founding', label: 'Beginnings (1844–1901)' },
+    { key: 'early', label: 'Building the Cathedral (1902–1912)' },
+    { key: 'growth', label: 'Consolidation (1913–1980)' },
+    { key: 'modern', label: 'Modern Era (1981–present)' },
+];
+
 export default function CathedralHistory() {
     const [activeEra, setActiveEra] = useState('all');
+    const timelineRef = useRef<HTMLElement>(null);
+    const filterBarRef = useRef<HTMLElement>(null);
+
+    /**
+     * Filtering shortens the page, sometimes by thousands of pixels. Without
+     * this, a reader who filters while scrolled into the timeline is left far
+     * below the results they just asked for — looking at the footer, with every
+     * appearance of having clicked a dead button.
+     *
+     * The scroll runs in an effect rather than in the click handler because it
+     * has to measure the *filtered* list: in the handler React has not committed
+     * the shorter page yet, so the target lands thousands of pixels out.
+     */
+    const skipFirstScroll = useRef(true);
+
+    useEffect(() => {
+        if (skipFirstScroll.current) {
+            skipFirstScroll.current = false;
+            return;
+        }
+        const target = timelineRef.current;
+        if (!target) return;
+        // Clear the fixed navbar, plus the filter bar itself where it sticks.
+        const sticks = window.matchMedia('(min-width: 1024px)').matches;
+        const offset = 72 + (sticks ? (filterBarRef.current?.offsetHeight ?? 0) : 0) + 16;
+        window.scrollTo({
+            top: Math.max(0, target.getBoundingClientRect().top + window.scrollY - offset),
+            behavior: 'smooth',
+        });
+    }, [activeEra]);
     // Entered in /cms/history. Nothing is bundled — an empty section renders as
     // an empty page rather than as the invented history this page once carried.
     const { historicalEvents, keyFigures, architecturalFeatures, heroStats } = useHistoryStore();
@@ -51,66 +90,36 @@ export default function CathedralHistory() {
                 </div>
             </section>
 
-            {/* Era Filter */}
-            <section className="py-8 bg-white border-b border-gray-200 sticky top-[72px] z-40">
+            {/* Era Filter
+                Sticky only from lg up. Pinned on a phone it wrapped to four or
+                five rows and, with the navbar, swallowed over 40% of the screen
+                for the whole scroll. On small screens it is a single row that
+                scrolls sideways instead. */}
+            <section
+                ref={filterBarRef}
+                className="py-4 lg:py-8 bg-white border-b border-gray-200 lg:sticky lg:top-[72px] z-30"
+            >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-wrap justify-center gap-3">
-                        <button
-                            onClick={() => setActiveEra('all')}
-                            className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
-                                activeEra === 'all'
-                                    ? 'bg-blue-900 text-white shadow-lg'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                        >
-                            All Events
-                        </button>
-                        <button
-                            onClick={() => setActiveEra('founding')}
-                            className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
-                                activeEra === 'founding'
-                                    ? 'bg-blue-900 text-white shadow-lg'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                        >
-                            Beginnings (1844–1901)
-                        </button>
-                        <button
-                            onClick={() => setActiveEra('early')}
-                            className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
-                                activeEra === 'early'
-                                    ? 'bg-blue-900 text-white shadow-lg'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                        >
-                            Building the Cathedral (1902–1912)
-                        </button>
-                        <button
-                            onClick={() => setActiveEra('growth')}
-                            className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
-                                activeEra === 'growth'
-                                    ? 'bg-blue-900 text-white shadow-lg'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                        >
-                            Consolidation (1913–1980)
-                        </button>
-                        <button
-                            onClick={() => setActiveEra('modern')}
-                            className={`px-6 py-2.5 rounded-lg font-semibold transition-all ${
-                                activeEra === 'modern'
-                                    ? 'bg-blue-900 text-white shadow-lg'
-                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                        >
-                            Modern Era (1981–present)
-                        </button>
+                    <div className="flex gap-3 overflow-x-auto lg:overflow-visible lg:flex-wrap lg:justify-center [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                        {ERAS.map((era) => (
+                            <button
+                                key={era.key}
+                                onClick={() => setActiveEra(era.key)}
+                                className={`px-5 lg:px-6 py-2.5 rounded-lg font-semibold text-sm lg:text-base whitespace-nowrap flex-shrink-0 transition-all ${
+                                    activeEra === era.key
+                                        ? 'bg-blue-900 text-white shadow-lg'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                            >
+                                {era.label}
+                            </button>
+                        ))}
                     </div>
                 </div>
             </section>
 
             {/* Timeline Section */}
-            <section className="py-16 bg-gradient-to-b from-white to-gray-50">
+            <section ref={timelineRef} className="py-16 bg-gradient-to-b from-white to-gray-50">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="text-center mb-12">
                         <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Historical Timeline</h2>
@@ -299,20 +308,11 @@ export default function CathedralHistory() {
                         mainland East Africa&apos;s first Anglican Cathedral remains what Bishop Peel asked it to be —
                         a house of prayer and an anchor for the Diocese in times of challenge.
                     </p>
-                    <p className="text-lg text-blue-200 mb-8">
+                    <p className="text-lg text-blue-200">
                         Our history is not just about the past — it's the foundation for our future. As we embrace digital
                         ministry and innovative outreach, we remain rooted in the timeless mission of sharing Christ's love
                         and transforming our community.
                     </p>
-                    <a
-                        href="/"
-                        className="inline-flex items-center gap-2 bg-white text-blue-900 px-8 py-4 rounded-lg font-bold hover:bg-blue-50 transition-all hover:scale-105"
-                    >
-                        Return to Main Site
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                        </svg>
-                    </a>
                 </div>
             </section>
 
