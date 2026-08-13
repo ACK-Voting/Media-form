@@ -24,6 +24,10 @@ const cmsActivitySchema = new mongoose.Schema(
       enum: [
         'create', 'update', 'delete', 'publish', 'unpublish',
         'login', 'user_create', 'user_update', 'user_delete', 'invite',
+        // Outbound mail. These matter more than the content actions above —
+        // they are the entries that answer "who told this applicant they were
+        // declined?" and "who sent that bulletin?".
+        'reply', 'send', 'notify',
       ],
       index: true,
     },

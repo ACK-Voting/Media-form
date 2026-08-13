@@ -1,5 +1,11 @@
 import { create } from 'zustand';
-import { fetchInbox, submitToInbox, updateInbox, deleteInbox } from './contentApi';
+import { fetchInbox, submitToInbox, updateInbox, deleteInbox, replyToInbox } from './contentApi';
+
+export type ContactReply = {
+  body: string;
+  sentByName: string;
+  sentAt: string;
+};
 
 export type ContactSubmission = {
   id: string;
@@ -10,6 +16,7 @@ export type ContactSubmission = {
   message: string;
   date: string;
   read: boolean;
+  replies?: ContactReply[];
 };
 
 interface ContactsStore {
@@ -19,6 +26,7 @@ interface ContactsStore {
   load: () => Promise<void>;
   markRead: (id: string) => void;
   remove: (id: string) => void;
+  reply: (id: string, body: string) => Promise<void>;
   addFromForm: (c: Omit<ContactSubmission, 'id' | 'date' | 'read'>) => Promise<void>;
 }
 
@@ -53,6 +61,14 @@ export const useContactsStore = create<ContactsStore>()((set, get) => ({
     deleteInbox('contact', id).catch((err) => {
       set({ contacts: before, error: err instanceof Error ? err.message : 'Could not delete.' });
     });
+  },
+
+  // Throws on failure so the composer can say the reply did not send. The
+  // server only records a reply after Resend accepts it, so a rejection here
+  // means nothing was written and nothing was sent.
+  reply: async (id, body) => {
+    const updated = await replyToInbox<ContactSubmission>('contact', id, body);
+    set({ contacts: get().contacts.map((c) => (c.id === id ? updated : c)) });
   },
 
   addFromForm: async (c) => {

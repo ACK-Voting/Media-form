@@ -1,66 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
 import { Select } from '@/components/ui/Select';
 import { usePrayerStore } from '@/stores/cms/prayerStore';
+import { usePrayerPageStore } from '@/stores/cms/prayerPageStore';
 import EnquiryModal from '@/app/_components/EnquiryModal';
-
-const prayerFocus = [
-  {
-    day: 'Sunday',
-    theme: 'The Nations',
-    scripture: 'Psalm 67:2',
-    verse: '"That your ways may be known on earth, your salvation among all nations."',
-  },
-  {
-    day: 'Monday',
-    theme: 'Our Families',
-    scripture: 'Joshua 24:15',
-    verse: '"As for me and my household, we will serve the Lord."',
-  },
-  {
-    day: 'Tuesday',
-    theme: 'Government & Leaders',
-    scripture: '1 Timothy 2:1-2',
-    verse: '"I urge, then, first of all, that petitions, prayers, intercession and thanksgiving be made for all people — for kings and all those in authority."',
-  },
-  {
-    day: 'Wednesday',
-    theme: 'The Church & Diocese',
-    scripture: 'Matthew 16:18',
-    verse: '"And I tell you that you are Peter, and on this rock I will build my church, and the gates of Hades will not overcome it."',
-  },
-  {
-    day: 'Thursday',
-    theme: 'The Sick & Suffering',
-    scripture: 'James 5:14-15',
-    verse: '"Is anyone among you sick? Let them call the elders of the church to pray over them and anoint them with oil in the name of the Lord."',
-  },
-  {
-    day: 'Friday',
-    theme: 'Missions & Evangelism',
-    scripture: 'Matthew 9:37-38',
-    verse: '"The harvest is plentiful but the workers are few. Ask the Lord of the harvest, therefore, to send out workers into his harvest field."',
-  },
-  {
-    day: 'Saturday',
-    theme: 'Our Youth & Children',
-    scripture: 'Proverbs 22:6',
-    verse: '"Train up a child in the way he should go; even when he is old he will not depart from it."',
-  },
-];
 
 const todayIndex = new Date().getDay(); // 0=Sunday, 1=Monday, etc.
 
 export default function PrayerPage() {
-  const { publicRequests: shared, addFromForm, loadPublic } = usePrayerStore();
-  // Only requests whose sender agreed to share them, fetched from the public
-  // endpoint. The full inbox needs a staff session and must never reach here.
-  const publicRequests = shared.slice(0, 5);
-
-  useEffect(() => { loadPublic(); }, [loadPublic]);
+  const addFromForm = usePrayerStore((s) => s.addFromForm);
+  // Daily themes and meeting times are CMS content — edited in /cms/prayer-page.
+  const prayerFocus = usePrayerPageStore((s) => s.focus);
+  const meetings = usePrayerPageStore((s) => s.meetings);
 
   const [submitted, setSubmitted] = useState(false);
   const [enquiryOpen, setEnquiryOpen] = useState(false);
@@ -71,11 +25,10 @@ export default function PrayerPage() {
     email: '',
     request: '',
     category: 'General',
-    isPrivate: false,
     receiveFollowUp: false,
   });
 
-  const todayFocus = prayerFocus[todayIndex];
+  const todayFocus = prayerFocus[todayIndex] ?? prayerFocus[0];
 
   return (
     <div className="min-h-screen bg-white">
@@ -125,7 +78,7 @@ export default function PrayerPage() {
             {/* Prayer Request Form */}
             <div className="lg:col-span-3">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Submit a Prayer Request</h2>
-              <p className="text-gray-600 mb-8 text-sm">Your request will be received by our intercessory prayer team. You may choose to keep it private.</p>
+              <p className="text-gray-600 mb-8 text-sm">Your request goes to our intercessory prayer team, and to no one else. Every request is treated in confidence.</p>
 
               {submitted ? (
                 <div className="bg-blue-50 border border-blue-200 rounded-2xl p-10 text-center">
@@ -151,9 +104,8 @@ export default function PrayerPage() {
                       name: formData.name || 'Anonymous',
                       email: formData.email,
                       request: formData.request,
-                      isAnonymous: formData.isPrivate || !formData.name,
-                      // A private request goes to the prayer team only.
-                      shareable: !formData.isPrivate,
+                      isAnonymous: !formData.name,
+                      receiveFollowUp: formData.receiveFollowUp,
                     });
                     setSubmitted(true);
                   } catch (err) {
@@ -198,18 +150,18 @@ export default function PrayerPage() {
                   </div>
 
                   <div className="space-y-3">
-                    <label className="flex items-start gap-3 cursor-pointer">
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center mt-0.5 flex-shrink-0 transition-all ${formData.isPrivate ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}
-                        onClick={() => setFormData(s => ({ ...s, isPrivate: !s.isPrivate }))}>
-                        {formData.isPrivate && <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>}
-                      </div>
+                    {/* Replaces the old opt-in "keep this private" checkbox.
+                        Confidentiality is no longer something the sender has to
+                        remember to ask for. */}
+                    <div className="flex items-start gap-3 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+                      <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Keep this request private</p>
-                        <p className="text-xs text-gray-500">Only the prayer team will see it — it won&apos;t appear on the public wall.</p>
+                        <p className="text-sm font-medium text-gray-900">Your request is confidential</p>
+                        <p className="text-xs text-gray-600">It is seen only by the Cathedral prayer team. Nothing you write here is ever published.</p>
                       </div>
-                    </label>
+                    </div>
 
                     <label className="flex items-start gap-3 cursor-pointer">
                       <div className={`w-5 h-5 rounded border-2 flex items-center justify-center mt-0.5 flex-shrink-0 transition-all ${formData.receiveFollowUp ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}
@@ -271,47 +223,12 @@ export default function PrayerPage() {
                 </div>
               </div>
 
-              {/* Prayer Wall */}
-              {!submitted && (
-                <div className="bg-white border border-gray-200 rounded-2xl p-6">
-                  <h3 className="font-bold text-gray-900 mb-1">Community Prayer Wall</h3>
-                  <p className="text-xs text-gray-400 mb-4">Public requests from our congregation — names used with permission.</p>
-                  {publicRequests.length > 0 ? (
-                    <div className="space-y-4">
-                      {publicRequests.map((pr) => (
-                        <div key={pr.id} className="border-b border-gray-100 pb-4 last:border-0">
-                          <p className="text-sm font-semibold text-gray-900 mb-1">{pr.name}</p>
-                          <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">{pr.request}</p>
-                          <div className="flex items-center justify-between mt-2">
-                            <p className="text-xs text-gray-400">
-                              {new Date(pr.date).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })}
-                            </p>
-                            <button className="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 transition-colors">
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                              </svg>
-                              Praying
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-400 text-center py-4">No public requests yet. Be the first to share!</p>
-                  )}
-                </div>
-              )}
-
               {/* Prayer Meetings */}
               <div className="bg-blue-900 text-white rounded-2xl p-6">
                 <h3 className="font-bold mb-4">Join Us in Prayer</h3>
                 <div className="space-y-4">
-                  {[
-                    { name: 'Early Morning Prayer', time: 'Weekdays — 5:30 AM', location: 'Cathedral Chapel' },
-                    { name: 'Wednesday Night Prayer', time: 'Wednesdays — 6:00 PM', location: 'Main Sanctuary' },
-                    { name: 'Sunday Intercessory Team', time: 'Before each service', location: 'Prayer Room' },
-                  ].map(meeting => (
-                    <div key={meeting.name} className="border-b border-white/10 pb-4 last:border-0">
+                  {meetings.map(meeting => (
+                    <div key={meeting.id} className="border-b border-white/10 pb-4 last:border-0">
                       <p className="font-semibold text-white text-sm">{meeting.name}</p>
                       <p className="text-blue-300 text-xs mt-0.5">{meeting.time}</p>
                       <p className="text-blue-400 text-xs">{meeting.location}</p>

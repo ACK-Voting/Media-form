@@ -35,6 +35,62 @@ function optimize(secureUrl: string): string {
   return secureUrl.replace('/upload/', '/upload/f_auto,q_auto,w_1600/');
 }
 
+/** CV types accepted from the public application form. No images. */
+const CV_TYPES: Record<string, string> = {
+  'application/pdf': 'PDF',
+  'application/msword': 'DOC',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
+};
+
+/** 5 MB. A CV that exceeds this is a scan, and the applicant can compress it. */
+const CV_MAX_BYTES = 5 * 1024 * 1024;
+
+/**
+ * Uploads a CV from the public job application form.
+ *
+ * Separate from uploadFile because the constraints are genuinely different:
+ * no CMS session, documents only, and a size cap. Cloudinary enforces the
+ * format too — the signature issued for this folder carries allowed_formats —
+ * so these checks are for a helpful error message, not for security.
+ */
+export async function uploadApplicationCV(file: File): Promise<UploadResult> {
+  if (!(file.type in CV_TYPES)) {
+    throw new Error('Please upload your CV as a PDF or Word document.');
+  }
+  if (file.size > CV_MAX_BYTES) {
+    throw new Error(`That file is ${formatSize(file.size)}. Please upload a CV under 5 MB.`);
+  }
+
+  const signRes = await fetch('/api/upload?folder=applications', { method: 'POST' });
+  const signed = await signRes.json().catch(() => ({}));
+  if (!signRes.ok) {
+    throw new Error(signed.error || 'Could not start the upload.');
+  }
+
+  const form = new FormData();
+  form.append('file', file);
+  form.append('api_key', signed.apiKey);
+  form.append('timestamp', String(signed.timestamp));
+  form.append('folder', signed.folder);
+  form.append('signature', signed.signature);
+  if (signed.allowedFormats) form.append('allowed_formats', signed.allowedFormats);
+
+  const res = await fetch(`https://api.cloudinary.com/v1_1/${signed.cloudName}/auto/upload`, {
+    method: 'POST',
+    body: form,
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.secure_url) {
+    throw new Error(json?.error?.message || 'Upload failed. Please try again.');
+  }
+
+  return {
+    url: json.secure_url,
+    fileType: CV_TYPES[file.type],
+    fileSize: formatSize(file.size),
+  };
+}
+
 /**
  * Uploads a file straight from the browser to Cloudinary.
  *

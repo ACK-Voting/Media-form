@@ -135,9 +135,16 @@ export default function PrayerRequestsPage() {
                     <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${r.prayedFor ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-purple-50 text-purple-700 border-purple-200'}`}>
                       {r.prayedFor ? '✓ Prayed For' : 'Needs Prayer'}
                     </span>
+                    {/* Someone waiting on a call needs to stand out from the
+                        requests that only need praying for. */}
+                    {r.receiveFollowUp && (
+                      <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border bg-amber-50 text-amber-700 border-amber-200">
+                        ☎ Wants Follow-Up
+                      </span>
+                    )}
                     <span className="text-xs text-gray-400 font-medium">{r.date}</span>
                   </div>
-                  <p className="text-gray-700 text-sm leading-relaxed">{r.request}</p>
+                  <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line">{r.request}</p>
                 </div>
               </div>
               <div className="flex-shrink-0">

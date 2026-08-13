@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { fetchInbox, submitToInbox, updateInbox, deleteInbox, fetchPublicPrayers } from './contentApi';
+import { fetchInbox, submitToInbox, updateInbox, deleteInbox } from './contentApi';
 
 export type PrayerRequest = {
   id: string;
@@ -9,20 +9,19 @@ export type PrayerRequest = {
   date: string;
   prayedFor: boolean;
   isAnonymous: boolean;
+  /** Sender asked the pastoral team to get in touch directly. */
+  receiveFollowUp?: boolean;
 };
 
 interface PrayerStore {
   requests: PrayerRequest[];
-  /** Requests whose sender agreed to share them with the congregation. */
-  publicRequests: PrayerRequest[];
   loaded: boolean;
   error: string | null;
   load: () => Promise<void>;
-  loadPublic: () => Promise<void>;
   markPrayed: (id: string) => void;
   remove: (id: string) => void;
   addFromForm: (
-    req: Omit<PrayerRequest, 'id' | 'prayedFor' | 'date'> & { shareable?: boolean }
+    req: Omit<PrayerRequest, 'id' | 'prayedFor' | 'date'> & { receiveFollowUp?: boolean }
   ) => Promise<void>;
 }
 
@@ -32,20 +31,8 @@ interface PrayerStore {
 // pastoral response.
 export const usePrayerStore = create<PrayerStore>()((set, get) => ({
   requests: [],
-  publicRequests: [],
   loaded: false,
   error: null,
-
-  // The public prayer wall. Served by a separate endpoint that returns only
-  // requests the sender chose to share, with emails stripped — the full inbox
-  // requires a staff session.
-  loadPublic: async () => {
-    try {
-      set({ publicRequests: await fetchPublicPrayers<PrayerRequest>() });
-    } catch {
-      // A visitor can do nothing about this; leave the wall empty.
-    }
-  },
 
   load: async () => {
     try {
@@ -82,7 +69,7 @@ export const usePrayerStore = create<PrayerStore>()((set, get) => ({
       email: req.email,
       request: req.request,
       isAnonymous: req.isAnonymous,
-      shareable: req.shareable ?? false,
+      receiveFollowUp: req.receiveFollowUp ?? false,
     });
   },
 }));

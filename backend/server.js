@@ -81,6 +81,7 @@ const contentRoutes = require('./routes/content');
 const inboxRoutes = require('./routes/inbox');
 const cmsActivityRoutes = require('./routes/cmsActivity');
 const cmsCountsRoutes = require('./routes/cmsCounts');
+const subscriberRoutes = require('./routes/subscribers');
 
 app.use('/api/submissions', submissionRoutes);
 app.use('/api/auth', authRoutes);
@@ -105,6 +106,7 @@ app.use('/api/content', contentRoutes);
 app.use('/api/inbox', inboxRoutes);
 app.use('/api/cms-activity', cmsActivityRoutes);
 app.use('/api/cms-counts', cmsCountsRoutes);
+app.use('/api/subscribers', subscriberRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -68,7 +68,7 @@ function PrayerRequestForm() {
     const [done, setDone] = useState(false);
     const [sending, setSending] = useState(false);
     const [error, setError] = useState('');
-    const [form, setForm] = useState({ name: '', email: '', request: '', private: false });
+    const [form, setForm] = useState({ name: '', email: '', request: '' });
     const addFromForm = usePrayerStore((s) => s.addFromForm);
 
     // This previously just set `done` — the visitor was told their request had
@@ -83,9 +83,6 @@ function PrayerRequestForm() {
                 email: form.email,
                 request: form.request,
                 isAnonymous: !form.name.trim(),
-                // "Keep this request private" is the inverse of consenting to
-                // have it shown on the public prayer wall.
-                shareable: !form.private,
             });
             setDone(true);
         } catch (err) {
@@ -123,10 +120,11 @@ function PrayerRequestForm() {
                     className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                     placeholder="Share what you would like our prayer team to pray about..." />
             </div>
-            <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={form.private} onChange={e => setForm(f => ({ ...f, private: e.target.checked }))} className="w-4 h-4 accent-indigo-700 rounded" />
-                <span className="text-sm text-gray-600">Keep this request private (shared with prayer team only, not publicly)</span>
-            </label>
+            {/* Every request is confidential now, so there is nothing to opt
+                into — this states the guarantee instead of asking for it. */}
+            <p className="text-sm text-gray-600 bg-indigo-50 border border-indigo-100 rounded-lg px-4 py-2.5">
+                Your request is seen only by the Cathedral prayer team. It is never published.
+            </p>
             {error && (
                 <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5">{error}</p>
             )}

@@ -5,6 +5,7 @@ import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
 import { useEventsStore } from '@/stores/cms/eventsStore';
 import { useContactsStore } from '@/stores/cms/contactsStore';
+import { subscribe } from '@/stores/cms/contentApi';
 import type { ChurchEvent } from '../_data/mockData';
 
 const categoryColors: Record<ChurchEvent['category'], string> = {
@@ -335,7 +336,7 @@ export default function EventsPage() {
           <p className="text-gray-600 mb-6">Get our weekly bulletin and event announcements delivered to your inbox.</p>
           {subDone ? (
             <p className="text-sm font-semibold text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-3 max-w-md mx-auto">
-              Thank you — we&apos;ll add you to the bulletin list.
+              You&apos;re subscribed. We&apos;ve sent a confirmation to {subEmail}.
             </p>
           ) : (
             <form className="flex gap-3 max-w-md mx-auto" onSubmit={async e => {
@@ -343,15 +344,10 @@ export default function EventsPage() {
               setSubSending(true);
               setSubError('');
               try {
-                // There is no mailing-list service yet, so a subscription
-                // request goes to the CMS inbox for staff to action. Better a
-                // real request someone reads than a button that does nothing.
-                await addContact({
-                  name: subEmail,
-                  email: subEmail,
-                  subject: 'Newsletter subscription request',
-                  message: `${subEmail} asked to receive the weekly bulletin and event announcements.`,
-                });
+                // Joins the real mailing list, which /cms/bulletins sends to.
+                // This used to file an ordinary contact message asking staff to
+                // add the person by hand, to a list that did not exist.
+                await subscribe(subEmail);
                 setSubDone(true);
               } catch (err) {
                 setSubError(err instanceof Error ? err.message : 'Could not subscribe. Please try again.');

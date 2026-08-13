@@ -11,7 +11,7 @@ const CHURCH_ADMIN_SECTIONS = [
   'events', 'gallery', 'announcements', 'leadership', 'staff',
   'giving', 'resources', 'prayer-requests', 'contacts', 'get-involved',
   'contact-info', 'ministries', 'home', 'history', 'staffDepartments',
-  'ministryPosts', 'opportunities', 'footer',
+  'ministryPosts', 'opportunities', 'footer', 'prayerPage', 'bulletins',
 ];
 
 // Sections a ministry_admin may touch, limited to their own ministries.

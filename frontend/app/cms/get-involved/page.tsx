@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useGetInvolvedStore, Submission, Opportunity, Application } from '@/stores/cms/getInvolvedStore';
+import { useGetInvolvedStore, Submission, Opportunity, Application, type NotifyOpts } from '@/stores/cms/getInvolvedStore';
 import { Select } from '@/components/ui/Select';
 
 // ── Status helpers ─────────────────────────────────────────────────────────────
@@ -9,7 +9,7 @@ import { Select } from '@/components/ui/Select';
 const STATUS_COLORS: Record<Submission['status'], string> = {
   pending:  'bg-amber-100 text-amber-700',
   reviewed: 'bg-blue-100 text-blue-700',
-  accepted: 'bg-green-100 text-green-700',
+  shortlisted: 'bg-green-100 text-green-700',
   declined: 'bg-red-100 text-red-700',
 };
 
@@ -111,16 +111,17 @@ function OpportunityModal({
 
 function SubmissionCard({ s, onStatus, onDelete }: {
   s: Submission;
-  onStatus: (id: string, status: Submission['status']) => void;
+  onStatus: (id: string, status: Submission['status'], opts?: NotifyOpts) => Promise<void>;
   onDelete: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
+  const [confirming, setConfirming] = useState<'shortlisted' | 'declined' | null>(null);
 
   return (
     <div className={`bg-white rounded-2xl border shadow-sm transition-all ${s.status === 'pending' ? 'border-amber-200' : 'border-gray-100'}`}>
       {/* Summary row */}
       <div className="flex items-start gap-4 p-5">
-        <div className={`w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ${s.status === 'pending' ? 'bg-amber-400' : s.status === 'accepted' ? 'bg-green-400' : s.status === 'declined' ? 'bg-red-400' : 'bg-blue-400'}`} />
+        <div className={`w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ${s.status === 'pending' ? 'bg-amber-400' : s.status === 'shortlisted' ? 'bg-green-400' : s.status === 'declined' ? 'bg-red-400' : 'bg-blue-400'}`} />
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <p className="font-semibold text-gray-900 text-sm">{s.firstName} {s.lastName}</p>
@@ -185,15 +186,195 @@ function SubmissionCard({ s, onStatus, onDelete }: {
           {/* Status update */}
           <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
             <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Update Status</span>
-            {(['pending', 'reviewed', 'accepted', 'declined'] as Submission['status'][]).map(st => (
-              <button key={st} onClick={() => onStatus(s.id, st)}
+            {(['pending', 'reviewed', 'shortlisted', 'declined'] as Submission['status'][]).map(st => (
+              <button key={st}
+                onClick={() => (st === 'shortlisted' || st === 'declined')
+                  ? setConfirming(st)
+                  : void onStatus(s.id, st)}
                 className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${s.status === st ? STATUS_COLORS[st] : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
                 {st.charAt(0).toUpperCase() + st.slice(1)}
               </button>
             ))}
+            {s.notifiedAt && (
+              <span className="ml-auto text-[11px] text-gray-400">
+                Applicant told: {s.notifiedStatus} on {new Date(s.notifiedAt).toLocaleDateString('en-KE')}
+              </span>
+            )}
           </div>
         </div>
       )}
+
+      {confirming && (
+        <StatusConfirm
+          name={`${s.firstName} ${s.lastName}`.trim()}
+          email={s.email}
+          status={confirming}
+          onCancel={() => setConfirming(null)}
+          onConfirm={async (opts) => {
+            await onStatus(s.id, confirming, opts);
+            setConfirming(null);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Confirms an accept/decline and offers to tell the applicant.
+ *
+ * Status buttons sit in a row, so Decline is one slip away from Accept. An
+ * email announcing either cannot be recalled, which makes this one of the few
+ * places in the CMS worth an extra click. Pending and reviewed are internal, so
+ * they skip this entirely.
+ */
+function StatusConfirm({
+  name, email, status, onCancel, onConfirm,
+}: {
+  name: string;
+  email: string;
+  status: 'shortlisted' | 'declined';
+  onCancel: () => void;
+  onConfirm: (opts: NotifyOpts) => Promise<void>;
+}) {
+  const [notify, setNotify] = useState(true);
+  const [note, setNote] = useState('');
+  const [interview, setInterview] = useState({ date: '', time: '', location: '', contact: '' });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  const shortlisting = status === 'shortlisted';
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onCancel}>
+      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}>
+        <div className="p-6 border-b border-gray-100">
+          <h2 className="font-bold text-gray-900 text-lg">
+            {shortlisting ? 'Shortlist' : 'Decline'} {name}?
+          </h2>
+          <p className="text-sm text-gray-500 mt-0.5">
+            {shortlisting
+              ? 'This marks the application as shortlisted and invites them to interview.'
+              : 'This marks the application as declined.'}
+          </p>
+        </div>
+
+        <div className="p-6 space-y-4">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={notify}
+              disabled={!email}
+              onChange={(e) => setNotify(e.target.checked)}
+              className="w-4 h-4 mt-0.5 rounded accent-blue-600"
+            />
+            <span>
+              <span className="block text-sm font-semibold text-gray-900">
+                {shortlisting ? `Email ${name} an interview invitation` : `Email ${name} to let them know`}
+              </span>
+              <span className="block text-xs text-gray-500">
+                {email
+                  ? `Sends from the Cathedral address to ${email}. This cannot be undone.`
+                  : 'No email address on this application.'}
+              </span>
+            </span>
+          </label>
+
+          {notify && email && shortlisting && (
+            <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+              <div>
+                <p className="text-sm font-semibold text-gray-900">Interview details</p>
+                {/* Leaving these blank is a real choice, not an omission: the
+                    email then asks the applicant to call and book, rather than
+                    promising an appointment nobody has made. */}
+                <p className="text-[11px] text-gray-400">
+                  Fill these in to give a fixed appointment. Leave blank and the email asks
+                  them to call the office to arrange one.
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Date</label>
+                  <input type="date" value={interview.date}
+                    onChange={(e) => setInterview((i) => ({ ...i, date: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Time</label>
+                  <input type="time" value={interview.time}
+                    onChange={(e) => setInterview((i) => ({ ...i, time: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Where</label>
+                <input value={interview.location} placeholder="e.g. Cathedral Office, Nkrumah Road"
+                  onChange={(e) => setInterview((i) => ({ ...i, location: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Phone number to call</label>
+                <input value={interview.contact} placeholder="e.g. 0724 906 951"
+                  onChange={(e) => setInterview((i) => ({ ...i, contact: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              </div>
+            </div>
+          )}
+
+          {notify && email && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-1">
+                Add a personal note <span className="font-normal text-gray-400">(optional)</span>
+              </label>
+              <textarea
+                rows={3}
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={shortlisting
+                  ? 'e.g. Please bring a recording of a recent performance.'
+                  : 'e.g. We would be glad to see you apply for the choir opening in March.'}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              />
+              <p className="text-[11px] text-gray-400 mt-1">
+                Appears below the standard {shortlisting ? 'interview invitation' : 'decline'} wording.
+              </p>
+            </div>
+          )}
+
+          {error && (
+            <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{error}</p>
+          )}
+        </div>
+
+        <div className="p-6 pt-0 flex justify-end gap-2">
+          <button onClick={onCancel}
+            className="px-4 py-2 rounded-xl text-sm font-bold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors cursor-pointer">
+            Cancel
+          </button>
+          <button
+            disabled={saving}
+            onClick={async () => {
+              setSaving(true);
+              setError('');
+              try {
+                await onConfirm({ notify: notify && !!email, note, interview: shortlisting ? interview : undefined });
+              } catch (err) {
+                setError(err instanceof Error ? err.message : 'Could not update.');
+              } finally {
+                setSaving(false);
+              }
+            }}
+            className={`px-4 py-2 rounded-xl text-sm font-bold text-white transition-colors cursor-pointer disabled:opacity-50 ${
+              shortlisting ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+            }`}>
+            {saving ? 'Saving…' : notify && email
+              ? `${shortlisting ? 'Shortlist' : 'Decline'} and send invitation`
+              : `${shortlisting ? 'Shortlist' : 'Decline'} without emailing`}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -203,7 +384,7 @@ function SubmissionCard({ s, onStatus, onDelete }: {
 const APP_STATUS_COLORS: Record<Application['status'], string> = {
   pending:  'bg-amber-100 text-amber-700',
   reviewed: 'bg-blue-100 text-blue-700',
-  accepted: 'bg-green-100 text-green-700',
+  shortlisted: 'bg-green-100 text-green-700',
   declined: 'bg-red-100 text-red-700',
 };
 
@@ -237,6 +418,8 @@ export default function GetInvolvedCMSPage() {
   // Applications filters
   const [appRoleFilter, setAppRoleFilter] = useState<string>('all');
   const [appStatusFilter, setAppStatusFilter] = useState<'all' | Application['status']>('all');
+  const [confirmingApp, setConfirmingApp] = useState<{ id: string; status: 'shortlisted' | 'declined' } | null>(null);
+  const confirmingAppRecord = confirmingApp ? applications.find((a) => a.id === confirmingApp.id) : null;
   const pendingApps = applications.filter(a => a.status === 'pending').length;
   const uniqueRoles = Array.from(new Set(applications.map(a => a.opportunityRole)));
 
@@ -314,7 +497,7 @@ export default function GetInvolvedCMSPage() {
               ))}
             </div>
             <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-              {(['all', 'pending', 'reviewed', 'accepted', 'declined'] as const).map(s => (
+              {(['all', 'pending', 'reviewed', 'shortlisted', 'declined'] as const).map(s => (
                 <button key={s} onClick={() => setStatusFilter(s)}
                   className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all capitalize ${statusFilter === s ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
                   {s === 'all' ? 'All Statuses' : s}
@@ -353,7 +536,7 @@ export default function GetInvolvedCMSPage() {
               ))}
             </div>
             <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-              {(['all', 'pending', 'reviewed', 'accepted', 'declined'] as const).map(s => (
+              {(['all', 'pending', 'reviewed', 'shortlisted', 'declined'] as const).map(s => (
                 <button key={s} onClick={() => setAppStatusFilter(s)}
                   className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all capitalize ${appStatusFilter === s ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
                   {s === 'all' ? 'All Statuses' : s}
@@ -382,14 +565,32 @@ export default function GetInvolvedCMSPage() {
                     {a.coverLetter && (
                       <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">{a.coverLetter}</p>
                     )}
+                    {a.cvUrl && (
+                      <a href={a.cvUrl} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 mt-3 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        {a.cvFileName || 'Download CV'}
+                        {a.cvFileType && <span className="font-normal opacity-70">({a.cvFileType})</span>}
+                      </a>
+                    )}
                     <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
                       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</span>
-                      {(['pending', 'reviewed', 'accepted', 'declined'] as Application['status'][]).map(st => (
-                        <button key={st} onClick={() => updateApplicationStatus(a.id, st)}
+                      {(['pending', 'reviewed', 'shortlisted', 'declined'] as Application['status'][]).map(st => (
+                        <button key={st}
+                          onClick={() => (st === 'shortlisted' || st === 'declined')
+                            ? setConfirmingApp({ id: a.id, status: st })
+                            : void updateApplicationStatus(a.id, st)}
                           className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors capitalize ${a.status === st ? APP_STATUS_COLORS[st] : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
                           {st}
                         </button>
                       ))}
+                      {a.notifiedAt && (
+                        <span className="ml-auto text-[11px] text-gray-400">
+                          Applicant told: {a.notifiedStatus} on {new Date(a.notifiedAt).toLocaleDateString('en-KE')}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <button onClick={() => removeApplication(a.id)}
@@ -458,6 +659,19 @@ export default function GetInvolvedCMSPage() {
           initial={oppModal.editing ? { ...oppModal.editing } : BLANK_OPP}
           onSave={saveOpportunity}
           onClose={() => setOppModal({ open: false, editing: null })}
+        />
+      )}
+
+      {confirmingApp && confirmingAppRecord && (
+        <StatusConfirm
+          name={`${confirmingAppRecord.firstName} ${confirmingAppRecord.lastName}`.trim()}
+          email={confirmingAppRecord.email}
+          status={confirmingApp.status}
+          onCancel={() => setConfirmingApp(null)}
+          onConfirm={async (opts) => {
+            await updateApplicationStatus(confirmingApp.id, confirmingApp.status, opts);
+            setConfirmingApp(null);
+          }}
         />
       )}
     </div>

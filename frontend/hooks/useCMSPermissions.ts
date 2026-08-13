@@ -9,6 +9,8 @@ type Section =
   | 'giving'
   | 'resources'
   | 'prayer-requests'
+  | 'prayerPage'
+  | 'bulletins'
   | 'contacts'
   | 'get-involved'
   | 'contact-info'
@@ -17,7 +19,7 @@ type Section =
 
 const CHURCH_ADMIN_SECTIONS: Section[] = [
   'events', 'gallery', 'announcements',
-  'leadership', 'staff', 'giving', 'resources', 'prayer-requests', 'contacts', 'get-involved', 'contact-info', 'ministries',
+  'leadership', 'staff', 'giving', 'resources', 'prayer-requests', 'prayerPage', 'bulletins', 'contacts', 'get-involved', 'contact-info', 'ministries',
 ];
 
 export function useCMSPermissions() {

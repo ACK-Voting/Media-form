@@ -6,6 +6,7 @@ import Footer from '../_components/Footer';
 import { useGetInvolvedStore } from '@/stores/cms/getInvolvedStore';
 import { Select } from '@/components/ui/Select';
 import { apiUrl } from '@/lib/apiBase';
+import { uploadApplicationCV } from '@/lib/uploadToCloudinary';
 
 const ministryOptions = [
   "Children's Ministry", "Youth Ministry (KAYO)", "Anglican Women's Fellowship (AWF)",
@@ -21,6 +22,8 @@ export default function GetInvolvedPage() {
   const [applySubmitted, setApplySubmitted] = useState(false);
   const [applySubmitting, setApplySubmitting] = useState(false);
   const [applyError, setApplyError] = useState('');
+  const [cv, setCv] = useState<{ file: File | null; uploading: boolean; url: string; name: string; type: string }>(
+    { file: null, uploading: false, url: '', name: '', type: '' });
 
   const [tab, setTab] = useState<'membership' | 'volunteer'>('membership');
   const [submitted, setSubmitted] = useState(false);
@@ -257,7 +260,7 @@ export default function GetInvolvedPage() {
                 <h3 className="font-bold text-gray-900 mb-2">{job.role}</h3>
                 <p className="text-sm text-gray-600 mb-4 leading-relaxed">{job.desc}</p>
                 <button
-                  onClick={() => { setApplyModal({ id: job.id, role: job.role, dept: job.dept }); setApplyForm({ firstName: '', lastName: '', email: '', phone: '', coverLetter: '' }); setApplySubmitted(false); }}
+                  onClick={() => { setApplyModal({ id: job.id, role: job.role, dept: job.dept }); setApplyForm({ firstName: '', lastName: '', email: '', phone: '', coverLetter: '' }); setCv({ file: null, uploading: false, url: '', name: '', type: '' }); setApplyError(''); setApplySubmitted(false); }}
                   className="text-sm font-semibold text-blue-900 border border-blue-900 px-4 py-1.5 rounded-lg hover:bg-blue-900 hover:text-white transition-colors">
                   Apply Now →
                 </button>
@@ -309,6 +312,9 @@ export default function GetInvolvedPage() {
                     opportunityId: applyModal.id,
                     opportunityRole: applyModal.role,
                     ...applyForm,
+                    cvUrl: cv.url,
+                    cvFileName: cv.name,
+                    cvFileType: cv.type,
                   });
                   setApplySubmitted(true);
                 } catch (err) {
@@ -349,10 +355,56 @@ export default function GetInvolvedPage() {
                     className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                     placeholder="Tell us about your relevant experience and why this role interests you..." />
                 </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">
+                    Your CV <span className="font-normal text-gray-400">(optional)</span>
+                  </label>
+                  {cv.url ? (
+                    <div className="flex items-center gap-3 border border-green-200 bg-green-50 rounded-lg px-3 py-2.5">
+                      <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      <span className="text-sm text-gray-700 truncate flex-1">{cv.name}</span>
+                      <button type="button"
+                        onClick={() => setCv({ file: null, uploading: false, url: '', name: '', type: '' })}
+                        className="text-xs font-semibold text-gray-500 hover:text-red-600 flex-shrink-0">
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                      disabled={cv.uploading}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setApplyError('');
+                        setCv((c) => ({ ...c, uploading: true }));
+                        try {
+                          // Uploaded now rather than on submit, so a slow
+                          // connection fails here — where it is obviously about
+                          // the file — instead of appearing to lose the whole
+                          // application at the final step.
+                          const res = await uploadApplicationCV(file);
+                          setCv({ file, uploading: false, url: res.url, name: file.name, type: res.fileType });
+                        } catch (err) {
+                          setCv({ file: null, uploading: false, url: '', name: '', type: '' });
+                          setApplyError(err instanceof Error ? err.message : 'Could not upload your CV.');
+                          e.target.value = '';
+                        }
+                      }}
+                      className="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer disabled:opacity-60"
+                    />
+                  )}
+                  <p className="text-xs text-gray-400 mt-1">
+                    {cv.uploading ? 'Uploading…' : 'PDF or Word document, up to 5 MB.'}
+                  </p>
+                </div>
                 {applyError && (
                   <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-3">{applyError}</p>
                 )}
-                <button type="submit" disabled={applySubmitting}
+                <button type="submit" disabled={applySubmitting || cv.uploading}
                   className="w-full bg-blue-900 text-white py-3 rounded-xl font-bold text-sm hover:bg-blue-800 transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
                   {applySubmitting && (
                     <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">

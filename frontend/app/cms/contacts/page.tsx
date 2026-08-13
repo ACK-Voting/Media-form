@@ -1,12 +1,103 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useContactsStore } from '@/stores/cms/contactsStore';
+import { useContactsStore, type ContactSubmission } from '@/stores/cms/contactsStore';
+
+/**
+ * Reply thread and composer for one message.
+ *
+ * Replying was a `mailto:` link, so answers left from whichever personal
+ * account the staff member happened to be signed into and nothing on the
+ * message recorded that anyone had responded — two people could each think the
+ * other had it. Replies now go out from the Cathedral address and stay on the
+ * record.
+ */
+function ReplyPanel({
+  contact, open, onClose,
+}: { contact: ContactSubmission; open: boolean; onClose: () => void }) {
+  const reply = useContactsStore((s) => s.reply);
+  const [body, setBody] = useState('');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+
+  const replies = contact.replies ?? [];
+
+  async function send() {
+    if (!body.trim()) return;
+    setSending(true);
+    setError('');
+    try {
+      await reply(contact.id, body.trim());
+      setBody('');
+      onClose();
+    } catch (err) {
+      // The server sends the email before recording it, so a failure here means
+      // nothing was sent and nothing was saved — say so plainly rather than
+      // leaving staff thinking the answer went out.
+      setError(err instanceof Error ? err.message : 'The reply could not be sent.');
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <div className="mt-4 pt-4 border-t border-gray-100 space-y-3">
+      {replies.map((r, i) => (
+        <div key={i} className="bg-blue-50/60 border border-blue-100 rounded-xl p-3">
+          <p className="text-[11px] font-bold text-blue-700 mb-1">
+            Replied by {r.sentByName || 'staff'}
+            {r.sentAt && ` • ${new Date(r.sentAt).toLocaleString('en-KE', {
+              day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+            })}`}
+          </p>
+          <p className="text-sm text-gray-700 whitespace-pre-line">{r.body}</p>
+        </div>
+      ))}
+
+      {open && (
+        <div className="space-y-2">
+          <textarea
+            autoFocus
+            rows={5}
+            value={body}
+            onChange={(e) => setBody(e.target.value)}
+            placeholder={`Write your reply to ${contact.name}…`}
+            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+          />
+          {error && (
+            <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2">{error}</p>
+          )}
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-[11px] text-gray-400">
+              Sends from the Cathedral address to {contact.email}. Their reply comes back to the office inbox.
+            </p>
+            <div className="flex gap-2 flex-shrink-0">
+              <button
+                onClick={() => { setBody(''); setError(''); onClose(); }}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={send}
+                disabled={sending || !body.trim()}
+                className="px-4 py-1.5 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {sending ? 'Sending…' : 'Send Reply'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ContactsPage() {
   const { contacts, markRead, load, loaded, error } = useContactsStore();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<'All' | 'Unread' | 'Read'>('All');
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
 
   useEffect(() => { load(); }, [load]);
 
@@ -135,14 +226,24 @@ export default function ContactsPage() {
                     Mark Read
                   </button>
                 )}
-                <a
-                  href={`mailto:${c.email}?subject=Re: ${encodeURIComponent(c.subject)}`}
-                  className="px-4 py-1.5 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                <button
+                  onClick={() => setReplyingTo(replyingTo === c.id ? null : c.id)}
+                  disabled={!c.email}
+                  title={c.email ? undefined : 'This message has no email address'}
+                  className="px-4 py-1.5 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   ↩ Reply
-                </a>
+                </button>
               </div>
             </div>
+
+            {(c.replies?.length || replyingTo === c.id) && (
+              <ReplyPanel
+                contact={c}
+                open={replyingTo === c.id}
+                onClose={() => setReplyingTo(null)}
+              />
+            )}
           </div>
         ))}
         {filtered.length === 0 && loaded && (

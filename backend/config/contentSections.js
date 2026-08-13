@@ -26,6 +26,10 @@ const SECTIONS = {
   staffDepartments: { kind: 'singleton', public: true,  scopable: false },
   home:             { kind: 'singleton', public: true,  scopable: false },
   history:          { kind: 'singleton', public: true,  scopable: false },
+  // The daily prayer themes and the prayer meeting times, which were hardcoded
+  // in app/prayer/page.tsx. Note this is the prayer *page copy* — the requests
+  // themselves are inbox records and are never public.
+  prayerPage:       { kind: 'singleton', public: true,  scopable: false },
 };
 
 const PUBLIC_SECTIONS = Object.keys(SECTIONS).filter((s) => SECTIONS[s].public);

@@ -14,6 +14,7 @@ import { useStaffStore } from '@/stores/cms/staffStore';
 import { useContactInfoStore } from '@/stores/cms/contactInfoStore';
 import { useGetInvolvedStore } from '@/stores/cms/getInvolvedStore';
 import { useHistoryStore } from '@/stores/cms/historyStore';
+import { usePrayerPageStore } from '@/stores/cms/prayerPageStore';
 
 type Sections = Record<string, unknown> | null;
 
@@ -73,6 +74,7 @@ function applySections(s: Sections) {
   if (s.contactInfo) useContactInfoStore.getState().hydrate(s.contactInfo as never);
   if (s.staffDepartments) useStaffStore.getState().hydrateDepartments(s.staffDepartments as never);
   if (s.history) useHistoryStore.getState().hydrate(s.history as never);
+  if (s.prayerPage) usePrayerPageStore.getState().hydrate(s.prayerPage as never);
 }
 
 export default function ContentBootstrap({ initial }: { initial?: Sections }) {

@@ -48,6 +48,24 @@ async function sendEmail({ to, subject, html, replyTo, bcc }) {
   return { messageId: data?.id };
 }
 
+/**
+ * Escapes text destined for an HTML email body.
+ *
+ * Everything these emails carry is typed by a member of the public — a prayer
+ * request, a contact message, an applicant's covering note. Interpolating that
+ * raw lets someone put working markup into a message staff open, which at best
+ * mangles the layout and at worst plants a convincing link in an email that
+ * genuinely came from the Cathedral's own domain.
+ */
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 /** Cathedral-branded wrapper, matching the look of the existing emails. */
 function churchLayout(heading, bodyHtml, footerNote = '') {
   return `
@@ -71,13 +89,13 @@ function churchLayout(heading, bodyHtml, footerNote = '') {
 function notifyOffice({ heading, subject, rows, body }) {
   const table = (rows || [])
     .filter(([, v]) => v)
-    .map(([k, v]) => `<tr><td style="padding:6px 0;color:#64748b;width:34%">${k}</td><td style="padding:6px 0;font-weight:600">${v}</td></tr>`)
+    .map(([k, v]) => `<tr><td style="padding:6px 0;color:#64748b;width:34%">${escapeHtml(k)}</td><td style="padding:6px 0;font-weight:600">${escapeHtml(v)}</td></tr>`)
     .join('');
 
   const html = churchLayout(
     heading,
     `${table ? `<table style="width:100%;border-collapse:collapse">${table}</table>` : ''}
-     ${body ? `<div style="margin-top:16px;padding:14px;background:#fff;border-radius:8px;border:1px solid #e2e8f0;white-space:pre-wrap">${body}</div>` : ''}
+     ${body ? `<div style="margin-top:16px;padding:14px;background:#fff;border-radius:8px;border:1px solid #e2e8f0;white-space:pre-wrap">${escapeHtml(body)}</div>` : ''}
      <p style="margin-top:24px"><a href="${CHURCH_URL}/cms" style="display:inline-block;background:#1e3a8a;color:#fff;text-decoration:none;padding:10px 20px;border-radius:8px;font-weight:600">Open the CMS</a></p>`,
     'You are receiving this because you are listed as the Cathedral office contact.'
   );
@@ -86,4 +104,57 @@ function notifyOffice({ heading, subject, rows, body }) {
     .catch((err) => console.error(`Office notification failed (${subject}):`, err.message));
 }
 
-module.exports = { sendEmail, churchLayout, notifyOffice, FROM, OFFICE, CHURCH_URL };
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Sends one personalised email per recipient, in batches.
+ *
+ * Not a single message with everyone in BCC, for two reasons: each recipient
+ * needs their own unsubscribe link, and one bad address in a BCC list can take
+ * the whole send down. Resend's batch endpoint caps at 100 messages per call
+ * and the account is rate-limited per second, so this chunks and paces itself
+ * rather than firing several hundred requests at once.
+ *
+ * Returns counts instead of throwing, because a bulletin that reached most of
+ * the list is a partial success and staff need to see which part failed.
+ */
+async function sendBulk(messages, { chunkSize = 100, pauseMs = 600 } = {}) {
+  if (!process.env.RESEND_API_KEY) {
+    throw new Error('Email is not configured (RESEND_API_KEY is not set).');
+  }
+
+  let sent = 0;
+  let failed = 0;
+  const errors = [];
+
+  for (let i = 0; i < messages.length; i += chunkSize) {
+    const chunk = messages.slice(i, i + chunkSize).map((m) => ({
+      from: FROM,
+      to: [m.to],
+      subject: m.subject,
+      html: m.html,
+      ...(m.replyTo ? { replyTo: m.replyTo } : {}),
+    }));
+
+    try {
+      const { data, error } = await resend.batch.send(chunk);
+      if (error) {
+        failed += chunk.length;
+        errors.push(error.message || JSON.stringify(error));
+      } else {
+        sent += data?.data?.length ?? chunk.length;
+      }
+    } catch (err) {
+      failed += chunk.length;
+      errors.push(err.message);
+    }
+
+    if (i + chunkSize < messages.length) await sleep(pauseMs);
+  }
+
+  return { sent, failed, errors };
+}
+
+module.exports = {
+  sendEmail, sendBulk, churchLayout, notifyOffice, escapeHtml, FROM, OFFICE, CHURCH_URL,
+};

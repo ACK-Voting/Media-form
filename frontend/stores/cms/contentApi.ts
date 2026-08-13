@@ -62,10 +62,27 @@ export async function submitToInbox(kind: InboxKind, payload: Record<string, unk
   });
 }
 
-/** The public prayer wall: shared requests only, with emails stripped. */
-export async function fetchPublicPrayers<T>(): Promise<T[]> {
-  const json = await request<{ requests: T[] }>('/inbox/prayer/public');
-  return json.requests || [];
+/**
+ * Joins the bulletin mailing list.
+ *
+ * Public, like the inbox submit: rate-limited and honeypotted server-side.
+ * Throws so the form can report a failure instead of showing a thank-you for a
+ * subscription that never happened.
+ */
+export async function subscribe(email: string, name = ''): Promise<void> {
+  await request('/subscribers', {
+    method: 'POST',
+    body: JSON.stringify({ email, name, website: '' }),
+  });
+}
+
+/** Confirms an unsubscribe from a link in a bulletin. */
+export async function unsubscribe(token: string): Promise<string> {
+  const json = await request<{ email?: string }>('/subscribers/unsubscribe', {
+    method: 'POST',
+    body: JSON.stringify({ token }),
+  });
+  return json.email ?? '';
 }
 
 export async function fetchInbox<T>(kind: InboxKind): Promise<T[]> {
@@ -82,6 +99,21 @@ export async function updateInbox(kind: InboxKind, id: string, patch: Record<str
 
 export async function deleteInbox(kind: InboxKind, id: string) {
   await request(`/inbox/${kind}/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+/**
+ * Sends a reply from the Cathedral address and returns the updated message.
+ *
+ * Deliberately not optimistic, unlike the list helpers below: the reply is only
+ * recorded once the email has actually gone, so there is nothing to show until
+ * the server says so.
+ */
+export async function replyToInbox<T>(kind: InboxKind, id: string, body: string): Promise<T> {
+  const json = await request<{ item: T }>(`/inbox/${kind}/${encodeURIComponent(id)}/reply`, {
+    method: 'POST',
+    body: JSON.stringify({ body }),
+  });
+  return json.item;
 }
 
 /* ------------------------------------------------------------------ lists -- */

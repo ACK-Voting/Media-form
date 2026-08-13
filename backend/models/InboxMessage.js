@@ -21,9 +21,26 @@ const inboxMessageSchema = new mongoose.Schema(
     // prayer only
     request: { type: String, trim: true, maxlength: 5000, default: '' },
     isAnonymous: { type: Boolean, default: false },
-    // Whether the request may be shown on the public prayer wall. Anonymous
-    // requests are never surfaced with a name attached.
+    // Vestigial: the public prayer wall was removed and prayer requests are now
+    // unconditionally confidential. Kept on the schema so existing documents
+    // still load cleanly, but nothing reads it and the submit route forces it
+    // false for prayer.
     shareable: { type: Boolean, default: false },
+    // The form has always offered "I'd like a follow-up from the pastoral
+    // team" and always thrown the answer away. Staff need to see it to act on
+    // it, so it is stored and surfaced in the CMS.
+    receiveFollowUp: { type: Boolean, default: false },
+
+    // An array rather than a repliedAt flag: staff will sometimes follow up
+    // twice, and a boolean loses the second conversation entirely.
+    replies: [
+      {
+        body: { type: String, required: true, maxlength: 5000 },
+        sentByName: { type: String, default: '' },
+        sentById: { type: String, default: '' },
+        sentAt: { type: Date, default: Date.now },
+      },
+    ],
 
     handled: { type: Boolean, default: false },  // "prayed for" / "read"
     archived: { type: Boolean, default: false },
@@ -47,20 +64,25 @@ inboxMessageSchema.methods.toAdmin = function toAdmin() {
     handled: this.handled,
   };
   if (this.kind === 'prayer') {
-    return { ...base, request: this.request, isAnonymous: this.isAnonymous, prayedFor: this.handled };
+    return {
+      ...base,
+      request: this.request,
+      isAnonymous: this.isAnonymous,
+      receiveFollowUp: this.receiveFollowUp,
+      prayedFor: this.handled,
+    };
   }
-  return { ...base, phone: this.phone, subject: this.subject, message: this.message, read: this.handled };
-};
-
-// Redacted record for the public prayer wall: no email, and no name unless the
-// sender both opted into sharing and did not ask to be anonymous.
-inboxMessageSchema.methods.toPublicPrayer = function toPublicPrayer() {
   return {
-    id: this._id.toString(),
-    name: this.isAnonymous ? 'Anonymous' : this.name,
-    request: this.request,
-    date: isoDate(this.createdAt),
-    prayedFor: this.handled,
+    ...base,
+    phone: this.phone,
+    subject: this.subject,
+    message: this.message,
+    read: this.handled,
+    replies: (this.replies || []).map((r) => ({
+      body: r.body,
+      sentByName: r.sentByName,
+      sentAt: r.sentAt ? r.sentAt.toISOString() : '',
+    })),
   };
 };
 
