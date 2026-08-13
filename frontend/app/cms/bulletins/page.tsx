@@ -2,27 +2,10 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useBulletinsStore } from '@/stores/cms/bulletinsStore';
+import { exportDataToCSV } from '@/lib/csv';
 
 const inputCls =
   'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500';
-
-/**
- * Builds the CSV client-side.
- *
- * lib/export.ts has an exportDataToCSV, but it lives on the media-team side of
- * the app and pulls in that module's assumptions; this needs three columns and
- * one button.
- */
-function downloadCsv(rows: string[][], filename: string) {
-  const escape = (v: string) => `"${String(v).replace(/"/g, '""')}"`;
-  const csv = rows.map((r) => r.map(escape).join(',')).join('\n');
-  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
 
 export default function BulletinsCMSPage() {
   const { subscribers, bulletins, load, loaded, error, removeSubscriber, send } = useBulletinsStore();
@@ -149,10 +132,11 @@ export default function BulletinsCMSPage() {
             </p>
             <button
               disabled={subscribers.length === 0}
-              onClick={() => downloadCsv(
-                [['Email', 'Name', 'Status', 'Subscribed'],
-                  ...subscribers.map((s) => [s.email, s.name, s.active ? 'Active' : 'Unsubscribed', s.date])],
-                `cathedral-subscribers-${new Date().toISOString().split('T')[0]}.csv`
+              onClick={() => exportDataToCSV(
+                subscribers,
+                ['Email', 'Name', 'Status', 'Subscribed'],
+                (s) => [s.email, s.name, s.active ? 'Active' : 'Unsubscribed', s.date],
+                'cathedral-subscribers'
               )}
               className="px-4 py-2 rounded-xl text-xs font-bold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors cursor-pointer disabled:opacity-50">
               Export CSV

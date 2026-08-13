@@ -1,9 +1,12 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
+const multer = require('multer');
+const mongoose = require('mongoose');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const { Resend } = require('resend');
 const GetInvolvedSubmission = require('../models/GetInvolvedSubmission');
+const ApplicationFile = require('../models/ApplicationFile');
 const { requireCMSUser, requireSection } = require('../middleware/cmsAuth');
 const { sendEmail, churchLayout, escapeHtml, OFFICE } = require('../utils/mailer');
 const { logActivity } = require('../utils/activityLog');
@@ -28,6 +31,135 @@ const submitLimiter = rateLimit({
     message: { success: false, message: 'Too many submissions. Please try again later.' },
     standardHeaders: true,
     legacyHeaders: false,
+});
+
+/**
+ * CV upload.
+ *
+ * The browser posts the file here, straight to this API — not through a Next
+ * route on Netlify, whose request bodies are capped at roughly 4.5 MB. The one
+ * CV uploaded during testing was 4.28 MB, so that cap was not theoretical.
+ */
+const CV_MAX_BYTES = 5 * 1024 * 1024;
+
+const cvLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 5,
+    message: { success: false, message: 'Too many uploads. Please try again later.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Memory storage, not middleware/upload.js: that one writes to disk, which is
+// ephemeral on Render, and accepts images.
+const cvUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: CV_MAX_BYTES, files: 1 },
+}).single('file');
+
+/**
+ * Identifies the file from its leading bytes rather than from the browser's
+ * Content-Type, which is attacker-controlled and means nothing.
+ *
+ * Returns the canonical type, or null if it is not a document we accept. The
+ * stored contentType comes from here, so a file can never later be served back
+ * as something that executes in a staff member's browser.
+ */
+function sniffDocument(buf) {
+    if (buf.length < 8) return null;
+
+    // %PDF-
+    if (buf.subarray(0, 5).toString('latin1') === '%PDF-') {
+        return { contentType: 'application/pdf', label: 'PDF', ext: 'pdf' };
+    }
+
+    // DOCX is a zip. The magic bytes alone would also accept any other zip, so
+    // require the part every Word document contains; zip stores its entry names
+    // uncompressed, which is what makes this findable.
+    if (buf[0] === 0x50 && buf[1] === 0x4b && buf[2] === 0x03 && buf[3] === 0x04) {
+        if (buf.includes('word/document.xml')) {
+            return {
+                contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                label: 'DOCX',
+                ext: 'docx',
+            };
+        }
+        return null;
+    }
+
+    // Legacy .doc — the OLE2 compound file header.
+    const OLE2 = Buffer.from([0xd0, 0xcf, 0x11, 0xe0, 0xa1, 0xb1, 0x1a, 0xe1]);
+    if (buf.subarray(0, 8).equals(OLE2)) {
+        return { contentType: 'application/msword', label: 'DOC', ext: 'doc' };
+    }
+
+    return null;
+}
+
+const TYPE_LABELS = {
+    'application/pdf': 'PDF',
+    'application/msword': 'DOC',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'DOCX',
+};
+
+/** Keeps a hostile filename from reaching a Content-Disposition header. */
+function safeFileName(name, ext) {
+    const base = String(name || 'cv')
+        .replace(/[\r\n"\\]/g, '')
+        .replace(/[^\w.\- ]/g, '')
+        .trim()
+        .slice(0, 120);
+    const stem = base.replace(/\.[^.]*$/, '') || 'cv';
+    return `${stem}.${ext}`;
+}
+
+// POST /api/get-involved/cv — public; attach a CV before submitting the form
+router.post('/cv', cvLimiter, (req, res) => {
+    cvUpload(req, res, async (uploadErr) => {
+        if (uploadErr) {
+            const tooBig = uploadErr.code === 'LIMIT_FILE_SIZE';
+            return res.status(tooBig ? 413 : 400).json({
+                success: false,
+                message: tooBig
+                    ? 'That file is larger than 5 MB. Please upload a smaller CV.'
+                    : 'Could not read that file. Please try again.',
+            });
+        }
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'No file was received.' });
+        }
+
+        const kind = sniffDocument(req.file.buffer);
+        if (!kind) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please upload your CV as a PDF or Word document.',
+            });
+        }
+
+        try {
+            const fileName = safeFileName(req.file.originalname, kind.ext);
+            const saved = await ApplicationFile.create({
+                data: req.file.buffer,
+                contentType: kind.contentType,
+                fileName,
+                size: req.file.size,
+                // Expires unless an application claims it. Someone who picks a
+                // file and then closes the tab should not leave bytes behind.
+                expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            });
+            res.json({
+                success: true,
+                fileId: saved._id.toString(),
+                fileName,
+                fileType: kind.label,
+                fileSize: req.file.size,
+            });
+        } catch (err) {
+            console.error('CV upload error:', err);
+            res.status(500).json({ success: false, message: 'Could not save that file. Please try again.' });
+        }
+    });
 });
 
 const validation = [
@@ -55,6 +187,13 @@ router.post('/', submitLimiter, validation, async (req, res) => {
             : 'Volunteer Sign-Up';
     const ministriesList = Array.isArray(ministries) && ministries.length ? ministries.join(', ') : '—';
 
+    // A CV, if one was uploaded to /cv a moment ago. Confirm it exists rather
+    // than trusting the id, so a made-up value cannot attach a phantom file.
+    let cvFile = null;
+    if (req.body.cvFileId && mongoose.isValidObjectId(req.body.cvFileId)) {
+        cvFile = await ApplicationFile.findById(req.body.cvFileId).select('fileName contentType').lean();
+    }
+
     try {
         // Save first. The two emails below are deliberately NOT awaited: they
         // used to be, which meant a Resend outage returned 500 for a submission
@@ -68,12 +207,17 @@ router.post('/', submitLimiter, validation, async (req, res) => {
             opportunityId: req.body.opportunityId,
             opportunityRole: req.body.opportunityRole,
             coverLetter: req.body.coverLetter,
-            // Only ever a Cloudinary URL produced by our own signed upload —
-            // the browser posts the result back, it does not post the file.
-            cvUrl: req.body.cvUrl,
-            cvFileName: req.body.cvFileName,
-            cvFileType: req.body.cvFileType,
+            cvFileId: cvFile ? cvFile._id : null,
+            cvFileName: cvFile ? cvFile.fileName : '',
+            // Derived from what the bytes actually are, not from what the
+            // browser claimed they were.
+            cvFileType: cvFile ? (TYPE_LABELS[cvFile.contentType] || 'Document') : '',
         });
+
+        // The application now owns the file, so stop it expiring.
+        if (cvFile) {
+            await ApplicationFile.updateOne({ _id: cvFile._id }, { $unset: { expiresAt: 1 } });
+        }
 
         // Confirmation to applicant
         resend.emails.send({
@@ -149,6 +293,39 @@ router.get('/', auth, async (req, res) => {
     } catch (err) {
         console.error('Get-involved list error:', err);
         res.status(500).json({ success: false, message: 'Failed to fetch submissions.' });
+    }
+});
+
+/**
+ * GET /api/get-involved/:id/cv — serve an applicant's CV to CMS staff.
+ *
+ * Reached through the submission rather than by file id, so a leaked id is not
+ * a URL, and so the same permission that lets someone read the application lets
+ * them read its attachment.
+ */
+router.get('/:id/cv', auth, async (req, res) => {
+    try {
+        const submission = await GetInvolvedSubmission.findById(req.params.id).select('cvFileId').lean();
+        if (!submission || !submission.cvFileId) {
+            return res.status(404).json({ success: false, message: 'No CV on this application.' });
+        }
+        // Deliberately not .lean(): the schema's Buffer cast is what guarantees
+        // a real Node Buffer here rather than a raw BSON Binary.
+        const file = await ApplicationFile.findById(submission.cvFileId);
+        if (!file) {
+            return res.status(404).json({ success: false, message: 'That CV is no longer stored.' });
+        }
+
+        // nosniff matters here: the browser must not be free to reinterpret a
+        // stored document as HTML and run it on the CMS origin.
+        res.setHeader('Content-Type', file.contentType);
+        res.setHeader('Content-Disposition', `attachment; filename="${file.fileName}"`);
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('Cache-Control', 'private, no-store');
+        res.send(file.data);
+    } catch (err) {
+        console.error('CV download error:', err);
+        res.status(500).json({ success: false, message: 'Failed to fetch the CV.' });
     }
 });
 
@@ -282,7 +459,13 @@ router.patch('/:id/status', auth, async (req, res) => {
 // DELETE /api/get-involved/:id — delete a submission (admin only)
 router.delete('/:id', auth, async (req, res) => {
     try {
-        await GetInvolvedSubmission.findByIdAndDelete(req.params.id);
+        const removed = await GetInvolvedSubmission.findByIdAndDelete(req.params.id);
+        // The CV goes with the application. Leaving an applicant's personal
+        // details behind after their record is deleted is the whole reason
+        // these files stopped living in Cloudinary.
+        if (removed?.cvFileId) {
+            await ApplicationFile.deleteOne({ _id: removed.cvFileId });
+        }
         res.json({ success: true });
     } catch (err) {
         console.error('Delete error:', err);

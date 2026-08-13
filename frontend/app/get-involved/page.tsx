@@ -22,8 +22,10 @@ export default function GetInvolvedPage() {
   const [applySubmitted, setApplySubmitted] = useState(false);
   const [applySubmitting, setApplySubmitting] = useState(false);
   const [applyError, setApplyError] = useState('');
-  const [cv, setCv] = useState<{ file: File | null; uploading: boolean; url: string; name: string; type: string }>(
-    { file: null, uploading: false, url: '', name: '', type: '' });
+  // fileId, not a URL: the CV is stored in the database and served only to
+  // signed-in CMS staff, so there is no public address to hold on to.
+  const [cv, setCv] = useState<{ file: File | null; uploading: boolean; fileId: string; name: string; type: string }>(
+    { file: null, uploading: false, fileId: '', name: '', type: '' });
 
   const [tab, setTab] = useState<'membership' | 'volunteer'>('membership');
   const [submitted, setSubmitted] = useState(false);
@@ -260,7 +262,7 @@ export default function GetInvolvedPage() {
                 <h3 className="font-bold text-gray-900 mb-2">{job.role}</h3>
                 <p className="text-sm text-gray-600 mb-4 leading-relaxed">{job.desc}</p>
                 <button
-                  onClick={() => { setApplyModal({ id: job.id, role: job.role, dept: job.dept }); setApplyForm({ firstName: '', lastName: '', email: '', phone: '', coverLetter: '' }); setCv({ file: null, uploading: false, url: '', name: '', type: '' }); setApplyError(''); setApplySubmitted(false); }}
+                  onClick={() => { setApplyModal({ id: job.id, role: job.role, dept: job.dept }); setApplyForm({ firstName: '', lastName: '', email: '', phone: '', coverLetter: '' }); setCv({ file: null, uploading: false, fileId: '', name: '', type: '' }); setApplyError(''); setApplySubmitted(false); }}
                   className="text-sm font-semibold text-blue-900 border border-blue-900 px-4 py-1.5 rounded-lg hover:bg-blue-900 hover:text-white transition-colors">
                   Apply Now →
                 </button>
@@ -312,9 +314,7 @@ export default function GetInvolvedPage() {
                     opportunityId: applyModal.id,
                     opportunityRole: applyModal.role,
                     ...applyForm,
-                    cvUrl: cv.url,
-                    cvFileName: cv.name,
-                    cvFileType: cv.type,
+                    cvFileId: cv.fileId,
                   });
                   setApplySubmitted(true);
                 } catch (err) {
@@ -359,14 +359,14 @@ export default function GetInvolvedPage() {
                   <label className="block text-sm font-semibold text-gray-700 mb-1">
                     Your CV <span className="font-normal text-gray-400">(optional)</span>
                   </label>
-                  {cv.url ? (
+                  {cv.fileId ? (
                     <div className="flex items-center gap-3 border border-green-200 bg-green-50 rounded-lg px-3 py-2.5">
                       <svg className="w-5 h-5 text-green-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
                       <span className="text-sm text-gray-700 truncate flex-1">{cv.name}</span>
                       <button type="button"
-                        onClick={() => setCv({ file: null, uploading: false, url: '', name: '', type: '' })}
+                        onClick={() => setCv({ file: null, uploading: false, fileId: '', name: '', type: '' })}
                         className="text-xs font-semibold text-gray-500 hover:text-red-600 flex-shrink-0">
                         Remove
                       </button>
@@ -387,9 +387,9 @@ export default function GetInvolvedPage() {
                           // the file — instead of appearing to lose the whole
                           // application at the final step.
                           const res = await uploadApplicationCV(file);
-                          setCv({ file, uploading: false, url: res.url, name: file.name, type: res.fileType });
+                          setCv({ file, uploading: false, fileId: res.fileId, name: res.fileName, type: res.fileType });
                         } catch (err) {
-                          setCv({ file: null, uploading: false, url: '', name: '', type: '' });
+                          setCv({ file: null, uploading: false, fileId: '', name: '', type: '' });
                           setApplyError(err instanceof Error ? err.message : 'Could not upload your CV.');
                           e.target.value = '';
                         }

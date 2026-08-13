@@ -1,4 +1,4 @@
-import { cmsAuthHeaders } from './apiBase';
+import { apiUrl, cmsAuthHeaders } from './apiBase';
 
 // Browser-side upload helper. Returns the same three fields the old
 // /api/upload route did, so the CMS pages that call it barely change.
@@ -45,15 +45,29 @@ const CV_TYPES: Record<string, string> = {
 /** 5 MB. A CV that exceeds this is a scan, and the applicant can compress it. */
 const CV_MAX_BYTES = 5 * 1024 * 1024;
 
+export type CVUploadResult = {
+  fileId: string;
+  fileName: string;
+  fileType: string;
+};
+
 /**
  * Uploads a CV from the public job application form.
  *
- * Separate from uploadFile because the constraints are genuinely different:
- * no CMS session, documents only, and a size cap. Cloudinary enforces the
- * format too — the signature issued for this folder carries allowed_formats —
- * so these checks are for a helpful error message, not for security.
+ * Unlike everything else here this does not touch Cloudinary. CVs are stored in
+ * MongoDB and served only to a signed-in CMS user, because a Cloudinary
+ * delivery URL is public to anyone holding it — and a CV carries a home
+ * address, a phone number and an employment history. Cloudinary also blocks PDF
+ * delivery by default, so the previous version stored CVs that nobody could
+ * open.
+ *
+ * The file goes straight to the API rather than through a Next route, which on
+ * Netlify would cap the body at roughly 4.5 MB.
+ *
+ * The checks below are for a readable error message; the server re-checks the
+ * type from the file's leading bytes, which is the check that counts.
  */
-export async function uploadApplicationCV(file: File): Promise<UploadResult> {
+export async function uploadApplicationCV(file: File): Promise<CVUploadResult> {
   if (!(file.type in CV_TYPES)) {
     throw new Error('Please upload your CV as a PDF or Word document.');
   }
@@ -61,34 +75,16 @@ export async function uploadApplicationCV(file: File): Promise<UploadResult> {
     throw new Error(`That file is ${formatSize(file.size)}. Please upload a CV under 5 MB.`);
   }
 
-  const signRes = await fetch('/api/upload?folder=applications', { method: 'POST' });
-  const signed = await signRes.json().catch(() => ({}));
-  if (!signRes.ok) {
-    throw new Error(signed.error || 'Could not start the upload.');
-  }
-
   const form = new FormData();
   form.append('file', file);
-  form.append('api_key', signed.apiKey);
-  form.append('timestamp', String(signed.timestamp));
-  form.append('folder', signed.folder);
-  form.append('signature', signed.signature);
-  if (signed.allowedFormats) form.append('allowed_formats', signed.allowedFormats);
 
-  const res = await fetch(`https://api.cloudinary.com/v1_1/${signed.cloudName}/auto/upload`, {
-    method: 'POST',
-    body: form,
-  });
+  const res = await fetch(apiUrl('/get-involved/cv'), { method: 'POST', body: form });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok || !json.secure_url) {
-    throw new Error(json?.error?.message || 'Upload failed. Please try again.');
+  if (!res.ok || !json.fileId) {
+    throw new Error(json.message || 'Upload failed. Please try again.');
   }
 
-  return {
-    url: json.secure_url,
-    fileType: CV_TYPES[file.type],
-    fileSize: formatSize(file.size),
-  };
+  return { fileId: json.fileId, fileName: json.fileName, fileType: json.fileType };
 }
 
 /**

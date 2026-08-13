@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useGetInvolvedStore, Submission, Opportunity, Application, type NotifyOpts } from '@/stores/cms/getInvolvedStore';
 import { Select } from '@/components/ui/Select';
+import { apiUrl, cmsAuthHeaders } from '@/lib/apiBase';
 
 // ── Status helpers ─────────────────────────────────────────────────────────────
 
@@ -12,6 +13,72 @@ const STATUS_COLORS: Record<Submission['status'], string> = {
   shortlisted: 'bg-green-100 text-green-700',
   declined: 'bg-red-100 text-red-700',
 };
+
+/**
+ * Opens an applicant's CV.
+ *
+ * A plain <a href> cannot carry the CMS bearer token, and putting the token in
+ * the query string would write it into browser history and any proxy log — so
+ * the file is fetched, turned into a blob, and handed to the browser from
+ * there. PDFs open in a tab; Word documents download, since no browser renders
+ * them anyway.
+ */
+function CvButton({ application }: { application: Application }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const open = async () => {
+    setBusy(true);
+    setError('');
+
+    // Claim the tab synchronously — a window.open() after the await is a popup
+    // the browser will block.
+    const isPdf = (application.cvFileType || '').toUpperCase() === 'PDF';
+    const tab = isPdf ? window.open('', '_blank') : null;
+
+    try {
+      const res = await fetch(apiUrl(`/get-involved/${application.id}/cv`), {
+        headers: cmsAuthHeaders(),
+      });
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}));
+        throw new Error(json.message || `Could not open the CV (${res.status}).`);
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+
+      if (tab) {
+        tab.location.href = url;
+      } else {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = application.cvFileName || 'cv';
+        link.click();
+      }
+      // Long enough for the tab or the download to take hold.
+      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    } catch (err) {
+      tab?.close();
+      setError(err instanceof Error ? err.message : 'Could not open the CV.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-3">
+      <button type="button" onClick={open} disabled={busy}
+        className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors disabled:opacity-60">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        {busy ? 'Opening…' : (application.cvFileName || 'View CV')}
+        {application.cvFileType && <span className="font-normal opacity-70">({application.cvFileType})</span>}
+      </button>
+      {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+    </div>
+  );
+}
 
 const TYPE_COLORS: Record<Opportunity['type'], string> = {
   'Full-Time': 'bg-green-100 text-green-700',
@@ -565,16 +632,7 @@ export default function GetInvolvedCMSPage() {
                     {a.coverLetter && (
                       <p className="text-sm text-gray-600 leading-relaxed line-clamp-3">{a.coverLetter}</p>
                     )}
-                    {a.cvUrl && (
-                      <a href={a.cvUrl} target="_blank" rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 mt-3 px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        {a.cvFileName || 'Download CV'}
-                        {a.cvFileType && <span className="font-normal opacity-70">({a.cvFileType})</span>}
-                      </a>
-                    )}
+                    {a.cvFileId && <CvButton application={a} />}
                     <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
                       <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</span>
                       {(['pending', 'reviewed', 'shortlisted', 'declined'] as Application['status'][]).map(st => (

@@ -31,8 +31,12 @@ export type Application = {
   email: string;
   phone: string;
   coverLetter?: string;
-  /** Cloudinary URL of the CV, when the applicant attached one. */
-  cvUrl?: string;
+  /**
+   * Set when the applicant attached a CV. Not a URL: the file lives in the
+   * database and is fetched from /get-involved/:id/cv with a CMS token, so it
+   * is never readable by anyone holding a link.
+   */
+  cvFileId?: string | null;
   cvFileName?: string;
   cvFileType?: string;
   // Must match the backend enum in models/GetInvolvedSubmission.js. It used to

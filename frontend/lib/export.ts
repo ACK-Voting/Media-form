@@ -1,4 +1,9 @@
 import type { Registration } from '@/types';
+import { escapeCSVField } from './csv';
+
+// The generic writer moved to lib/csv.ts so the church CMS can use it too.
+// Re-exported here so existing media-app imports keep working.
+export { exportDataToCSV } from './csv';
 
 export const exportToCSV = (data: Registration[], filename: string = 'submissions') => {
   if (!data || data.length === 0) {
@@ -84,22 +89,6 @@ export const exportToCSV = (data: Registration[], filename: string = 'submission
   document.body.removeChild(link);
 };
 
-// Helper function to escape CSV fields
-const escapeCSVField = (field: any): string => {
-  if (field === null || field === undefined) {
-    return '';
-  }
-
-  const stringField = String(field);
-
-  // If field contains comma, newline, or quotes, wrap in quotes and escape internal quotes
-  if (stringField.includes(',') || stringField.includes('\n') || stringField.includes('"')) {
-    return `"${stringField.replace(/"/g, '""')}"`;
-  }
-
-  return stringField;
-};
-
 // Export filtered submissions
 export const exportFilteredSubmissions = async (
   filters: {
@@ -126,28 +115,3 @@ export const exportFilteredSubmissions = async (
   }
 };
 
-// Generic CSV export function for any data type
-export const exportDataToCSV = (data: any[], headers: string[], rowMapper: (item: any) => any[], filename: string) => {
-  if (!data || data.length === 0) {
-    throw new Error('No data to export');
-  }
-
-  // Convert data to CSV rows using the provided mapper
-  const rows = data.map(item => rowMapper(item).map(escapeCSVField));
-
-  // Combine headers and rows
-  const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
-
-  // Create blob and download
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  const url = URL.createObjectURL(blob);
-
-  link.setAttribute('href', url);
-  link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
-  link.style.visibility = 'hidden';
-
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-};

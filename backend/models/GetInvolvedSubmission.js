@@ -15,6 +15,11 @@ const getInvolvedSubmissionSchema = new mongoose.Schema(
     coverLetter:     { type: String, trim: true, maxlength: 5000 },
     // CV attached to a job application. Optional by design: a required upload
     // on a phone with a patchy connection loses applicants.
+    //
+    // The bytes live in the ApplicationFile collection and are served only to a
+    // signed-in CMS user. cvUrl is the retired Cloudinary location, kept so old
+    // records still read cleanly; nothing writes it any more.
+    cvFileId:   { type: mongoose.Schema.Types.ObjectId, ref: 'ApplicationFile', default: null },
     cvUrl:      { type: String, trim: true, default: '' },
     cvFileName: { type: String, trim: true, default: '', maxlength: 200 },
     cvFileType: { type: String, trim: true, default: '' },
