@@ -38,9 +38,8 @@ export default function CathedralHistory() {
         }
         const target = timelineRef.current;
         if (!target) return;
-        // Clear the fixed navbar, plus the filter bar itself where it sticks.
-        const sticks = window.matchMedia('(min-width: 1024px)').matches;
-        const offset = 72 + (sticks ? (filterBarRef.current?.offsetHeight ?? 0) : 0) + 16;
+        // Clear the 72px fixed navbar and the filter bar pinned beneath it.
+        const offset = 72 + (filterBarRef.current?.offsetHeight ?? 0) + 16;
         window.scrollTo({
             top: Math.max(0, target.getBoundingClientRect().top + window.scrollY - offset),
             behavior: 'smooth',
@@ -91,13 +90,14 @@ export default function CathedralHistory() {
             </section>
 
             {/* Era Filter
-                Sticky only from lg up. Pinned on a phone it wrapped to four or
-                five rows and, with the navbar, swallowed over 40% of the screen
-                for the whole scroll. On small screens it is a single row that
-                scrolls sideways instead. */}
+                Sticky at every width, below the 72px navbar. What made it
+                intolerable on a phone was not the pinning but the height: five
+                buttons wrapped to four or five rows and, with the navbar, held
+                over 40% of the screen for the whole scroll. As a single row that
+                scrolls sideways it costs about 73px, so it can stay put. */}
             <section
                 ref={filterBarRef}
-                className="py-4 lg:py-8 bg-white border-b border-gray-200 lg:sticky lg:top-[72px] z-30"
+                className="py-4 lg:py-8 bg-white border-b border-gray-200 sticky top-[72px] z-30"
             >
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex gap-3 overflow-x-auto lg:overflow-visible lg:flex-wrap lg:justify-center [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
