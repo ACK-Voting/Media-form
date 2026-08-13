@@ -1,12 +1,71 @@
 'use client';
 
+import { useState } from 'react';
 import { useHistoryStore } from '@/stores/cms/historyStore';
-import type { HistoricalEvent, KeyFigure, ArchitecturalFeature } from '@/app/_data/historyContent';
+import { uploadFile } from '@/lib/uploadToCloudinary';
+import type { HistoricalEvent, KeyFigure, ArchitecturalFeature, HeroStat } from '@/app/_data/historyContent';
 
 const inputCls =
   'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500';
 
-const ERAS = ['founding', 'early', 'growth', 'modern'];
+// Labels match the buttons on the public page.
+const ERAS: { value: string; label: string }[] = [
+  { value: 'founding', label: 'Beginnings (1844–1901)' },
+  { value: 'early', label: 'Building the Cathedral (1902–1912)' },
+  { value: 'growth', label: 'Consolidation (1913–1980)' },
+  { value: 'modern', label: 'Modern Era (1981–present)' },
+];
+
+/**
+ * Photo picker used by all three editors.
+ *
+ * Uploads through the CMS-authenticated signed route — the same one the gallery
+ * and leadership pages use — into the `history` folder.
+ */
+function PhotoField({
+  value, onChange, label = 'Photograph',
+}: {
+  value?: string; onChange: (url: string) => void; label?: string;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  async function pick(file: File) {
+    setBusy(true);
+    setError('');
+    try {
+      const res = await uploadFile(file, 'history');
+      onChange(res.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload failed.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex items-start gap-3">
+      {value ? (
+        <img src={value} alt="" className="w-20 h-20 rounded-lg object-cover border border-gray-200 flex-shrink-0" />
+      ) : (
+        <div className="w-20 h-20 rounded-lg border-2 border-dashed border-gray-200 flex-shrink-0" />
+      )}
+      <div className="flex-1 min-w-0">
+        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">{label}</label>
+        <input type="file" accept="image/*" disabled={busy}
+          onChange={(ev) => { const f = ev.target.files?.[0]; if (f) pick(f); ev.target.value = ''; }}
+          className="w-full text-xs text-gray-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 file:cursor-pointer disabled:opacity-60" />
+        {busy && <p className="text-xs text-gray-400 mt-1">Uploading…</p>}
+        {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+        {value && !busy && (
+          <button onClick={() => onChange('')} className="text-xs font-semibold text-gray-400 hover:text-red-600 mt-1">
+            Remove photo
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function Section({
   title, count, description, onAdd, addLabel, children,
@@ -50,8 +109,8 @@ function RemoveButton({ onClick }: { onClick: () => void }) {
 
 export default function HistoryCMSPage() {
   const {
-    historicalEvents, keyFigures, architecturalFeatures,
-    setEvents, setFigures, setFeatures, error,
+    historicalEvents, keyFigures, architecturalFeatures, heroStats,
+    setEvents, setFigures, setFeatures, setHeroStats, error,
   } = useHistoryStore();
 
   function patchEvent(i: number, patch: Partial<HistoricalEvent>) {
@@ -62,6 +121,9 @@ export default function HistoryCMSPage() {
   }
   function patchFeature(i: number, patch: Partial<ArchitecturalFeature>) {
     setFeatures(architecturalFeatures.map((f, n) => (n === i ? { ...f, ...patch } : f)));
+  }
+  function patchStat(i: number, patch: Partial<HeroStat>) {
+    setHeroStats(heroStats.map((s, n) => (n === i ? { ...s, ...patch } : s)));
   }
 
   return (
@@ -78,13 +140,33 @@ export default function HistoryCMSPage() {
       )}
 
       <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-800">
-        <p className="font-semibold mb-1">Please check this content before launch</p>
+        <p className="font-semibold mb-1">Photograph provenance still to be confirmed</p>
         <p>
-          These entries came from the original design mock-up and may not reflect the
-          Cathedral&apos;s actual history. Names, dates and events should be verified
-          against parish records before the site goes live.
+          The text and photographs come from the Cathedral&apos;s own booklets — principally
+          Canon Dr. Steve Foster&apos;s <em>Who Built Mombasa&apos;s Anglican Cathedral?</em> and the
+          Welcome Visitor Book. That booklet credits several outside archives for its
+          historic images without saying which supplied which. Please confirm with
+          Canon Foster before launch. See <code>docs/history-image-sources.md</code> for
+          the page each photograph came from.
         </p>
       </div>
+
+      <Section
+        title="Hero Figures" count={heroStats.length}
+        description="The stat cards at the top of the page. A card with no value is not shown."
+        addLabel="Add Figure"
+        onAdd={() => setHeroStats([...heroStats, { value: '', label: '' }])}
+      >
+        {heroStats.map((s, i) => (
+          <div key={i} className="flex items-start gap-3">
+            <input className={`${inputCls} w-32`} value={s.value}
+              onChange={(ev) => patchStat(i, { value: ev.target.value })} placeholder="1904" />
+            <input className={inputCls} value={s.label}
+              onChange={(ev) => patchStat(i, { label: ev.target.value })} placeholder="Dedicated" />
+            <RemoveButton onClick={() => setHeroStats(heroStats.filter((_, n) => n !== i))} />
+          </div>
+        ))}
+      </Section>
 
       <Section
         title="Timeline" count={historicalEvents.length}
@@ -101,9 +183,9 @@ export default function HistoryCMSPage() {
                 onChange={(ev) => patchEvent(i, { image: ev.target.value })} placeholder="🏛️" />
               <input className={`${inputCls} w-24`} value={e.year}
                 onChange={(ev) => patchEvent(i, { year: ev.target.value })} placeholder="1903" />
-              <select className={`${inputCls} w-36`} value={e.era}
+              <select className={`${inputCls} w-56`} value={e.era}
                 onChange={(ev) => patchEvent(i, { era: ev.target.value })}>
-                {ERAS.map((era) => <option key={era} value={era}>{era}</option>)}
+                {ERAS.map((era) => <option key={era.value} value={era.value}>{era.label}</option>)}
               </select>
               <RemoveButton onClick={() => setEvents(historicalEvents.filter((_, n) => n !== i))} />
             </div>
@@ -113,6 +195,9 @@ export default function HistoryCMSPage() {
               onChange={(ev) => patchEvent(i, { description: ev.target.value })} placeholder="What happened" />
             <input className={inputCls} value={e.significance}
               onChange={(ev) => patchEvent(i, { significance: ev.target.value })} placeholder="e.g. Major Milestone" />
+            <PhotoField value={e.photo} onChange={(photo) => patchEvent(i, { photo })} />
+            <input className={inputCls} value={e.photoCaption ?? ''}
+              onChange={(ev) => patchEvent(i, { photoCaption: ev.target.value })} placeholder="Photo caption" />
           </div>
         ))}
       </Section>
@@ -138,6 +223,7 @@ export default function HistoryCMSPage() {
             </div>
             <textarea className={`${inputCls} h-20 resize-none`} value={f.contribution}
               onChange={(ev) => patchFigure(i, { contribution: ev.target.value })} placeholder="Their contribution" />
+            <PhotoField value={f.photo} onChange={(photo) => patchFigure(i, { photo })} label="Portrait" />
           </div>
         ))}
       </Section>
@@ -159,6 +245,7 @@ export default function HistoryCMSPage() {
             </div>
             <textarea className={`${inputCls} h-20 resize-none`} value={f.description}
               onChange={(ev) => patchFeature(i, { description: ev.target.value })} placeholder="Description" />
+            <PhotoField value={f.photo} onChange={(photo) => patchFeature(i, { photo })} />
           </div>
         ))}
       </Section>

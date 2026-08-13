@@ -1,8 +1,9 @@
 import { create } from 'zustand';
-import type { HistoryContent, HistoricalEvent, KeyFigure, ArchitecturalFeature } from '@/app/_data/historyContent';
+import type { HistoryContent, HistoricalEvent, KeyFigure, ArchitecturalFeature, HeroStat } from '@/app/_data/historyContent';
 import { singletonOps } from './contentApi';
 
 interface HistoryStore extends HistoryContent {
+  heroStats: HeroStat[];
   version: number;
   loaded: boolean;
   error: string | null;
@@ -11,6 +12,7 @@ interface HistoryStore extends HistoryContent {
   setEvents: (items: HistoricalEvent[]) => void;
   setFigures: (items: KeyFigure[]) => void;
   setFeatures: (items: ArchitecturalFeature[]) => void;
+  setHeroStats: (items: HeroStat[]) => void;
   flush: () => Promise<void>;
 }
 
@@ -21,6 +23,7 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => {
       historicalEvents: s.historicalEvents,
       keyFigures: s.keyFigures,
       architecturalFeatures: s.architecturalFeatures,
+      heroStats: s.heroStats,
     };
   }
 
@@ -36,6 +39,7 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => {
     historicalEvents: [],
     keyFigures: [],
     architecturalFeatures: [],
+    heroStats: [],
     version: 0,
     loaded: false,
     error: null,
@@ -46,6 +50,7 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => {
         historicalEvents: value.historicalEvents ?? [],
         keyFigures: value.keyFigures ?? [],
         architecturalFeatures: value.architecturalFeatures ?? [],
+        heroStats: value.heroStats ?? [],
         version: version ?? 0,
         loaded: true,
       }),
@@ -53,6 +58,7 @@ export const useHistoryStore = create<HistoryStore>()((set, get) => {
     setEvents: (historicalEvents) => ops.patch({ historicalEvents }),
     setFigures: (keyFigures) => ops.patch({ keyFigures }),
     setFeatures: (architecturalFeatures) => ops.patch({ architecturalFeatures }),
+    setHeroStats: (heroStats) => ops.patch({ heroStats }),
     flush: ops.flush,
   };
 });

@@ -7,8 +7,13 @@ import { useHistoryStore } from '@/stores/cms/historyStore';
 
 export default function CathedralHistory() {
     const [activeEra, setActiveEra] = useState('all');
-    // Editable in /cms/history; falls back to the bundled copy until loaded.
-    const { historicalEvents, keyFigures, architecturalFeatures } = useHistoryStore();
+    // Entered in /cms/history. Nothing is bundled — an empty section renders as
+    // an empty page rather than as the invented history this page once carried.
+    const { historicalEvents, keyFigures, architecturalFeatures, heroStats } = useHistoryStore();
+
+    // Only stats with a value are shown. The membership card is deliberately
+    // left blank until someone can supply a real figure.
+    const shownStats = (heroStats ?? []).filter(s => s.value?.trim());
 
     const filteredEvents = activeEra === 'all'
         ? historicalEvents
@@ -32,20 +37,16 @@ export default function CathedralHistory() {
                         <p className="text-xl text-blue-100 mb-8 leading-relaxed">
                             Discover the rich heritage of ACK Mombasa Memorial Cathedral — 120+ years of faith, service, and community transformation on the Kenyan coast.
                         </p>
-                        <div className="grid sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
-                            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                                <div className="text-4xl font-bold mb-2">1903</div>
-                                <div className="text-blue-200 text-sm">Founded</div>
+                        {shownStats.length > 0 && (
+                            <div className="grid sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
+                                {shownStats.map((stat, i) => (
+                                    <div key={i} className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                                        <div className="text-4xl font-bold mb-2">{stat.value}</div>
+                                        <div className="text-blue-200 text-sm">{stat.label}</div>
+                                    </div>
+                                ))}
                             </div>
-                            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                                <div className="text-4xl font-bold mb-2">120+</div>
-                                <div className="text-blue-200 text-sm">Years of Ministry</div>
-                            </div>
-                            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
-                                <div className="text-4xl font-bold mb-2">2,500+</div>
-                                <div className="text-blue-200 text-sm">Active Members</div>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             </section>
@@ -72,7 +73,7 @@ export default function CathedralHistory() {
                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                         >
-                            Founding Era (1903-1919)
+                            Beginnings (1844–1901)
                         </button>
                         <button
                             onClick={() => setActiveEra('early')}
@@ -82,7 +83,7 @@ export default function CathedralHistory() {
                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                         >
-                            Early Growth (1920-1950)
+                            Building the Cathedral (1902–1912)
                         </button>
                         <button
                             onClick={() => setActiveEra('growth')}
@@ -92,7 +93,7 @@ export default function CathedralHistory() {
                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                         >
-                            Expansion (1951-1984)
+                            Consolidation (1913–1980)
                         </button>
                         <button
                             onClick={() => setActiveEra('modern')}
@@ -102,7 +103,7 @@ export default function CathedralHistory() {
                                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                         >
-                            Modern Era (1985-Present)
+                            Modern Era (1981–present)
                         </button>
                     </div>
                 </div>
@@ -170,8 +171,29 @@ export default function CathedralHistory() {
                                     {/* Center Dot */}
                                     <div className="hidden lg:block absolute left-1/2 transform -translate-x-1/2 w-6 h-6 bg-blue-600 rounded-full border-4 border-white shadow-lg z-10"></div>
 
-                                    {/* Spacer */}
-                                    <div className="hidden lg:block w-5/12"></div>
+                                    {/* Photograph, opposite the card. This column
+                                        was previously an empty spacer — the layout
+                                        was already reserving the space. */}
+                                    <div className="w-full lg:w-5/12">
+                                        {event.photo && (
+                                            <figure className={index % 2 === 0 ? 'lg:pl-4' : 'lg:pr-4'}>
+                                                {/* Capped by height as well as width: these crops range from
+                                                    wide postcards to tall single portraits, and an uncapped
+                                                    portrait stretches one timeline row to several screens. */}
+                                                <img
+                                                    src={event.photo}
+                                                    alt={event.photoCaption || event.title}
+                                                    loading="lazy"
+                                                    className="max-h-80 w-auto max-w-full mx-auto rounded-2xl shadow-lg border border-blue-100 bg-white"
+                                                />
+                                                {event.photoCaption && (
+                                                    <figcaption className="mt-2 text-xs text-gray-500 italic text-center max-w-md mx-auto">
+                                                        {event.photoCaption}
+                                                    </figcaption>
+                                                )}
+                                            </figure>
+                                        )}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -200,9 +222,19 @@ export default function CathedralHistory() {
                     <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
                         {keyFigures.map((figure, index) => (
                             <div key={index} className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-2xl p-6 border border-blue-100 hover:shadow-xl transition-all duration-300 hover:scale-105">
-                                <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl text-white font-bold">
-                                    {figure.name.split(' ').map(n => n[0]).join('')}
-                                </div>
+                                {/* Portrait where one survives; initials otherwise. */}
+                                {figure.photo ? (
+                                    <img
+                                        src={figure.photo}
+                                        alt={figure.name}
+                                        loading="lazy"
+                                        className="w-24 h-24 rounded-full mx-auto mb-4 object-cover object-top border-4 border-white shadow-md bg-white"
+                                    />
+                                ) : (
+                                    <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-full mx-auto mb-4 flex items-center justify-center text-2xl text-white font-bold">
+                                        {figure.name.split(' ').map(n => n[0]).join('').slice(0, 3)}
+                                    </div>
+                                )}
                                 <h3 className="text-lg font-bold text-gray-900 mb-1 text-center">{figure.name}</h3>
                                 <p className="text-sm text-blue-600 font-medium mb-2 text-center">{figure.role}</p>
                                 <p className="text-xs text-gray-500 mb-3 text-center">{figure.years}</p>
@@ -235,10 +267,19 @@ export default function CathedralHistory() {
                         {architecturalFeatures.map((feature, index) => (
                             <div key={index} className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-blue-100 hover:scale-105">
                                 <div className="flex items-start gap-4">
-                                    <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 text-3xl">
-                                        {feature.icon}
-                                    </div>
-                                    <div>
+                                    {feature.photo ? (
+                                        <img
+                                            src={feature.photo}
+                                            alt={feature.feature}
+                                            loading="lazy"
+                                            className="w-24 h-24 rounded-xl object-cover flex-shrink-0 border border-blue-100 bg-white"
+                                        />
+                                    ) : (
+                                        <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0 text-3xl">
+                                            {feature.icon}
+                                        </div>
+                                    )}
+                                    <div className="min-w-0">
                                         <h3 className="text-xl font-bold text-gray-900 mb-2">{feature.feature}</h3>
                                         <p className="text-gray-600">{feature.description}</p>
                                     </div>
@@ -254,8 +295,9 @@ export default function CathedralHistory() {
                 <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                     <h2 className="text-3xl sm:text-4xl font-bold mb-6">Our Enduring Legacy</h2>
                     <p className="text-xl text-blue-100 mb-8 leading-relaxed">
-                        From a small mission church in 1903 to a vibrant cathedral community serving over 2,500 members today,
-                        ACK Mombasa Memorial Cathedral continues to be a beacon of hope, faith, and service on the Kenyan coast.
+                        Built in 506 working days and dedicated on the Feast of St Michael and All Angels in 1904,
+                        mainland East Africa&apos;s first Anglican Cathedral remains what Bishop Peel asked it to be —
+                        a house of prayer and an anchor for the Diocese in times of challenge.
                     </p>
                     <p className="text-lg text-blue-200 mb-8">
                         Our history is not just about the past — it's the foundation for our future. As we embrace digital
