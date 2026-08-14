@@ -9,7 +9,6 @@ import { apiUrl, cmsAuthHeaders } from '@/lib/apiBase';
 
 const STATUS_COLORS: Record<Submission['status'], string> = {
   pending:  'bg-amber-100 text-amber-700',
-  reviewed: 'bg-blue-100 text-blue-700',
   shortlisted: 'bg-green-100 text-green-700',
   declined: 'bg-red-100 text-red-700',
 };
@@ -188,7 +187,7 @@ function SubmissionCard({ s, onStatus, onDelete }: {
     <div className={`bg-white rounded-2xl border shadow-sm transition-all ${s.status === 'pending' ? 'border-amber-200' : 'border-gray-100'}`}>
       {/* Summary row */}
       <div className="flex items-start gap-4 p-5">
-        <div className={`w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ${s.status === 'pending' ? 'bg-amber-400' : s.status === 'shortlisted' ? 'bg-green-400' : s.status === 'declined' ? 'bg-red-400' : 'bg-blue-400'}`} />
+        <div className={`w-2.5 h-2.5 rounded-full mt-1.5 flex-shrink-0 ${s.status === 'pending' ? 'bg-amber-400' : s.status === 'shortlisted' ? 'bg-green-400' : 'bg-red-400'}`} />
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2 mb-1">
             <p className="font-semibold text-gray-900 text-sm">{s.firstName} {s.lastName}</p>
@@ -250,18 +249,29 @@ function SubmissionCard({ s, onStatus, onDelete }: {
             )}
           </div>
 
-          {/* Status update */}
+          {/* Status update. Once shortlisted or declined the decision is final —
+              the API refuses to change it, so the buttons go away rather than
+              offering an action that would only fail. */}
           <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Update Status</span>
-            {(['pending', 'reviewed', 'shortlisted', 'declined'] as Submission['status'][]).map(st => (
-              <button key={st}
-                onClick={() => (st === 'shortlisted' || st === 'declined')
-                  ? setConfirming(st)
-                  : void onStatus(s.id, st)}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${s.status === st ? STATUS_COLORS[st] : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
-                {st.charAt(0).toUpperCase() + st.slice(1)}
-              </button>
-            ))}
+            {s.status === 'pending' ? (
+              <>
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Decision</span>
+                {(['shortlisted', 'declined'] as const).map(st => (
+                  <button key={st} onClick={() => setConfirming(st)}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                      st === 'shortlisted'
+                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                        : 'bg-red-100 text-red-700 hover:bg-red-200'
+                    }`}>
+                    {st === 'shortlisted' ? 'Shortlist' : 'Decline'}
+                  </button>
+                ))}
+              </>
+            ) : (
+              <span className={`px-3 py-1 rounded-lg text-xs font-bold ${STATUS_COLORS[s.status]}`}>
+                {s.status === 'shortlisted' ? 'Shortlisted' : 'Declined'} — final
+              </span>
+            )}
             {s.notifiedAt && (
               <span className="ml-auto text-[11px] text-gray-400">
                 Applicant told: {s.notifiedStatus} on {new Date(s.notifiedAt).toLocaleDateString('en-KE')}
@@ -292,8 +302,8 @@ function SubmissionCard({ s, onStatus, onDelete }: {
  *
  * Status buttons sit in a row, so Decline is one slip away from Accept. An
  * email announcing either cannot be recalled, which makes this one of the few
- * places in the CMS worth an extra click. Pending and reviewed are internal, so
- * they skip this entirely.
+ * places in the CMS worth an extra click. Pending is the only non-final state, so
+ * it is the only one that skips this.
  */
 function StatusConfirm({
   name, email, status, onCancel, onConfirm,
@@ -324,7 +334,8 @@ function StatusConfirm({
           <p className="text-sm text-gray-500 mt-0.5">
             {shortlisting
               ? 'This marks the application as shortlisted and invites them to interview.'
-              : 'This marks the application as declined.'}
+              : 'This marks the application as declined.'}{' '}
+            <span className="font-semibold text-gray-700">The decision is final and cannot be changed afterwards.</span>
           </p>
         </div>
 
@@ -393,7 +404,11 @@ function StatusConfirm({
           {notify && email && (
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-1">
-                Add a personal note <span className="font-normal text-gray-400">(optional)</span>
+                {shortlisting ? (
+                  <>Add a personal note <span className="font-normal text-gray-400">(optional)</span></>
+                ) : (
+                  <>Reason for declining <span className="text-red-500">*</span></>
+                )}
               </label>
               <textarea
                 rows={3}
@@ -401,11 +416,13 @@ function StatusConfirm({
                 onChange={(e) => setNote(e.target.value)}
                 placeholder={shortlisting
                   ? 'e.g. Please bring a recording of a recent performance.'
-                  : 'e.g. We would be glad to see you apply for the choir opening in March.'}
+                  : 'e.g. We have filled the role with a candidate who has formal training in sign language interpretation.'}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
               />
               <p className="text-[11px] text-gray-400 mt-1">
-                Appears below the standard {shortlisting ? 'interview invitation' : 'decline'} wording.
+                {shortlisting
+                  ? 'Appears below the standard interview invitation wording.'
+                  : 'Sent to the applicant under "Why, on this occasion". Being told no without being told why is the thing applicants most resent.'}
               </p>
             </div>
           )}
@@ -421,7 +438,10 @@ function StatusConfirm({
             Cancel
           </button>
           <button
-            disabled={saving}
+            // A decline that is emailed must carry a reason. Declining without
+            // emailing at all is still allowed — that is a filing decision, not
+            // a message to a person.
+            disabled={saving || (!shortlisting && notify && !!email && !note.trim())}
             onClick={async () => {
               setSaving(true);
               setError('');
@@ -437,7 +457,7 @@ function StatusConfirm({
               shortlisting ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
             }`}>
             {saving ? 'Saving…' : notify && email
-              ? `${shortlisting ? 'Shortlist' : 'Decline'} and send invitation`
+              ? (shortlisting ? 'Shortlist and send invitation' : 'Decline and send the reason')
               : `${shortlisting ? 'Shortlist' : 'Decline'} without emailing`}
           </button>
         </div>
@@ -450,7 +470,6 @@ function StatusConfirm({
 
 const APP_STATUS_COLORS: Record<Application['status'], string> = {
   pending:  'bg-amber-100 text-amber-700',
-  reviewed: 'bg-blue-100 text-blue-700',
   shortlisted: 'bg-green-100 text-green-700',
   declined: 'bg-red-100 text-red-700',
 };
@@ -564,7 +583,7 @@ export default function GetInvolvedCMSPage() {
               ))}
             </div>
             <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-              {(['all', 'pending', 'reviewed', 'shortlisted', 'declined'] as const).map(s => (
+              {(['all', 'pending', 'shortlisted', 'declined'] as const).map(s => (
                 <button key={s} onClick={() => setStatusFilter(s)}
                   className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all capitalize ${statusFilter === s ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
                   {s === 'all' ? 'All Statuses' : s}
@@ -603,7 +622,7 @@ export default function GetInvolvedCMSPage() {
               ))}
             </div>
             <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
-              {(['all', 'pending', 'reviewed', 'shortlisted', 'declined'] as const).map(s => (
+              {(['all', 'pending', 'shortlisted', 'declined'] as const).map(s => (
                 <button key={s} onClick={() => setAppStatusFilter(s)}
                   className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all capitalize ${appStatusFilter === s ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
                   {s === 'all' ? 'All Statuses' : s}
@@ -634,16 +653,26 @@ export default function GetInvolvedCMSPage() {
                     )}
                     {a.cvFileId && <CvButton application={a} />}
                     <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100">
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</span>
-                      {(['pending', 'reviewed', 'shortlisted', 'declined'] as Application['status'][]).map(st => (
-                        <button key={st}
-                          onClick={() => (st === 'shortlisted' || st === 'declined')
-                            ? setConfirmingApp({ id: a.id, status: st })
-                            : void updateApplicationStatus(a.id, st)}
-                          className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors capitalize ${a.status === st ? APP_STATUS_COLORS[st] : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
-                          {st}
-                        </button>
-                      ))}
+                      {a.status === 'pending' ? (
+                        <>
+                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Decision</span>
+                          {(['shortlisted', 'declined'] as const).map(st => (
+                            <button key={st}
+                              onClick={() => setConfirmingApp({ id: a.id, status: st })}
+                              className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+                                st === 'shortlisted'
+                                  ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                                  : 'bg-red-100 text-red-700 hover:bg-red-200'
+                              }`}>
+                              {st === 'shortlisted' ? 'Shortlist' : 'Decline'}
+                            </button>
+                          ))}
+                        </>
+                      ) : (
+                        <span className={`px-3 py-1 rounded-lg text-xs font-bold ${APP_STATUS_COLORS[a.status]}`}>
+                          {a.status === 'shortlisted' ? 'Shortlisted' : 'Declined'} — final
+                        </span>
+                      )}
                       {a.notifiedAt && (
                         <span className="ml-auto text-[11px] text-gray-400">
                           Applicant told: {a.notifiedStatus} on {new Date(a.notifiedAt).toLocaleDateString('en-KE')}

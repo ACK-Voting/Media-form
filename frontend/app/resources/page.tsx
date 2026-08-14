@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
 import { useResourcesStore } from '@/stores/cms/resourcesStore';
-import type { Resource } from '@/app/_data/mockData';
+import type { Resource } from '@/app/_data/contentTypes';
 import EnquiryModal from '@/app/_components/EnquiryModal';
 
 type FilterCategory = 'All' | Resource['category'];

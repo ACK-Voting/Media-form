@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
-import type { GalleryItem } from '../_data/mockData';
+import type { GalleryItem } from '../_data/contentTypes';
 import { useGalleryStore } from '@/stores/cms/galleryStore';
 
 const categories: (GalleryItem['category'] | 'All')[] = ['All', 'Worship', 'Events', 'Youth', 'Community', 'History'];
@@ -170,7 +170,7 @@ export default function GalleryPage() {
             Were you at one of our services or events? Share your photos with us and we&apos;ll feature them in the gallery.
           </p>
           <div className="flex flex-wrap gap-3 justify-center">
-            <a href="mailto:media@ackmombasa.org" className="inline-flex items-center gap-2 bg-gray-900 text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-700 transition-colors">
+            <a href="mailto:media@ackmmc.com" className="inline-flex items-center gap-2 bg-gray-900 text-white px-6 py-3 rounded-xl font-semibold hover:bg-gray-700 transition-colors">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>

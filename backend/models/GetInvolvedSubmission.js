@@ -28,9 +28,16 @@ const getInvolvedSubmissionSchema = new mongoose.Schema(
     previousChurch: { type: String, trim: true },
     ministries: [{ type: String }],
     message:   { type: String, trim: true },
+    // Three states, not four. 'reviewed' was an internal holding state that
+    // told the applicant nothing and told staff only that somebody had opened
+    // the record — it made the row look handled while the person waited.
+    //
+    // Shortlisted and declined are final: see the guard in
+    // routes/getInvolved.js. An applicant who has been told no must not be
+    // able to become a yes afterwards.
     status: {
       type: String,
-      enum: ['pending', 'reviewed', 'shortlisted', 'declined'],
+      enum: ['pending', 'shortlisted', 'declined'],
       default: 'pending',
     },
     // When the applicant was last told the outcome, and which outcome they were

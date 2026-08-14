@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { BlogPost } from '@/app/_data/mockData';
+import { BlogPost } from '@/app/_data/contentTypes';
 import { listOps } from './contentApi';
 
 interface AnnouncementsStore {

@@ -9,7 +9,7 @@ import { useMinistriesStore } from '@/stores/cms/ministriesStore';
 import { useEventsStore } from '@/stores/cms/eventsStore';
 import { useGalleryStore } from '@/stores/cms/galleryStore';
 import { useMinistryPostsStore } from '@/stores/cms/ministryPostsStore';
-import type { MinistryPost } from '../../_data/mockData';
+import type { MinistryPost } from '../../_data/contentTypes';
 import EnquiryModal from '@/app/_components/EnquiryModal';
 
 type Tab = 'about' | 'updates' | 'gallery' | 'events';

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
 import { useAnnouncementsStore } from '@/stores/cms/announcementsStore';
-import type { BlogPost } from '../_data/mockData';
+import type { BlogPost } from '../_data/contentTypes';
 
 const categoryColors: Record<BlogPost['category'], string> = {
   Announcement: 'bg-blue-100 text-blue-700',

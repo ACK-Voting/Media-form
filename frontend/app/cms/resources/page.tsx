@@ -4,7 +4,7 @@ import { uploadFile } from '@/lib/uploadToCloudinary';
 
 import { useState, useRef } from 'react';
 import { useResourcesStore } from '@/stores/cms/resourcesStore';
-import { Resource } from '@/app/_data/mockData';
+import { Resource } from '@/app/_data/contentTypes';
 import { Select } from '@/components/ui/Select';
 
 const CATEGORIES: Resource['category'][] = ['Bulletin', 'Prayer Guide', 'Document', 'News'];

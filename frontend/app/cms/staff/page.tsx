@@ -4,7 +4,7 @@ import { uploadFile } from '@/lib/uploadToCloudinary';
 
 import { useState, useRef } from 'react';
 import { useStaffStore } from '@/stores/cms/staffStore';
-import { StaffMember, Department } from '@/app/_data/mockData';
+import { StaffMember, Department } from '@/app/_data/contentTypes';
 import { Select } from '@/components/ui/Select';
 import { displayName } from '@/lib/displayName';
 

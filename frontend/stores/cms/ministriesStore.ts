@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ministries as seed, Ministry } from '@/app/_data/mockData';
+import type { Ministry } from '@/app/_data/contentTypes';
 import { listOps } from './contentApi';
 
 interface MinistriesStore {
@@ -23,7 +23,10 @@ export const useMinistriesStore = create<MinistriesStore>()((set, get) => {
   });
 
   return {
-    ministries: seed.map((m) => ({ ...m, id: m.slug })),
+    // See leadershipStore: seeded fallbacks surface mock-up data — including
+    // ministry contact addresses on a domain the Cathedral does not own —
+    // whenever the content API cannot be reached.
+    ministries: [],
     loaded: false,
     error: null,
     hydrate: (items) => set({

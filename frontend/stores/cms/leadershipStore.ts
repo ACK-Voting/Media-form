@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { leadership as seed, Leader } from '@/app/_data/mockData';
+import type { Leader } from '@/app/_data/contentTypes';
 import { listOps } from './contentApi';
 
 interface LeadershipStore {
@@ -20,7 +20,11 @@ export const useLeadershipStore = create<LeadershipStore>()((set, get) => {
   });
 
   return {
-    leaders: seed,
+    // Empty, not seeded. getServerContent() returns null whenever the API is
+    // unreachable, and ContentBootstrap then never runs — so a seeded store
+    // would quietly serve the bundled mock-up copy during an outage. An empty
+    // section is honest; a stale one that looks live is not.
+    leaders: [],
     loaded: false,
     error: null,
     hydrate: (items) => set({ leaders: items, loaded: true }),

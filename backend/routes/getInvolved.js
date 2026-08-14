@@ -283,7 +283,7 @@ router.get('/', auth, async (req, res) => {
         const { type, status, limit = 100, skip = 0 } = req.query;
         const filter = {};
         if (type && ['membership', 'volunteer', 'application'].includes(type)) filter.type = type;
-        if (status && ['pending', 'reviewed', 'shortlisted', 'declined'].includes(status)) filter.status = status;
+        if (status && ['pending', 'shortlisted', 'declined'].includes(status)) filter.status = status;
 
         const [submissions, total] = await Promise.all([
             GetInvolvedSubmission.find(filter).sort({ createdAt: -1 }).limit(Number(limit)).skip(Number(skip)).lean(),
@@ -384,6 +384,15 @@ function outcomeEmail(submission, note, interview = {}) {
         };
     }
 
+    // The reason is given its own labelled block rather than being tacked on as
+    // an afterthought: being told no without being told why is the complaint
+    // applicants make about every recruitment process, and the Cathedral is in
+    // a position to do better than that.
+    const reasonBlock = note
+        ? `<p style="margin-top:16px"><strong>Why, on this occasion:</strong></p>
+           <div style="margin-top:8px;padding:14px;background:#fff;border-radius:8px;border:1px solid #e2e8f0;white-space:pre-wrap">${escapeHtml(note)}</div>`
+        : '';
+
     return {
         subject: role
             ? `Your application for ${submission.opportunityRole} — ACK Mombasa Memorial Cathedral`
@@ -392,8 +401,8 @@ function outcomeEmail(submission, note, interview = {}) {
             'About Your Application',
             `<p>Dear <strong>${name}</strong>,</p>
              <p>Thank you for your interest in serving with us and for the time you put into your application${role ? ` for <strong>${role}</strong>` : ''}. After prayerful consideration we are not able to take it forward on this occasion.</p>
-             <p>We would warmly encourage you to apply again for future opportunities, and you remain very welcome among us.</p>
-             ${noteBlock}
+             ${reasonBlock}
+             <p style="margin-top:16px">We would warmly encourage you to apply again for future opportunities, and you remain very welcome among us.</p>
              <p style="margin-top:24px">God bless you,<br/><strong>ACK Mombasa Memorial Cathedral</strong></p>`,
             'You can reply to this email and it will reach the Cathedral office.'
         ),
@@ -407,16 +416,29 @@ function outcomeEmail(submission, note, interview = {}) {
 // irreversible email at a real person.
 router.patch('/:id/status', auth, async (req, res) => {
     const { status, notify, note, interview } = req.body;
-    if (!['pending', 'reviewed', 'shortlisted', 'declined'].includes(status)) {
+    if (!['pending', 'shortlisted', 'declined'].includes(status)) {
         return res.status(400).json({ success: false, message: 'Invalid status value.' });
     }
     try {
+        const existing = await GetInvolvedSubmission.findById(req.params.id);
+        if (!existing) return res.status(404).json({ success: false, message: 'Submission not found.' });
+
+        // A decision is final. Enforced here rather than only in the UI, because
+        // the UI is not the security boundary — and because the harm is real:
+        // an applicant told they were unsuccessful should never afterwards be
+        // told they are shortlisted, or the reverse.
+        if (existing.status === 'shortlisted' || existing.status === 'declined') {
+            return res.status(409).json({
+                success: false,
+                message: `This application was already ${existing.status} and cannot be changed.`,
+            });
+        }
+
         const submission = await GetInvolvedSubmission.findByIdAndUpdate(
             req.params.id,
             { status },
             { new: true }
         );
-        if (!submission) return res.status(404).json({ success: false, message: 'Submission not found.' });
 
         // The status change is already saved, so a mail failure is reported
         // without rolling it back — staff would otherwise click again and again

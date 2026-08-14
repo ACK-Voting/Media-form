@@ -15,7 +15,7 @@ export type Submission = {
   previousChurch?: string;
   ministries: string[];
   message?: string;
-  status: 'pending' | 'reviewed' | 'shortlisted' | 'declined';
+  status: 'pending' | 'shortlisted' | 'declined';
   date: string;
   /** Set once the applicant has been emailed the outcome. */
   notifiedAt?: string | null;
@@ -39,10 +39,9 @@ export type Application = {
   cvFileId?: string | null;
   cvFileName?: string;
   cvFileType?: string;
-  // Must match the backend enum in models/GetInvolvedSubmission.js. It used to
-  // read 'shortlisted' | 'rejected', which the API rejects — so those two
-  // buttons appeared to work, then silently rolled back.
-  status: 'pending' | 'reviewed' | 'shortlisted' | 'declined';
+  // Must match the backend enum in models/GetInvolvedSubmission.js. Shortlisted
+  // and declined are final there — the API returns 409 on any further change.
+  status: 'pending' | 'shortlisted' | 'declined';
   date: string;
   /** Set once the applicant has been emailed the outcome. */
   notifiedAt?: string | null;

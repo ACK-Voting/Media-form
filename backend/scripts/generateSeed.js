@@ -1,12 +1,16 @@
 /*
- * Dev-time tool: turns the frontend's mockData.ts into backend/seed/content.json.
+ * RETIRED — do not run. Kept only as the record of how the original seed was
+ * produced.
  *
- *   node scripts/generateSeed.js
+ * This turned the frontend's mock-up data into backend/seed/content.json, which
+ * seedContent.js then loaded into Mongo to bootstrap the site. That mock-up
+ * data has since been deleted (app/_data/contentTypes.ts now holds the types
+ * and nothing else), so this script would produce an *empty* seed — and
+ * seedContent.js would then overwrite the Cathedral's real, staff-edited
+ * content with nothing.
  *
- * Run this only when the committed seed needs regenerating. seedContent.js is
- * what actually loads the JSON into Mongo. Keeping the generated JSON in git
- * means the backend has no build step and no TypeScript dependency, and the
- * file doubles as the record of what production started with.
+ * Content is now authored in /cms and lives in MongoDB. There is no seed step.
+ * The guard below refuses to run rather than leaving that trap armed.
  */
 
 const fs = require('fs');
@@ -16,7 +20,18 @@ const { execFileSync } = require('child_process');
 
 const REPO = path.resolve(__dirname, '../..');
 const FRONTEND = path.join(REPO, 'frontend');
-const MOCK_DATA = path.join(FRONTEND, 'app/_data/mockData.ts');
+// The source this script read no longer contains any data — see the notice
+// above. Refuse to run rather than silently emitting an empty seed.
+console.error(
+    'generateSeed.js is retired.\n' +
+    'The mock-up data it read has been deleted; running it would write an empty\n' +
+    'seed, and seedContent.js would then wipe the live CMS content.\n' +
+    'Content is authored in /cms and stored in MongoDB — there is no seed step.'
+);
+process.exit(1);
+
+// eslint-disable-next-line no-unreachable
+const MOCK_DATA = path.join(FRONTEND, 'app/_data/contentTypes.ts');
 const TSC = path.join(FRONTEND, 'node_modules/typescript/bin/tsc');
 const OUT = path.join(__dirname, '../seed/content.json');
 

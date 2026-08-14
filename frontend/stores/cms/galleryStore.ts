@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { GalleryItem } from '@/app/_data/mockData';
+import { GalleryItem } from '@/app/_data/contentTypes';
 import { listOps } from './contentApi';
 
 interface GalleryStore {

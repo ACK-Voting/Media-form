@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { ChurchEvent } from '@/app/_data/mockData';
+import { ChurchEvent } from '@/app/_data/contentTypes';
 import { listOps } from './contentApi';
 
 interface EventsStore {

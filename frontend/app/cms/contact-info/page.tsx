@@ -215,7 +215,7 @@ export default function ContactInfoPage() {
               <div>
                 <label className="block text-sm text-blue-200 mb-1">Email</label>
                 <input type="email" className="w-full bg-blue-800 border border-blue-700 rounded-lg px-3 py-2 text-sm text-white placeholder-blue-400 focus:outline-none focus:border-blue-400"
-                  value={bkEmail} onChange={e => setBkEmail(e.target.value)} placeholder="events@ackmombasa.org" />
+                  value={bkEmail} onChange={e => setBkEmail(e.target.value)} placeholder="events@ackmmc.com" />
               </div>
             </div>
             <button onClick={handleSaveBooking}
@@ -239,7 +239,7 @@ export default function ContactInfoPage() {
                 <input className={inputCls} value={d.name}
                   onChange={e => updateDepartment(d.id, { name: e.target.value })} placeholder="Department name" />
                 <input className={inputCls} value={d.email}
-                  onChange={e => updateDepartment(d.id, { email: e.target.value })} placeholder="email@ackmombasa.org" />
+                  onChange={e => updateDepartment(d.id, { email: e.target.value })} placeholder="email@ackmmc.com" />
                 <input className={inputCls} value={d.phone}
                   onChange={e => updateDepartment(d.id, { phone: e.target.value })} placeholder="+254 700 000 000" />
               </EditableRow>
@@ -249,7 +249,7 @@ export default function ContactInfoPage() {
             <p className="text-xs font-semibold text-gray-400 uppercase mb-3">Add Department</p>
             <div className="grid sm:grid-cols-3 gap-3 mb-3">
               <input className={inputCls} value={newDept.name} onChange={e => setNewDept(d => ({ ...d, name: e.target.value }))} placeholder="Department name" />
-              <input className={inputCls} value={newDept.email} onChange={e => setNewDept(d => ({ ...d, email: e.target.value }))} placeholder="email@ackmombasa.org" />
+              <input className={inputCls} value={newDept.email} onChange={e => setNewDept(d => ({ ...d, email: e.target.value }))} placeholder="email@ackmmc.com" />
               <input className={inputCls} value={newDept.phone} onChange={e => setNewDept(d => ({ ...d, phone: e.target.value }))} placeholder="+254 700 000 000" />
             </div>
             <button onClick={() => {

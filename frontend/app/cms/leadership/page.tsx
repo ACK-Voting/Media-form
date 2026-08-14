@@ -4,7 +4,7 @@ import { uploadFile } from '@/lib/uploadToCloudinary';
 
 import { useState, useRef } from 'react';
 import { useLeadershipStore } from '@/stores/cms/leadershipStore';
-import { Leader } from '@/app/_data/mockData';
+import { Leader } from '@/app/_data/contentTypes';
 import { displayName } from '@/lib/displayName';
 
 const emptyLeader: Omit<Leader, 'id'> = {

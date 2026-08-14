@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Navbar from '../_components/Navbar';
 import Footer from '../_components/Footer';
 import { useGivingStore } from '@/stores/cms/givingStore';
+import EnquiryModal from '../_components/EnquiryModal';
 
 const amounts = [500, 1000, 2000, 5000, 10000];
 
@@ -45,6 +46,11 @@ function GivePage() {
   const [amount, setAmount] = useState<number | ''>('');
   const [customAmount, setCustomAmount] = useState('');
   const [category, setCategory] = useState('tithe');
+  // "Request Annual Report" had no handler at all — it looked like a button and
+  // did nothing, on the one page where a visitor is being asked to trust the
+  // Cathedral with money. It now opens the same enquiry modal the rest of the
+  // site uses, so the request lands in /cms/contacts.
+  const [reportOpen, setReportOpen] = useState(false);
   const [recurring, setRecurring] = useState(false);
 
   // M-Pesa state
@@ -729,25 +735,43 @@ function GivePage() {
                 <p className="text-sm text-gray-600 mb-4">
                   We are committed to transparency. Audited financial reports are presented at the Annual General Meeting and available to all members.
                 </p>
-                <button className="w-full border-2 border-gray-300 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:border-gray-400 transition-colors">
+                <button
+                  type="button"
+                  onClick={() => setReportOpen(true)}
+                  className="w-full border-2 border-gray-300 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:border-gray-400 transition-colors cursor-pointer"
+                >
                   Request Annual Report
                 </button>
               </div>
 
-              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6">
-                <svg className="w-8 h-8 text-amber-400 mb-3" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
-                </svg>
-                <p className="text-sm text-amber-900 italic leading-relaxed">
-                  &quot;Giving my tithe faithfully has been a spiritual discipline that has deepened my trust in God.
-                  The cathedral has been a blessing to my family and our community for generations.&quot;
-                </p>
-                <p className="text-xs text-amber-700 font-semibold mt-3">— Margaret N., Member since 1985</p>
-              </div>
+              {/* A testimonial from "Margaret N., Member since 1985" stood here.
+                  It came from the design mock-up — an invented quote attributed
+                  to a named person, directly beneath a heading about financial
+                  transparency. Removed rather than replaced: a real one has to
+                  come from a real member who agreed to it. */}
             </div>
           </div>
         </div>
       </section>
+
+      <EnquiryModal
+        open={reportOpen}
+        onClose={() => setReportOpen(false)}
+        title="Request the Annual Report"
+        intro="Tell us which year you would like and how to reach you, and the Cathedral office will send the audited accounts."
+        subject="Annual report request"
+        submitLabel="Send Request"
+        extraFields={[
+          { name: 'year', label: 'Which year?', placeholder: 'e.g. 2025', required: true },
+          {
+            name: 'format',
+            label: 'How would you like it?',
+            type: 'select',
+            options: ['Email a copy', 'Collect a printed copy from the office'],
+            required: true,
+          },
+        ]}
+      />
 
       <Footer />
     </div>

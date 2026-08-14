@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-import { givingInfo as seed } from '@/app/_data/mockData';
 import { singletonOps } from './contentApi';
 
 type GivingCategory = { id: string; label: string; description: string };
@@ -15,6 +14,12 @@ interface GivingInfo {
   };
   givingCategories: GivingCategory[];
 }
+
+const EMPTY_GIVING: GivingInfo = {
+  mpesa: { paybill: '', accountName: '' },
+  bank: { name: '', branch: '', accountName: '', accountNumber: '', swiftCode: '' },
+  givingCategories: [],
+};
 
 interface GivingStore {
   givingInfo: GivingInfo;
@@ -40,7 +45,12 @@ export const useGivingStore = create<GivingStore>()((set, get) => {
   });
 
   return {
-    givingInfo: seed,
+    // Blank, not seeded. The bundled mock-up carried a placeholder bank account
+    // number ('1234567890') and a paybill; if the content API is unreachable
+    // getServerContent() returns null and ContentBootstrap never runs, so a
+    // seeded store would show those to someone about to send money. The shape
+    // is kept so the page renders empty fields rather than "undefined".
+    givingInfo: EMPTY_GIVING,
     version: 0,
     loaded: false,
     error: null,

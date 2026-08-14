@@ -6,7 +6,7 @@ import Navbar from '../../../../_components/Navbar';
 import Footer from '../../../../_components/Footer';
 import { useMinistriesStore } from '@/stores/cms/ministriesStore';
 import { useMinistryPostsStore } from '@/stores/cms/ministryPostsStore';
-import type { MinistryPost } from '../../../../_data/mockData';
+import type { MinistryPost } from '../../../../_data/contentTypes';
 
 const categoryColors: Record<MinistryPost['category'], string> = {
   Update: 'bg-blue-100 text-blue-700',

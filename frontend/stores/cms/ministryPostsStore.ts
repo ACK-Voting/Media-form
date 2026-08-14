@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { MinistryPost } from '@/app/_data/mockData';
+import { MinistryPost } from '@/app/_data/contentTypes';
 import { listOps } from './contentApi';
 
 interface MinistryPostsStore {

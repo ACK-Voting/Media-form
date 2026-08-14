@@ -68,7 +68,7 @@ export default function MaintenancePage() {
             Call the Cathedral Office
           </a>
           <a
-            href="mailto:info@ackmombasa.org"
+            href="mailto:media@ackmmc.com"
             className="rounded-xl border border-white/25 px-5 py-3 text-sm font-semibold hover:bg-white/10 transition-colors"
           >
             Email Us

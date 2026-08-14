@@ -6,7 +6,7 @@ import Footer from '../_components/Footer';
 import { useEventsStore } from '@/stores/cms/eventsStore';
 import { useContactsStore } from '@/stores/cms/contactsStore';
 import { subscribe } from '@/stores/cms/contentApi';
-import type { ChurchEvent } from '../_data/mockData';
+import type { ChurchEvent } from '../_data/contentTypes';
 
 const categoryColors: Record<ChurchEvent['category'], string> = {
   Worship: 'blue',

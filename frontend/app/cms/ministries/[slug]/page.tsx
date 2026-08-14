@@ -9,7 +9,7 @@ import { useMinistryPostsStore } from '@/stores/cms/ministryPostsStore';
 import { useGalleryStore } from '@/stores/cms/galleryStore';
 import { useEventsStore } from '@/stores/cms/eventsStore';
 import { useCMSPermissions } from '@/hooks/useCMSPermissions';
-import { MinistryPost, GalleryItem, ChurchEvent } from '@/app/_data/mockData';
+import { MinistryPost, GalleryItem, ChurchEvent } from '@/app/_data/contentTypes';
 import { Select } from '@/components/ui/Select';
 
 type Tab = 'info' | 'posts' | 'gallery' | 'events';
@@ -287,7 +287,7 @@ export default function MinistryHubPage() {
                     className={inputCls}
                     value={(info as Record<string, string>).contact ?? ''}
                     onChange={(e) => setInfoForm((f) => ({ ...(f ?? ministry as unknown as Record<string, string>), contact: e.target.value }))}
-                    placeholder="e.g. children@ackmombasa.org"
+                    placeholder="e.g. children@ackmmc.com"
                   />
                 </div>
                 <div>

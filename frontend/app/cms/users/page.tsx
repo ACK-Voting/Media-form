@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useMinistriesStore } from '@/stores/cms/ministriesStore';
-import { CMSUserRole } from '@/app/_data/mockData';
+import { CMSUserRole } from '@/app/_data/contentTypes';
 import { CMSProtectedRoute } from '@/contexts/CMSAuthContext';
 import { Select } from '@/components/ui/Select';
 import { API_BASE } from '@/lib/apiBase';

@@ -3,7 +3,7 @@
 import { uploadFile } from '@/lib/uploadToCloudinary';
 import { useState, useRef } from 'react';
 import { useGalleryStore } from '@/stores/cms/galleryStore';
-import { GalleryItem } from '@/app/_data/mockData';
+import { GalleryItem } from '@/app/_data/contentTypes';
 import { Select } from '@/components/ui/Select';
 
 const CATEGORIES: GalleryItem['category'][] = ['Worship', 'Events', 'Youth', 'Community', 'History'];

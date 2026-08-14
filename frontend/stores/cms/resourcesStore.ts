@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Resource } from '@/app/_data/mockData';
+import { Resource } from '@/app/_data/contentTypes';
 import { listOps } from './contentApi';
 
 interface ResourcesStore {

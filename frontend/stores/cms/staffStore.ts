@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { departments as seedDepartments, StaffMember, Department } from '@/app/_data/mockData';
+import type { StaffMember, Department } from '@/app/_data/contentTypes';
 import { listOps, singletonOps } from './contentApi';
 
 interface StaffStore {
@@ -20,7 +20,7 @@ interface StaffStore {
 
 const uid = () => globalThis.crypto?.randomUUID?.() ?? `id-${Date.now()}`;
 
-// Staff starts empty on purpose: the six entries in mockData are placeholders
+// Staff starts empty on purpose: the six entries the mock-up shipped with were placeholders
 // that all share /bishop.jpeg, and showing them publicly would misrepresent who
 // works at the cathedral. Real staff are added through /cms/staff.
 export const useStaffStore = create<StaffStore>()((set, get) => {
@@ -42,7 +42,7 @@ export const useStaffStore = create<StaffStore>()((set, get) => {
 
   return {
     staff: [],
-    departments: seedDepartments,
+    departments: [],
     departmentsVersion: 0,
     loaded: false,
     error: null,
